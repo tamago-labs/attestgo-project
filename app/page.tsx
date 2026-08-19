@@ -1,6 +1,5 @@
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
-import HowItWorks from "@/components/landing/HowItWorks";
 import Verification from "@/components/landing/Verification";
 import Stats from "@/components/landing/Stats";
 import Cta from "@/components/landing/Cta";
@@ -11,7 +10,6 @@ export default function Home() {
     <>
       <Navbar />
       <Hero />
-      <HowItWorks />
       <Verification />
       <Stats />
       <Cta />

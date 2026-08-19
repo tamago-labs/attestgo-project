@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import ButtonGlow from "./ButtonGlow";
 
 export default function Hero() {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -125,12 +126,7 @@ export default function Hero() {
             >
               Start streaming
             </a>
-            <a
-              href="#"
-              className="inline-flex items-center gap-2 rounded-lg border border-border px-6 py-3 text-sm font-medium text-white hover:bg-panel transition-colors"
-            >
-              Read the spec
-            </a>
+            <ButtonGlow href="#" className="px-6 py-3">Read the spec</ButtonGlow>
           </div>
         </div>
       </div>

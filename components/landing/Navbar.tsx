@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import ButtonGlow from "./ButtonGlow";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -38,12 +39,7 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-4">
-          <a
-            href="#"
-            className="inline-flex items-center rounded-md border border-border px-4 py-2 text-sm font-medium text-white hover:bg-panel transition-colors"
-          >
-            Launch app
-          </a>
+          <ButtonGlow href="/app" className="px-4 py-2 rounded-md">Launch app</ButtonGlow>
         </div>
       </nav>
     </header>
