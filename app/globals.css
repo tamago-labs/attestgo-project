@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #0A0D13;
+  color: #ffffff;
+  font-family: var(--font-inter), sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.glow-text {
+  background: linear-gradient(90deg, #FDB750 0%, #8B7CF0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.mesh-glow {
+  background: radial-gradient(circle at 30% 30%, rgba(253,183,80,0.22), transparent 55%),
+              radial-gradient(circle at 70% 60%, rgba(139,124,240,0.22), transparent 55%);
+  filter: blur(40px);
+}
+
+#grid-wrap {
+  mask-image: radial-gradient(ellipse 90% 85% at 50% 15%, black 25%, transparent 95%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 85% at 50% 15%, black 25%, transparent 95%);
+}
