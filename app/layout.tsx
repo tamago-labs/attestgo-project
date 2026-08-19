@@ -18,9 +18,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Saffron — Streams that carry their own proof",
+  title: "tamaGO — Lend & Borrow via Payment Streams Across Any Chain with Attestcoin",
   description:
-    "Travel Rule data and a verifiable attestation of the underlying transaction move with every payment — anchored on-chain as a hash, never as exposed identity data.",
+    "tamaGO is a stream-based DeFi lending protocol for cross-chain payments, enabling users to borrow against future payment streams through isolated liquidity pools with Attestcoin-verified transactions.",
 };
 
 export default function RootLayout({

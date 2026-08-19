@@ -1,7 +1,7 @@
 export default function HowItWorks() {
   return (
     <section className="relative py-28 border-b border-border">
-      <div className="max-w-6xl mx-auto px-6 lg:px-10">
+      <div className="max-w-7xl mx-auto px-6 lg:px-10">
         <div className="max-w-xl mb-16">
           <span className="font-mono text-xs uppercase tracking-widest text-amber">
             How it works

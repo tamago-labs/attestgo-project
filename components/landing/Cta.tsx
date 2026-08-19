@@ -2,7 +2,7 @@ export default function Cta() {
   return (
     <section className="relative overflow-hidden py-28">
       <div className="mesh-glow absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] pointer-events-none" />
-      <div className="relative max-w-3xl mx-auto px-6 text-center">
+      <div className="relative max-w-4xl mx-auto px-6 text-center">
         <h2 className="font-display font-semibold text-4xl sm:text-5xl leading-tight tracking-tight">
           Start streaming with
           <br />

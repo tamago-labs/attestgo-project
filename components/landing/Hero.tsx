@@ -101,17 +101,20 @@ export default function Hero() {
       </div>
       <div className="mesh-glow absolute -top-20 left-1/2 -translate-x-1/2 w-[900px] h-[550px] pointer-events-none" />
 
-      <div className="relative max-w-6xl mx-auto px-6 lg:px-10 pt-24 pb-12 z-10">
+      <div className="relative max-w-7xl mx-auto px-6 lg:px-10 pt-24 pb-12 z-10">
         <div className="max-w-2xl">
-          <h1 className="font-display font-semibold text-5xl sm:text-6xl leading-[1.05] tracking-tight">
-            Streams that carry<br />
-            <span className="glow-text">their own proof.</span>
+          <span className="font-mono text-xs uppercase tracking-widest text-amber">
+            Stream X Lending X Comply
+          </span>
+          <h1 className="mt-4 font-display font-semibold text-5xl sm:text-6xl leading-[1.05] tracking-tight">
+            Get Paid as You Earn,{" "}
+            <span className="glow-text">Borrow as You Need</span>
           </h1>
 
           <p className="mt-6 text-lg text-muted max-w-lg leading-relaxed">
-            Saffron makes real-time payment streams carry Travel Rule data and
-            verifiable proofs of real-world transactions across any chain,
-            powered by Attestcoin on Creditcoin.
+            Stream payments across any chain and borrow against them instantly.
+            Attestcoin unifies balances &amp; verifiable proofs, connecting each
+            to isolated liquidity pools.
           </p>
 
           <div className="mt-10 flex flex-wrap items-center gap-4">

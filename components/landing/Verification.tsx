@@ -4,7 +4,7 @@ export default function Verification() {
       <div
         className="mesh-glow absolute top-0 right-0 w-[600px] h-[500px] pointer-events-none opacity-60"
       />
-      <div className="relative max-w-6xl mx-auto px-6 lg:px-10 grid lg:grid-cols-12 gap-14 items-center">
+      <div className="relative max-w-7xl mx-auto px-6 lg:px-10 grid lg:grid-cols-12 gap-14 items-center">
         <div className="lg:col-span-5">
           <span className="font-mono text-xs uppercase tracking-widest text-amber">
             Verification

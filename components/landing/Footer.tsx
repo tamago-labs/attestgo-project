@@ -1,15 +1,14 @@
 export default function Footer() {
   return (
     <footer className="border-t border-border">
-      <div className="max-w-6xl mx-auto px-6 lg:px-10 py-16 grid md:grid-cols-12 gap-10">
+      <div className="max-w-7xl mx-auto px-6 lg:px-10 py-16 grid md:grid-cols-12 gap-10">
         <div className="md:col-span-4">
-          <a href="#" className="flex items-center gap-2.5">
-            <span
-              className="w-2.5 h-2.5 rounded-full"
-              style={{ background: "linear-gradient(135deg,#FDB750,#8B7CF0)" }}
-            ></span>
-            <span className="font-display font-semibold text-lg tracking-tight">
-              Saffron
+          <a href="#" className="flex items-center gap-1.5">
+            <span className="font-display font-semibold text-lg tracking-tight text-white">
+              tama
+            </span>
+            <span className="brand-tamg font-display text-sm">
+              GO
             </span>
           </a>
           <p className="mt-4 text-sm text-muted max-w-xs leading-relaxed">
@@ -86,8 +85,8 @@ export default function Footer() {
         </div>
       </div>
       <div className="border-t border-border">
-        <div className="max-w-6xl mx-auto px-6 lg:px-10 py-6 flex flex-wrap items-center justify-between gap-4 text-xs text-muted">
-          <span>© 2026 Saffron. All rights reserved.</span>
+        <div className="max-w-7xl mx-auto px-6 lg:px-10 py-6 flex flex-wrap items-center justify-between gap-4 text-xs text-muted">
+          <span>© 2026 tamaGO. All rights reserved.</span>
           <div className="flex items-center gap-6">
             <a href="#" className="hover:text-white transition-colors">
               Twitter

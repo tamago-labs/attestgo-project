@@ -20,6 +20,18 @@ body {
   color: transparent;
 }
 
+.brand-tamg {
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(135deg, #FDB750 0%, #8B7CF0 100%);
+  color: #0A0D13;
+  padding: 0.25em 0.6em;
+  border-radius: 0;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1;
+}
+
 .mesh-glow {
   background: radial-gradient(circle at 30% 30%, rgba(253,183,80,0.22), transparent 55%),
               radial-gradient(circle at 70% 60%, rgba(139,124,240,0.22), transparent 55%);

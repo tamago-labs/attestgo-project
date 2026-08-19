@@ -21,17 +21,13 @@ export default function Navbar() {
       }`}
     >
       <nav className="max-w-7xl mx-auto flex items-center justify-between px-6 lg:px-10 py-4">
-        <a href="#" className="flex items-center gap-2.5">
-          <span
-            className="relative w-2.5 h-2.5 rounded-full"
-            style={{ background: "linear-gradient(135deg,#FDB750,#8B7CF0)" }}
-          >
-            <span
-              className="absolute inset-0 rounded-full animate-ping"
-              style={{ background: "linear-gradient(135deg,#FDB750,#8B7CF0)", opacity: 0.5 }}
-            ></span>
+        <a href="#" className="flex items-center gap-1.5">
+          <span className="font-display font-semibold text-lg tracking-tight text-white">
+            tama
           </span>
-          <span className="font-display font-semibold text-lg tracking-tight">Saffron</span>
+          <span className="brand-tamg font-display text-sm">
+            GO
+          </span>
         </a>
 
         <div className="hidden md:flex items-center gap-8 text-sm text-muted">
@@ -42,7 +38,6 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-4">
-          <a href="#" className="hidden sm:inline text-sm text-muted hover:text-white transition-colors">Sign in</a>
           <a
             href="#"
             className="inline-flex items-center rounded-md border border-border px-4 py-2 text-sm font-medium text-white hover:bg-panel transition-colors"
