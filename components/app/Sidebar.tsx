@@ -40,15 +40,9 @@ export default function Sidebar() {
         {!collapsed && (
           <Link href="/" className="flex items-center gap-1.5 group">
             <span className="font-display font-semibold text-lg tracking-tight text-white">
-              tama
+              attest
             </span>
-            <span
-              className="inline-flex items-center px-1.5 py-0.5 text-xs font-bold"
-              style={{
-                background: "linear-gradient(135deg, #FDB750, #8B7CF0)",
-                color: "#0A0D13",
-              }}
-            >
+            <span className="brand-tamg font-display text-sm">
               GO
             </span>
           </Link>
