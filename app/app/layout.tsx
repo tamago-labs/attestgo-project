@@ -1,7 +1,7 @@
 import AppLayout from "@/components/app/AppLayout";
 
 export const metadata = {
-  title: "tamaGO — App",
+  title: "AttestGO — App",
 };
 
 export default function AppRootLayout({

@@ -18,9 +18,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "tamaGO — Lend & Borrow via Payment Streams Across Any Chain with Attestcoin",
+  title: "AttestGO — Lend & Borrow via Payment Streams Across Any Chain with Attestcoin",
   description:
-    "tamaGO is a stream-based DeFi lending protocol for cross-chain payments, enabling users to borrow against future payment streams through isolated liquidity pools with Attestcoin-verified transactions.",
+    "AttestGO is a stream-based DeFi lending protocol for cross-chain payments, enabling users to borrow against future payment streams through isolated liquidity pools with Attestcoin-verified transactions.",
 };
 
 export default function RootLayout({

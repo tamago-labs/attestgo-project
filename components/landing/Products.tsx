@@ -17,7 +17,7 @@ const products = [
     label: "Lending",
     title: "Earn Yield on Payment Streams",
     description:
-      "tamaGO turns payment streams into dynamic collateral, giving recipients access to liquidity while ratios adjust as the stream matures.",
+      "AttestGO turns payment streams into dynamic collateral, giving recipients access to liquidity while ratios adjust as the stream matures.",
     features: [
       "Future payments become borrowing power",
       "Isolated pools limit risk between markets",

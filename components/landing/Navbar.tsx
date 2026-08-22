@@ -24,7 +24,7 @@ export default function Navbar() {
       <nav className="max-w-7xl mx-auto flex items-center justify-between px-6 lg:px-10 py-4">
         <a href="#" className="flex items-center gap-1.5">
           <span className="font-display font-semibold text-lg tracking-tight text-white">
-            tama
+            attest
           </span>
           <span className="brand-tamg font-display text-sm">
             GO
