@@ -35,6 +35,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# attestcoin examples (local reference, not committed)
+usc-testnet-bridge-examples/
+
 # amplify
 .amplify
 amplify_outputs*
