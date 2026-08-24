@@ -2,8 +2,8 @@
 pragma solidity 0.8.19;
 
 import {Script, console} from "forge-std/Script.sol";
-import {AdvanceManager} from "../src/Advance/AdvanceManager.sol";
-import {AuxiliaryAdvance} from "../src/Advance/AuxiliaryAdvance.sol";
+import {AdvanceManager} from "../../src/unused/Advance/AdvanceManager.sol";
+import {AuxiliaryAdvance} from "../../src/unused/Advance/AuxiliaryAdvance.sol";
 
 /**
  * @title DeployAdvance

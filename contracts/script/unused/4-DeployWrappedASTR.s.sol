@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import {Script, console} from "forge-std/Script.sol";
-import {WrappedASTR} from "../src/WrappedASTR.sol";
+import {WrappedASTR} from "../../src/unused/WrappedASTR.sol";
 
 interface IUSCMinter {
     function wrapOriginToken(address originToken, address targetToken) external;

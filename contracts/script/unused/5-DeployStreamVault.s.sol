@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import {Script, console} from "forge-std/Script.sol";
-import {StreamVault} from "../src/StreamVault.sol";
+import {StreamVault} from "../../src/unused/StreamVault.sol";
 
 /**
  * @title DeployStreamVault

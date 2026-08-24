@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import {Script, console} from "forge-std/Script.sol";
-import {AttestStream} from "../src/AttestStream.sol";
+import {AttestStream} from "../../src/unused/AttestStream.sol";
 
 /**
  * @title DeployAttestStream
