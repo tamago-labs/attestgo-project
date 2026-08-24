@@ -91,7 +91,7 @@ export default function AvatarMenu() {
         whileTap={{ scale: 0.97 }}
         whileHover={{ scale: 1.02 }}
         transition={{ type: "spring", stiffness: 400, damping: 18 }}
-        className="flex items-center gap-2 rounded-full border border-border bg-base pl-1 pr-3 py-1 hover:bg-white/5 transition-colors"
+        className="flex items-center gap-2 rounded-full border border-border bg-canvas pl-1 pr-3 py-1 hover:bg-white/5 transition-colors"
       >
         <span
           className="h-7 w-7 rounded-full shrink-0 border border-white/10"

@@ -78,7 +78,7 @@ export default function Features() {
           {features.map((f) => (
             <div
               key={f.title}
-              className="bg-base p-7 hover:bg-panel/60 transition-colors"
+              className="bg-canvas p-7 hover:bg-panel/60 transition-colors"
             >
               <div
                 className="w-9 h-9 rounded-lg flex items-center justify-center mb-5"

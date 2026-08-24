@@ -7,12 +7,12 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        base: '#0A0D13',
+        canvas: '#0A0D13',
         panel: '#11151D',
         border: '#1E2430',
         amber: '#FDB750',
         violet: '#8B7CF0',
-        muted: '#8A93A6',
+        muted: '#B8C0D0',
       },
       fontFamily: {
         display: ['var(--font-space-grotesk)', 'sans-serif'],

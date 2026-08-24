@@ -18,9 +18,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AttestGO — Lend & Borrow via Payment Streams Across Any Chain with Attestcoin",
+  title: "AttestGO — Verified Identity, Compliant Assets and AI Inbox for Web3",
   description:
-    "AttestGO is a stream-based DeFi lending protocol for cross-chain payments, enabling users to borrow against future payment streams through isolated liquidity pools with Attestcoin-verified transactions.",
+    "AttestGO connects verified identity, compliant assets and payment flows across networks for Web3 — every transfer is provable, auditable and rendered by AI into a human-readable inbox.",
 };
 
 export default function RootLayout({
@@ -31,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} bg-base text-white font-body antialiased`}
+        className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} bg-canvas text-white font-body antialiased`}
       >
         {children}
       </body>

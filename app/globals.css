@@ -38,6 +38,13 @@ body {
   filter: blur(40px);
 }
 
+@media (max-width: 640px) {
+  .mesh-glow {
+    filter: blur(24px);
+    opacity: 0.5;
+  }
+}
+
 #grid-wrap {
   mask-image: radial-gradient(ellipse 90% 85% at 50% 15%, black 25%, transparent 95%);
   -webkit-mask-image: radial-gradient(ellipse 90% 85% at 50% 15%, black 25%, transparent 95%);

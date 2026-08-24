@@ -45,7 +45,7 @@ export default function NetworkSwitcher() {
         whileTap={{ scale: 0.97 }}
         whileHover={{ scale: 1.02 }}
         transition={{ type: "spring", stiffness: 400, damping: 18 }}
-        className="flex items-center gap-2 rounded-lg border border-border bg-base px-3 py-1.5 text-sm hover:bg-white/5 transition-colors"
+        className="flex items-center gap-2 rounded-lg border border-border bg-canvas px-3 py-1.5 text-sm hover:bg-white/5 transition-colors"
       >
         {current?.icon ? (
           // eslint-disable-next-line @next/next/no-img-element

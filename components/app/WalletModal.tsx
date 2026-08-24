@@ -103,7 +103,7 @@ export default function WalletModal({
                     animate={{ opacity: 1, y: 0 }}
                     whileTap={{ scale: 0.99 }}
                     transition={{ type: "spring", stiffness: 400, damping: 18 }}
-                    className="relative flex w-full items-center gap-3 rounded-xl border border-border bg-base px-4 py-3 text-left overflow-hidden group transition-colors disabled:opacity-50"
+                    className="relative flex w-full items-center gap-3 rounded-xl border border-border bg-canvas px-4 py-3 text-left overflow-hidden group transition-colors disabled:opacity-50"
                   >
                     {/* gradient like app sidebar on hover */}
                     <span

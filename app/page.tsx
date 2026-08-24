@@ -1,6 +1,7 @@
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
-import Verification from "@/components/landing/Verification";
+import Products from "@/components/landing/Products";
+import Inbox from "@/components/landing/Inbox";
 import Stats from "@/components/landing/Stats";
 import Cta from "@/components/landing/Cta";
 import Footer from "@/components/landing/Footer";
@@ -10,7 +11,8 @@ export default function Home() {
     <>
       <Navbar />
       <Hero />
-      <Verification />
+      <Products />
+      <Inbox />
       <Stats />
       <Cta />
       <Footer />

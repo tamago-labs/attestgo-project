@@ -1,7 +1,7 @@
 export default function Footer() {
   return (
     <footer className="border-t border-border">
-      <div className="max-w-7xl mx-auto px-6 lg:px-10 py-16 grid md:grid-cols-12 gap-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-12 sm:py-16 grid md:grid-cols-12 gap-8 sm:gap-10">
         <div className="md:col-span-4">
           <a href="#" className="flex items-center gap-1.5">
             <span className="font-display font-semibold text-lg tracking-tight text-white">
@@ -85,7 +85,7 @@ export default function Footer() {
         </div>
       </div>
       <div className="border-t border-border">
-        <div className="max-w-7xl mx-auto px-6 lg:px-10 py-6 flex flex-wrap items-center justify-between gap-4 text-xs text-muted">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-6 flex flex-col sm:flex-row flex-wrap items-center justify-between gap-3 sm:gap-4 text-xs text-muted">
           <span>© 2026 AttestGO. All rights reserved.</span>
           <div className="flex items-center gap-6">
             <a href="#" className="hover:text-white transition-colors">

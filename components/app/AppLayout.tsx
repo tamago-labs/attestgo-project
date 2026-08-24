@@ -5,7 +5,7 @@ import { WalletProvider } from "./WalletContext";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <WalletProvider>
-      <div className="flex h-screen overflow-hidden bg-base">
+      <div className="flex h-screen overflow-hidden bg-canvas">
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <AppHeader />

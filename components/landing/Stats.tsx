@@ -8,13 +8,13 @@ const stats = [
 export default function Stats() {
   return (
     <section className="border-b border-border">
-      <div className="max-w-7xl mx-auto px-6 lg:px-10 py-16 grid grid-cols-2 lg:grid-cols-4 gap-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-10 sm:py-16 grid grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10">
         {stats.map((s) => (
-          <div key={s.value}>
-            <div className="font-display font-semibold text-3xl glow-text">
+          <div key={s.value} className="text-center sm:text-left">
+            <div className="font-display font-semibold text-2xl sm:text-3xl glow-text">
               {s.value}
             </div>
-            <div className="mt-2 text-sm text-muted">{s.label}</div>
+            <div className="mt-2 text-xs sm:text-sm text-muted">{s.label}</div>
           </div>
         ))}
       </div>
