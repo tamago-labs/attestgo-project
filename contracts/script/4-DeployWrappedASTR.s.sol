@@ -40,27 +40,29 @@ contract DeployWrappedASTR is Script {
         require(minter != address(0), "USC_MINTER_CONTRACT_ADDRESS not set");
 
         vm.startBroadcast(pk);
-
         WrappedASTR wastr = new WrappedASTR(minter);
-        console.log("\n[1/2] WrappedASTR deployed at:", address(wastr));
+        vm.stopBroadcast();
+
+        console.log("\n[1/1] WrappedASTR deployed at:", address(wastr));
         console.log("      name:", wastr.name());
         console.log("      symbol:", wastr.symbol());
         console.log("      decimals:", wastr.decimals());
+        console.log("      owner:", wastr.owner());
+        console.log("      hasRole USC_MINTER for minter:", wastr.hasRole(keccak256("USC_MINTER"), minter));
 
-        IUSCMinter(minter).wrapOriginToken(origin, address(wastr));
-        console.log("[2/2] wrapOriginToken(origin, wASTR) called");
-
-        vm.stopBroadcast();
+        // Wrap must be separate tx on CC3 (pallet-evm NotActivated if batched in same script)
+        // After this deploy, run:
+        // cast send --rpc-url $CREDITCOIN_RPC_URL 0x2Be9B8640ED32815d3B9e8C92AbcD3F15F07396f "wrapOriginToken(address,address)" 0x052B3eAC16D43EF792589aae41BaD2205c6CC21C <wASTR> --private-key $PRIVATE_KEY
 
         address wrapped = IUSCMinter(minter).wrappedTokens(origin);
         console.log("\n===========================================");
-        console.log("Verification");
+        console.log("Verification (before wrap)");
         console.log("===========================================");
         console.log("WrappedASTR:", address(wastr));
-        console.log("Minter.wrappedTokens(origin):", wrapped);
-        require(wrapped == address(wastr), "wrap failed");
+        console.log("Minter.wrappedTokens(origin) before:", wrapped);
+        console.log("  (will be 0x0 until you run wrapOriginToken via cast)");
 
-        console.log("\n[OK] wASTR deployed and wrapped");
+        console.log("\n[OK] wASTR deployed -- now run wrap via cast");
 
         console.log("\n===========================================");
         console.log("Update .env:");
