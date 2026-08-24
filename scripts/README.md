@@ -62,19 +62,19 @@ npx tsx scripts/5_worker.ts
 # watches StreamPayment (fallback TokensBurnedForBridging), auto-proves + submits; poll 5s,handles attest lag
 ```
 
-### 6 — Deploy + stream demo (needs Sepolia ETH + CTC)
+### 6 — Stream demo (uses deployed 0x052B, no deploy)
 ```bash
-# deploy AttestStream on Sepolia + payStream + prove + view verify (no CTC submit):
-npx tsx scripts/6_deploy_and_stream_demo.ts
-# deploy only / pay only / with on-chain submit:
-npx tsx scripts/6_deploy_and_stream_demo.ts --deploy-only
-npx tsx scripts/6_deploy_and_stream_demo.ts --pay-only 0x<AttestStream>
-npx tsx scripts/6_deploy_and_stream_demo.ts --execute 0x<AttestStream>
-# --execute also submits to minter (needs CTC); compare with worker auto-submit
+# payStream on Sepolia + prove + view verify (no CTC):
+npx tsx scripts/6_stream_demo.ts
+# with on-chain submit to minter 0x2Be9... (needs CTC):
+npx tsx scripts/6_stream_demo.ts --execute
+npx tsx scripts/6_stream_demo.ts --execute 0x052B3eAC16D43EF792589aae41BaD2205c6CC21C
+# compare with auto-relay: npx tsx scripts/5_worker.ts
 ```
 
 Contracts:
-- `contracts/AttestStream.sol` — minimal source-chain token with `payStream(recipient,amount,attestId,streamId,memo)` emitting `StreamPayment` + legacy `TokensBurnedForBridging` for `app/payment-streams` + Travel Rule `attestId`. Forge: `forge create --rpc-url $SOURCE_CHAIN_RPC_URL --private-key $KEY contracts/AttestStream.sol:AttestStream --broadcast`
+- `contracts/src/AttestStream.sol` (0x052B3eAC16D43EF792589aae41BaD2205c6CC21C, tx 0x53147...) — `payStream(recipient,amount,attestId,streamId,memo)` → `StreamPayment`. Deploy via Forge: `forge script script/3-DeployAttestStream.s.sol --rpc-url $SOURCE_CHAIN_RPC_URL --broadcast --legacy`
+- `contracts/src/PriceOracle.sol` etc. for `app/pools`/`app/borrow`
 
 See `usc-testnet-bridge-examples/README.md` tutorials: `custom-contracts-bridging`, `bridge-offchain-worker`, `loan-flow`
 
