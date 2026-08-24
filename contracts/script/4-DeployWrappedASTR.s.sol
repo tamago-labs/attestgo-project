@@ -50,17 +50,16 @@ contract DeployWrappedASTR is Script {
         console.log("      owner:", wastr.owner());
         console.log("      hasRole USC_MINTER for minter:", wastr.hasRole(keccak256("USC_MINTER"), minter));
 
-        // Wrap must be separate tx on CC3 (pallet-evm NotActivated if batched in same script)
+        // Wrap must be separate cast after deploy (minter view fails in script simulation on CC3 pallet-evm)
         // After this deploy, run:
         // cast send --rpc-url $CREDITCOIN_RPC_URL 0x2Be9B8640ED32815d3B9e8C92AbcD3F15F07396f "wrapOriginToken(address,address)" 0x052B3eAC16D43EF792589aae41BaD2205c6CC21C <wASTR> --private-key $PRIVATE_KEY
-
-        address wrapped = IUSCMinter(minter).wrappedTokens(origin);
+        // cast call --rpc-url $CREDITCOIN_RPC_URL 0x2Be9B8640ED32815d3B9e8C92AbcD3F15F07396f "wrappedTokens(address)(address)" 0x052B3eAC16D43EF792589aae41BaD2205c6CC21C
         console.log("\n===========================================");
-        console.log("Verification (before wrap)");
+        console.log("Verification");
         console.log("===========================================");
         console.log("WrappedASTR:", address(wastr));
-        console.log("Minter.wrappedTokens(origin) before:", wrapped);
-        console.log("  (will be 0x0 until you run wrapOriginToken via cast)");
+        console.log("  verify after wrap:");
+        console.log("  cast call --rpc-url $CREDITCOIN_RPC_URL 0x2Be9B8640ED32815d3B9e8C92AbcD3F15F07396f \"wrappedTokens(address)(address)\" 0x052B3eAC16D43EF792589aae41BaD2205c6CC21C");
 
         console.log("\n[OK] wASTR deployed -- now run wrap via cast");
 
