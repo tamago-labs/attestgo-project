@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import {
   Inbox,
   Radio,
-  FileDown,
   ArrowUpFromLine,
   ArrowDownToLine,
   Settings,
@@ -18,8 +17,7 @@ const navItems = [
   { label: "Inbox", href: "/app", icon: Inbox },
   { label: "Streams", href: "/app/payment-streams", icon: Radio },
   { label: "Lend", href: "/app/pools", icon: ArrowUpFromLine },
-  { label: "Borrow", href: "/app/borrow", icon: ArrowDownToLine },
-  { label: "Travel Rule", href: "/app/travel-rule", icon: FileDown },
+  { label: "Advance", href: "/app/borrow", icon: ArrowDownToLine },
   { label: "Settings", href: "/app/settings", icon: Settings },
 ];
 
