@@ -1,30 +1,30 @@
 /**
- * 6_deploy_and_stream_demo.ts — Deploy AttestStream (Sepolia) + demo payStream (read/write)
+ * 6_stream_demo.ts — AttestGO stream payment demo (uses deployed AttestStream on Sepolia)
  *
- * Deploys contracts/AttestStream.sol to Sepolia via ethers (no forge needed).
- * Optionally demonstrates a full AttestGO stream payment:
- *   1. deploy or reuse AttestStream on Sepolia
- *   2. mint + payStream(recipient, amount, attestId, streamId, memo)
- *   3. wait attested + generate proof (like 2_verify_single_view.ts)
- *   4. (optional --execute) submit to USCMinter on Creditcoin
+ * Assumes AttestStream already deployed via forge:
+ *   forge script script/3-DeployAttestStream.s.sol --rpc-url $SOURCE_CHAIN_RPC_URL --broadcast --legacy
+ *   Deployed 0x052B3eAC16D43EF792589aae41BaD2205c6CC21C tx 0x53147...
+ *
+ * Flow:
+ *   1. payStream(recipient, amount, attestId, streamId, memo) on Sepolia
+ *   2. wait attested + generate proof (like 2_verify_single_view.ts)
+ *   3. view verify via 0x0FD2
+ *   4. --execute: submit to USCMinter 0x2Be9... on Creditcoin
  *
  * Env:
  *   SOURCE_CHAIN_RPC_URL, CREDITCOIN_RPC_URL, PROOF_BUILDER_URL, SOURCE_CHAIN_KEY
- *   CREDITCOIN_WALLET_PRIVATE_KEY (deployer + payer, must have Sepolia ETH + CTC)
- *   USC_MINTER_CONTRACT_ADDRESS (if --execute, e.g. 0x2Be9... pre-deployed)
- *   STREAM_RECIPIENT=0x... STREAM_AMOUNT=1000000000000000000 STREAM_MEMO="salary #1"
+ *   SOURCE_CHAIN_CONTRACT_ADDRESS (0x052B...), CREDITCOIN_WALLET_PRIVATE_KEY
+ *   USC_MINTER_CONTRACT_ADDRESS (if --execute), STREAM_RECIPIENT, STREAM_AMOUNT, STREAM_MEMO
  *
  * Usage:
- *   npx tsx scripts/6_deploy_and_stream_demo.ts --deploy-only
- *   npx tsx scripts/6_deploy_and_stream_demo.ts --pay-only 0x<AttestStreamSepoliaAddr>
- *   npx tsx scripts/6_deploy_and_stream_demo.ts --execute 0x<AttestStreamSepoliaAddr>
- *   # auto: deploy + pay + prove (no execute):
- *   npx tsx scripts/6_deploy_and_stream_demo.ts
+ *   npx tsx scripts/6_stream_demo.ts
+ *   npx tsx scripts/6_stream_demo.ts --execute
+ *   npx tsx scripts/6_stream_demo.ts --execute 0x052B3eAC16D43EF792589aae41BaD2205c6CC21C
+ *   STREAM_RECIPIENT=0x... STREAM_AMOUNT=1000000000000000000 npx tsx scripts/6_stream_demo.ts --execute
  */
 
 import 'dotenv/config';
-import { JsonRpcProvider, Wallet, ContractFactory, Contract, InterfaceAbi, keccak256, toUtf8Bytes, ethers } from 'ethers';
-import { readFileSync } from 'fs';
+import { JsonRpcProvider, Wallet, Contract, InterfaceAbi, keccak256, toUtf8Bytes } from 'ethers';
 import { proofProvider, chainInfo, blockProver } from '@gluwa/usc-sdk';
 
 const SOURCE_KEY = Number(process.env.SOURCE_CHAIN_KEY || 1);
@@ -32,99 +32,48 @@ const SRC_RPC = process.env.SOURCE_CHAIN_RPC_URL || '';
 const CC_RPC = process.env.CREDITCOIN_RPC_URL || 'https://rpc.cc3-testnet.creditcoin.network';
 const PROVER = process.env.PROOF_BUILDER_URL || 'https://prover.cc3-testnet.creditcoin.network';
 const PK = process.env.CREDITCOIN_WALLET_PRIVATE_KEY || '';
-const MINTER_ADDR = process.env.USC_MINTER_CONTRACT_ADDRESS || process.env.USC_CUSTOM_MINTER_CONTRACT_ADDRESS || '0x2Be9B8640ED32815d3B9e8C92AbcD3F15F07396f';
+const STREAM_ADDR =
+  process.env.SOURCE_CHAIN_CONTRACT_ADDRESS ||
+  process.env.SOURCE_CHAIN_CUSTOM_CONTRACT_ADDRESS ||
+  '0x052B3eAC16D43EF792589aae41BaD2205c6CC21C';
+const MINTER_ADDR =
+  process.env.USC_MINTER_CONTRACT_ADDRESS || process.env.USC_CUSTOM_MINTER_CONTRACT_ADDRESS || '0x2Be9B8640ED32815d3B9e8C92AbcD3F15F07396f';
 const RECIPIENT = process.env.STREAM_RECIPIENT || '';
-const AMOUNT = process.env.STREAM_AMOUNT || '1000000000000000000'; // 1 ASTR (18 dec)
-const MEMO = process.env.STREAM_MEMO || 'AttestGO stream #1 — pay as you go';
+const AMOUNT = process.env.STREAM_AMOUNT || '1000000000000000000';
+const MEMO = process.env.STREAM_MEMO || 'AttestGO stream demo — pay as you go';
 
 if (!SRC_RPC) throw new Error('SOURCE_CHAIN_RPC_URL missing (Sepolia)');
 if (!PK) throw new Error('CREDITCOIN_WALLET_PRIVATE_KEY missing');
-
-// Minimal compiled artifact fallback: we compile via ethers if foundry artifact not present
-// Try load from usc-testnet-bridge-examples cache? Instead use inline bytecode from forge build if available
-// For now we expect `yarn build` with hardhat/foundry not needed — we deploy via ContractFactory using ABI + bytecode
-// Bytecode is not checked in; script will try to read cache/forge artifact, else print forge command.
-
-async function getAttestStreamFactory(signer: Wallet): Promise<ContractFactory> {
-  // Try foundry artifact
-  const candidates = [
-    'cache/AttestStream.json',
-    'out/AttestStream.sol/AttestStream.json',
-    'usc-testnet-bridge-examples/cache/AttestStream.json',
-  ];
-  for (const p of candidates) {
-    try {
-      const j = JSON.parse(readFileSync(p, 'utf8'));
-      const abi = j.abi ?? j;
-      const bytecode = j.bytecode ?? j.deployedBytecode;
-      if (abi && bytecode) return new ContractFactory(abi as InterfaceAbi, bytecode, signer);
-    } catch {}
-  }
-  // Fallback: instruct user
-  console.error(`
-❌ AttestStream artifact not found.
-
-Run forge build for contracts/AttestStream.sol:
-
-  forge build --contracts contracts --out out
-  # or
-  npx tsc --skipLibCheck # not needed
-  # then re-run this script
-
-Alternatively deploy manually:
-  forge create --rpc-url $SOURCE_CHAIN_RPC_URL --private-key $CREDITCOIN_WALLET_PRIVATE_KEY contracts/AttestStream.sol:AttestStream --broadcast
-`);
-  process.exit(1);
-}
+if (!STREAM_ADDR || !STREAM_ADDR.startsWith('0x')) throw new Error('SOURCE_CHAIN_CONTRACT_ADDRESS missing (0x052B...)');
 
 async function main() {
   const args = process.argv.slice(2);
-  const deployOnly = args.includes('--deploy-only');
-  const payOnlyAddr = args[args.indexOf('--pay-only') + 1] as string | undefined;
-  const executeAddr = args[args.indexOf('--execute') + 1] as string | undefined;
   const doExecute = args.includes('--execute');
+  const overrideAddr = args[args.indexOf('--execute') + 1] as string | undefined;
+  const streamAddr = overrideAddr && overrideAddr.startsWith('0x') ? overrideAddr : STREAM_ADDR;
 
   const srcProvider = new JsonRpcProvider(SRC_RPC);
   const ccProvider = new JsonRpcProvider(CC_RPC);
   const wallet = new Wallet(PK, srcProvider);
   const ccWallet = wallet.connect(ccProvider);
 
-  console.log(`\n🔗 Sepolia RPC: ${SRC_RPC.slice(0, 48)}...`);
-  console.log(`🔗 Creditcoin RPC: ${CC_RPC}`);
-  console.log(`👛 Deployer/payer: ${wallet.address}`);
+  console.log(`\n🔗 Sepolia: ${SRC_RPC.slice(0, 48)}...`);
+  console.log(`🔗 Creditcoin: ${CC_RPC}`);
+  console.log(`📦 AttestStream: ${streamAddr} (deployed 0x53147...)`);
+  console.log(`👛 Payer: ${wallet.address}`);
 
-  let streamAddr: string | undefined = payOnlyAddr || executeAddr;
-
-  if (!streamAddr && !payOnlyAddr) {
-    console.log('\n⏳ Deploying AttestStream.sol to Sepolia...');
-    const factory = await getAttestStreamFactory(wallet);
-    const contract = await factory.deploy();
-    await contract.waitForDeployment();
-    streamAddr = await contract.getAddress();
-    console.log(`✅ Deployed AttestStream to ${streamAddr}`);
-    console.log(`   Save: SOURCE_CHAIN_CONTRACT_ADDRESS=${streamAddr} in .env`);
-  } else if (streamAddr) {
-    console.log(`\n📦 Using existing AttestStream ${streamAddr}`);
-  }
-
-  if (deployOnly) {
-    console.log('\n--deploy-only: stopping. Next:');
-    console.log(`  npx tsx scripts/6_deploy_and_stream_demo.ts --pay-only ${streamAddr}`);
-    return;
-  }
-
-  if (!streamAddr) throw new Error('no streamAddr');
-
-  // Pay stream
   const streamAbi = [
     'function payStream(address recipient,uint256 amount,bytes32 attestId,uint256 streamId,string memo) external returns (bool)',
-    'function burn(uint256) external',
+    'function balanceOf(address) view returns (uint256)',
     'event StreamPayment(address indexed payer, address indexed recipient, uint256 amount, bytes32 indexed attestId, uint256 streamId, string memo)',
   ] as const;
   const stream = new Contract(streamAddr, streamAbi as unknown as InterfaceAbi, wallet);
 
+  const bal = await (stream as any).balanceOf(wallet.address);
+  console.log(`💰 ASTR balance: ${bal.toString()} ${bal === 0n ? '⚠️  mint first: cast send ... "mint(uint256)" 1000000000000000000000' : ''}`);
+
   const recipient = RECIPIENT || wallet.address;
-  const attestId = keccak256(toUtf8Bytes(`attestgo:${Date.now()}:${Math.random()}`));
+  const attestId = keccak256(toUtf8Bytes(`attestgo:demo:${Date.now()}:${Math.random()}`));
   const streamId = Math.floor(Date.now() / 1000) % 100000;
 
   console.log(`\n💸 payStream(recipient=${recipient}, amount=${AMOUNT}, attestId=${attestId}, streamId=${streamId}, memo="${MEMO}")`);
@@ -134,7 +83,6 @@ async function main() {
   console.log(`  mined block ${receipt.blockNumber} status=${receipt.status}`);
   if (receipt.status !== 1) throw new Error('payStream reverted');
 
-  // Prove
   const txHash: string = tx.hash;
   console.log(`\n⏳ Proving ${txHash} (block ${receipt.blockNumber})...`);
   const builder = new proofProvider.service.ProofBuilder(SOURCE_KEY, PROVER, 5000);
@@ -147,9 +95,7 @@ async function main() {
   if (!res.success || !res.data) throw new Error(String(res.error));
   const d = res.data!;
   console.log(`  ✅ proof continuity=${d.continuityProof.roots.length} siblings=${d.merkleProof.siblings.length} cached=${d.cached}`);
-
-  const estCTC = 2.3e-5 + 2.9e-7 * d.continuityProof.roots.length;
-  console.log(`  est CTC ${estCTC.toExponential(2)} (view verify next)`);
+  console.log(`  est CTC ${(2.3e-5 + 2.9e-7 * d.continuityProof.roots.length).toExponential(2)}`);
 
   const prover = new blockProver.PrecompileBlockProver(ccProvider);
   const ok = await prover.verifySingle(d.chainKey, d.headerNumber, d.txBytes, d.merkleProof, d.continuityProof);
@@ -178,7 +124,6 @@ async function main() {
     console.log(`  submitted ${resp.hash} waiting...`);
     const r = await resp.wait();
     console.log(`  mined ${r.blockNumber} status=${r.status}`);
-    // parse TokensMinted
     for (const log of r.logs) {
       try {
         const parsed = minter.interface.parseLog({ topics: [...log.topics], data: log.data });
@@ -186,9 +131,9 @@ async function main() {
       } catch {}
     }
   } else {
-    console.log('\nTip: add --execute to also submit to minter (needs CTC for gas).');
-    console.log(`  npx tsx scripts/6_deploy_and_stream_demo.ts --execute ${streamAddr}`);
-    console.log('Or let 5_worker.ts auto-submit: npx tsx scripts/5_worker.ts (set SOURCE_CHAIN_CONTRACT_ADDRESS=' + streamAddr + ')');
+    console.log('\nTip: add --execute to also submit to minter (needs CTC).');
+    console.log(`  npx tsx scripts/6_stream_demo.ts --execute`);
+    console.log(`  Or auto-relay: npx tsx scripts/5_worker.ts`);
   }
   console.log('');
 }
