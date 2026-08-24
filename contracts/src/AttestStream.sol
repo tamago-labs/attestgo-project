@@ -30,6 +30,20 @@ contract AttestStream is ERC20 {
         string memo
     );
 
+    // Option B: single lock → CC3 vest (1 tx, then CC3 StreamVault releases via block.timestamp)
+    event StreamCreated(
+        address indexed payer,
+        address indexed recipient,
+        uint256 totalAmount,
+        uint256 duration,
+        bytes32 indexed attestId,
+        uint256 streamId,
+        string memo
+    );
+
+    uint256 public nextStreamId = 1;
+    mapping(uint256 => address) public streamPayer;
+
     // Legacy burn event kept for hello-bridge compatibility
     event TokensBurnedForBridging(address indexed from, uint256 value);
 
@@ -62,6 +76,25 @@ contract AttestStream is ERC20 {
         // also emit legacy event for any generic minter that only watches TokensBurnedForBridging
         emit TokensBurnedForBridging(msg.sender, amount);
         return true;
+    }
+
+    // Option B: lock total once on Sepolia, CC3 StreamVault vests via timestamp
+    function createStream(
+        address recipient,
+        uint256 totalAmount,
+        uint256 duration,
+        bytes32 attestId,
+        string calldata memo
+    ) external returns (uint256 streamId) {
+        require(recipient != address(0), "recipient zero");
+        require(totalAmount > 0, "amount zero");
+        require(duration > 0, "duration zero");
+        streamId = nextStreamId++;
+        streamPayer[streamId] = msg.sender;
+        _transfer(msg.sender, BURN_ADDRESS, totalAmount);
+        emit StreamCreated(msg.sender, recipient, totalAmount, duration, attestId, streamId, memo);
+        emit TokensBurnedForBridging(msg.sender, totalAmount);
+        return streamId;
     }
 
     // View helper for SDK testing
