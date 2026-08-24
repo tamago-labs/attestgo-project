@@ -43,12 +43,40 @@ yarn --cwd usc-testnet-bridge-examples hello_bridge:submit_query <same txHash>
 # yarn --cwd usc-testnet-bridge-examples utils:check_balance $USC_MINTABLE_TOKEN <wallet>
 ```
 
-## Next scripts planned
-- `3_verify_batch_view.ts` — `getBatchProof([tx1,tx2])` + `verifyBatch` (10 max, 1000-block range)
-- `4_estimate_gas_table.ts` — table recent vs 24h-old cost (2.59e-5 vs 3.13e-4 CTC)
-- `5_worker_skeleton.ts` — offchain worker polling your AttestGo `StreamPayment` events (copy `bridge-offchain-worker/worker.ts` + `utils/pollEvents`)
-- `6_attestGO_stream.ts` — custom source contract emitting payment-stream event for `app/payment-streams`
-- See `usc-testnet-bridge-examples/README.md` tutorials: `custom-contracts-bridging`, `bridge-offchain-worker`, `loan-flow`
+### 3 — Batch verify (read-only, needs 2 txs within 1000 blocks)
+```bash
+npx tsx scripts/3_verify_batch_view.ts 0x<tx1> 0x<tx2>
+# shares one continuity proof, cheaper than 2 singles
+```
+
+### 4 — Gas table (read-only, no RPC; with tx gives live len)
+```bash
+npx tsx scripts/4_estimate_gas_table.ts
+npx tsx scripts/4_estimate_gas_table.ts 0x<txHash>
+```
+
+### 5 — Offchain worker (needs funded CTC, watches Sepolia)
+```bash
+# .env: SOURCE_CHAIN_CONTRACT_ADDRESS=<AttestStream or 0x0F24...>, USC_MINTER_CONTRACT_ADDRESS=0x2Be9..., PRIVATE_KEY=...
+npx tsx scripts/5_worker.ts
+# watches StreamPayment (fallback TokensBurnedForBridging), auto-proves + submits; poll 5s,handles attest lag
+```
+
+### 6 — Deploy + stream demo (needs Sepolia ETH + CTC)
+```bash
+# deploy AttestStream on Sepolia + payStream + prove + view verify (no CTC submit):
+npx tsx scripts/6_deploy_and_stream_demo.ts
+# deploy only / pay only / with on-chain submit:
+npx tsx scripts/6_deploy_and_stream_demo.ts --deploy-only
+npx tsx scripts/6_deploy_and_stream_demo.ts --pay-only 0x<AttestStream>
+npx tsx scripts/6_deploy_and_stream_demo.ts --execute 0x<AttestStream>
+# --execute also submits to minter (needs CTC); compare with worker auto-submit
+```
+
+Contracts:
+- `contracts/AttestStream.sol` — minimal source-chain token with `payStream(recipient,amount,attestId,streamId,memo)` emitting `StreamPayment` + legacy `TokensBurnedForBridging` for `app/payment-streams` + Travel Rule `attestId`. Forge: `forge create --rpc-url $SOURCE_CHAIN_RPC_URL --private-key $KEY contracts/AttestStream.sol:AttestStream --broadcast`
+
+See `usc-testnet-bridge-examples/README.md` tutorials: `custom-contracts-bridging`, `bridge-offchain-worker`, `loan-flow`
 
 ## Reference
 - Precompiles: `0x0FD2` BlockProver, `0x0FD3` ChainInfo, decoder `0x731c345d79Fb8BbDC541f9DF3b6317585F849F9f` (testnet)
