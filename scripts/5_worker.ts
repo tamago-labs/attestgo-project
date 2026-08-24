@@ -34,7 +34,7 @@ const SOURCE_ABI = [
 
 const MINTER_ABI = [
   'event TokensMinted(address indexed wrappedTokenAddress, address indexed burntFrom, uint256 amount, bytes32 indexed queryId)',
-  'function execute(uint8 action, uint64 chainKey, uint64 blockHeight, bytes calldata encodedTransaction, bytes32 merkleRoot, tuple(bytes32 root, bool isLeft)[] siblings, bytes32 lowerEndpointDigest, bytes32[] continuityRoots) external returns (bool)',
+  'function execute(uint8 action, uint64 chainKey, uint64 blockHeight, bytes calldata encodedTransaction, bytes32 merkleRoot, tuple(bytes32 hash, bool isLeft)[] siblings, bytes32 lowerEndpointDigest, bytes32[] continuityRoots) external returns (bool)',
 ] as const;
 
 const SOURCE_CHAIN_KEY = Number(process.env.SOURCE_CHAIN_KEY || 1);
@@ -177,7 +177,7 @@ async function main() {
 
           // estimate gas with fallback
           const iface = minterContract.interface;
-          const frag = iface.getFunction('execute(uint8,uint64,uint64,bytes,bytes32,tuple(bytes32,bool)[],bytes32,bytes32[])');
+          const frag = iface.getFunction('execute(uint8,uint64,uint64,bytes,bytes32,tuple(bytes32 hash, bool isLeft)[],bytes32,bytes32[])');
           const params = [0, d.chainKey, d.headerNumber, d.txBytes, d.merkleProof.root, d.merkleProof.siblings, d.continuityProof.lowerEndpointDigest, d.continuityProof.roots] as const;
           const data = iface.encodeFunctionData(frag!, params as any);
           let gasLimit: bigint;

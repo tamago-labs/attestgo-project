@@ -104,11 +104,11 @@ async function main() {
   if (doExecute) {
     console.log(`\n🚀 Submitting to minter ${MINTER_ADDR} (action=0)...`);
     const minterAbi = [
-      'function execute(uint8 action,uint64 chainKey,uint64 blockHeight,bytes encodedTransaction,bytes32 merkleRoot,tuple(bytes32 root,bool isLeft)[] siblings,bytes32 lowerEndpointDigest,bytes32[] continuityRoots) external returns (bool)',
+      'function execute(uint8 action,uint64 chainKey,uint64 blockHeight,bytes encodedTransaction,bytes32 merkleRoot,tuple(bytes32 hash, bool isLeft)[] siblings,bytes32 lowerEndpointDigest,bytes32[] continuityRoots) external returns (bool)',
     ] as const;
     const minter = new Contract(MINTER_ADDR, minterAbi as unknown as InterfaceAbi, ccWallet);
     const iface = minter.interface;
-    const frag = iface.getFunction('execute(uint8,uint64,uint64,bytes,bytes32,tuple(bytes32,bool)[],bytes32,bytes32[])');
+    const frag = iface.getFunction('execute(uint8,uint64,uint64,bytes,bytes32,tuple(bytes32 hash, bool isLeft)[],bytes32,bytes32[])');
     const data = iface.encodeFunctionData(frag!, [0, d.chainKey, d.headerNumber, d.txBytes, d.merkleProof.root, d.merkleProof.siblings, d.continuityProof.lowerEndpointDigest, d.continuityProof.roots]);
     let gasLimit: bigint;
     try {
