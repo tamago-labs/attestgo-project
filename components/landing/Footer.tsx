@@ -12,8 +12,7 @@ export default function Footer() {
             </span>
           </a>
           <p className="mt-4 text-sm text-muted max-w-xs leading-relaxed">
-            Real-time payment streams carrying Travel Rule data and verifiable
-            proofs of real-world transactions.
+            Building the infrastructure for compliant onchain finance with verifiable proofs & AI composed inbox powered by Attestcoin Protocol.
           </p>
         </div>
 

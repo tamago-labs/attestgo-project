@@ -5,9 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Inbox,
-  Radio,
-  ArrowUpFromLine,
-  ArrowDownToLine,
+  BadgeCheck,
+  Send,
+  History,
+  Compass,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -15,9 +16,10 @@ import {
 
 const navItems = [
   { label: "Inbox", href: "/app", icon: Inbox },
-  { label: "Streams", href: "/app/payment-streams", icon: Radio },
-  { label: "Lend", href: "/app/pools", icon: ArrowUpFromLine },
-  { label: "Advance", href: "/app/borrow", icon: ArrowDownToLine },
+  { label: "Identity", href: "/app/identity", icon: BadgeCheck },
+  { label: "Send", href: "/app/send", icon: Send },
+  { label: "History", href: "/app/history", icon: History },
+  { label: "Discover", href: "/app/discover", icon: Compass },
   { label: "Settings", href: "/app/settings", icon: Settings },
 ];
 
