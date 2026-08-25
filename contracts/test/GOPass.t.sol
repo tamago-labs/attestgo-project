@@ -3,12 +3,12 @@ pragma solidity 0.8.19;
 
 import {Test} from "forge-std/Test.sol";
 import {GOPass} from "../src/GOPass.sol";
-import {GOPassMirror} from "../src/GOPassMirror.sol";
+import {GOPassVerifier} from "../src/GOPassVerifier.sol";
 import {GToken} from "../src/GToken.sol";
 
 contract GOPassTest is Test {
     GOPass hub;
-    GOPassMirror mirror;
+    GOPassVerifier mirror;
     GToken gtoken;
 
     address owner = address(0xA11CE);
@@ -21,10 +21,10 @@ contract GOPassTest is Test {
         vm.prank(owner);
         hub = new GOPass("https://attestgo.test/pass/");
         // hub is on CC3 102031, mirror on dest chains references it
-        mirror = new GOPassMirror(address(hub), 102031);
+        mirror = new GOPassVerifier(address(hub), 102031);
         vm.prank(mirror.owner());
         mirror.setWorker(worker);
-        GOPassMirror.Rule memory baseRule = GOPassMirror.Rule({
+        GOPassVerifier.Rule memory baseRule = GOPassVerifier.Rule({
             allowed_group: bytes2(0),
             allowed_sub_group: bytes2(0),
             min_tier: 10,
@@ -49,8 +49,8 @@ contract GOPassTest is Test {
         return GOPass.Record({tier: tier, subTier: 0, group: 0, subGroup: 0, countryBitmap: bitmap, expiry: expiry, frozen: frozen, customerIdHash: cid});
     }
 
-    function _mirrorRec(uint8 tier, uint256 bitmap, uint64 expiry, bool frozen, bytes32 cid) internal pure returns (GOPassMirror.Record memory) {
-        return GOPassMirror.Record({tier: tier, subTier: 0, group: 0, subGroup: 0, countryBitmap: bitmap, expiry: expiry, frozen: frozen, customerIdHash: cid});
+    function _mirrorRec(uint8 tier, uint256 bitmap, uint64 expiry, bool frozen, bytes32 cid) internal pure returns (GOPassVerifier.Record memory) {
+        return GOPassVerifier.Record({tier: tier, subTier: 0, group: 0, subGroup: 0, countryBitmap: bitmap, expiry: expiry, frozen: frozen, customerIdHash: cid});
     }
 
     // ---- GOPass hub ----
@@ -125,10 +125,10 @@ contract GOPassTest is Test {
     // ---- Mirror ----
     function test_mirror_markVerified_and_eligible() public {
         uint64 exp = uint64(block.timestamp + 1 days);
-        GOPassMirror.Record memory r = _mirrorRec(11, 3, exp, false, keccak256("c1"));
+        GOPassVerifier.Record memory r = _mirrorRec(11, 3, exp, false, keccak256("c1"));
         vm.prank(worker);
         mirror.markVerified(alice, r);
-        GOPassMirror.Rule memory rule = GOPassMirror.Rule(bytes2(0), bytes2(0), 10, 0, false, 3);
+        GOPassVerifier.Rule memory rule = GOPassVerifier.Rule(bytes2(0), bytes2(0), 10, 0, false, 3);
         assertTrue(mirror.isEligibleCached(alice, rule));
         // tier too low
         rule.min_tier = 20;
@@ -145,10 +145,10 @@ contract GOPassTest is Test {
 
     function test_mirror_expiry_and_invalidate() public {
         uint64 exp = uint64(block.timestamp + 100);
-        GOPassMirror.Record memory r = _mirrorRec(11, 3, exp, false, keccak256("c1"));
+        GOPassVerifier.Record memory r = _mirrorRec(11, 3, exp, false, keccak256("c1"));
         vm.prank(worker);
         mirror.markVerified(alice, r);
-        GOPassMirror.Rule memory rule = GOPassMirror.Rule(bytes2(0), bytes2(0), 10, 0, false, 3);
+        GOPassVerifier.Rule memory rule = GOPassVerifier.Rule(bytes2(0), bytes2(0), 10, 0, false, 3);
         assertTrue(mirror.isEligibleCached(alice, rule));
         vm.warp(block.timestamp + 101);
         assertFalse(mirror.isEligibleCached(alice, rule)); // expired
@@ -173,7 +173,7 @@ contract GOPassTest is Test {
     // ---- GToken gated ----
     function test_gtoken_mint_transfer_gated() public {
         uint64 exp = uint64(block.timestamp + 1 days);
-        GOPassMirror.Record memory r = _mirrorRec(11, 3, exp, false, keccak256("c1"));
+        GOPassVerifier.Record memory r = _mirrorRec(11, 3, exp, false, keccak256("c1"));
         vm.prank(worker);
         mirror.markVerified(alice, r);
         vm.prank(owner);

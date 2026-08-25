@@ -1,7 +1,7 @@
 /**
  * 1_check_chains.ts — verify CC3 + dest RPCs and GOPass contracts
  * Usage: npx tsx scripts/gopass/1_check_chains.ts
- * Env: CREDITCOIN_RPC_URL, SEPOLIA_RPC_URL, GOPASS_ADDR, MIRROR_ADDR, GTOKEN_ADDR
+ * Env: CREDITCOIN_RPC_URL, SEPOLIA_RPC_URL, GOPASS_ADDR, VERIFIER_ADDR, GTOKEN_ADDR
  */
 import 'dotenv/config';
 import { JsonRpcProvider, Contract } from 'ethers';
@@ -10,7 +10,7 @@ import { chainInfo } from '@gluwa/usc-sdk';
 const CREDITCOIN_RPC_URL = process.env.CREDITCOIN_RPC_URL || 'https://rpc.cc3-testnet.creditcoin.network';
 const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL || process.env.SOURCE_CHAIN_RPC_URL || '';
 const GOPASS_ADDR = process.env.GOPASS_ADDR || '';
-const MIRROR_ADDR = process.env.MIRROR_ADDR || '';
+const VERIFIER_ADDR = process.env.VERIFIER_ADDR || '';
 const GTOKEN_ADDR = process.env.GTOKEN_ADDR || '';
 
 async function check(label: string, url: string) {
@@ -47,10 +47,10 @@ async function main() {
   if (GOPASS_ADDR) await code(cc, GOPASS_ADDR, 'GOPass');
   if (SEPOLIA_RPC_URL) {
     const se = await check('Sepolia', SEPOLIA_RPC_URL);
-    if (MIRROR_ADDR) {
-      await code(se, MIRROR_ADDR, 'GOPassMirror');
+    if (VERIFIER_ADDR) {
+      await code(se, VERIFIER_ADDR, 'GOPassVerifier');
       try {
-        const m = new Contract(MIRROR_ADDR, ['function GOPASS_ADDR() view returns (address)', 'function worker() view returns (address)', 'function cacheTTL() view returns (uint64)'], se);
+        const m = new Contract(VERIFIER_ADDR, ['function GOPASS_ADDR() view returns (address)', 'function worker() view returns (address)', 'function cacheTTL() view returns (uint64)'], se);
         console.log(`    GOPASS_ADDR=${await m.GOPASS_ADDR()} worker=${await m.worker()} ttl=${await m.cacheTTL()}`);
       } catch {}
     }

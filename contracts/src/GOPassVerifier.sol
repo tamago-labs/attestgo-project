@@ -4,11 +4,14 @@ pragma solidity 0.8.19;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
- * GOPassMirror — dest chain cache for Creditcoin GOPass, Advance-style worker pattern
- * Primary path B: worker off-chain verifies storage proof (continuityLen=2) and calls markVerified (no on-chain decoder).
- * Fallback path A: anyone calls syncPass with storage proof verified on-chain via 0x0FD2 precompile.
- * GToken checks isEligibleCached (5k gas) — no proof per transfer.
- * Mirrors AdvanceManager.worker + AuxiliaryAdvance pattern.
+ * GOPassVerifier — dest chain cache for Creditcoin GOPass
+ * Hub GOPass lives on Creditcoin (chainId 102031) as source of truth. This contract caches
+ * verified Records on destination chains (Ethereum/Base/etc) so RWA tokens can check eligibility
+ * with a cheap local read (~5k gas) instead of proving Creditcoin storage every transfer.
+ * Sync is two paths: (1) trusted worker verifies Creditcoin storage off-chain (eth_getProof,
+ * continuityLen=2) and calls markVerified — primary, gas ~40k once per wallet per cacheTTL;
+ * (2) anyone calls syncPass with a storage proof verified on-chain via precompile 0x0FD2 —
+ * fallback when worker is down. GToken calls isEligibleCached; no proof per transfer.
  */
 interface IBlockProver {
     // Creditcoin CC3 precompile 0x0FD2 — view verify. Exact signature varies by network fork;
@@ -16,7 +19,7 @@ interface IBlockProver {
     function verifyStorageProof(bytes calldata proof) external view returns (bool);
 }
 
-contract GOPassMirror is Ownable {
+contract GOPassVerifier is Ownable {
     struct Record {
         uint8 tier;
         uint8 subTier;

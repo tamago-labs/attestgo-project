@@ -1,15 +1,15 @@
 /**
  * 4_check_eligible.ts — view isEligibleCached + cached record
  * Usage: npx tsx scripts/gopass/4_check_eligible.ts --wallet 0x...
- * Env: SEPOLIA_RPC_URL, MIRROR_ADDR
+ * Env: SEPOLIA_RPC_URL, VERIFIER_ADDR
  */
 import 'dotenv/config';
 import { JsonRpcProvider, Contract } from 'ethers';
 
 const RPC = process.env.SEPOLIA_RPC_URL || process.env.SOURCE_CHAIN_RPC_URL || '';
-const MIRROR_ADDR = process.env.MIRROR_ADDR || '';
+const VERIFIER_ADDR = process.env.VERIFIER_ADDR || '';
 if (!RPC) { console.error('SEPOLIA_RPC_URL missing'); process.exit(1); }
-if (!MIRROR_ADDR) { console.error('MIRROR_ADDR missing'); process.exit(1); }
+if (!VERIFIER_ADDR) { console.error('VERIFIER_ADDR missing'); process.exit(1); }
 
 function arg(k: string) { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : undefined; }
 
@@ -17,7 +17,7 @@ async function main() {
   const wallet = arg('--wallet') || arg('--to') || '';
   if (!wallet) { console.error('need --wallet 0x...'); process.exit(1); }
   const p = new JsonRpcProvider(RPC);
-  const m = new Contract(MIRROR_ADDR, [
+  const m = new Contract(VERIFIER_ADDR, [
     'function getCached(address) view returns (tuple(uint8 tier,uint8 subTier,bytes2 group,bytes2 subGroup,uint256 countryBitmap,uint64 expiry,bool frozen,bytes32 customerIdHash))',
     'function isVerified(address) view returns (bool)',
     'function verifiedUntil(address) view returns (uint64)',

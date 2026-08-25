@@ -1,9 +1,9 @@
 /**
- * 3_worker_sync.ts — Advance-style worker: off-chain proof then mirror.markVerified (B primary)
- * Polls Creditcoin GOPass recordHash storage, uses PrecompileChainInfoProvider to wait attested, then calls mirror.
+ * 3_worker_sync.ts — worker: off-chain proof then verifier.markVerified (B primary)
+ * Polls Creditcoin GOPass recordHash storage, uses PrecompileChainInfoProvider to wait attested, then calls verifier.
  * Fallback: if no worker key, user can do syncPass with proof (A path) — not implemented here.
  * Usage: npx tsx scripts/gopass/3_worker_sync.ts --wallet 0x2c1A...
- * Env: CREDITCOIN_RPC_URL, SEPOLIA_RPC_URL, GOPASS_ADDR, MIRROR_ADDR, PRIVATE_KEY (worker/owner), WORKER_PRIVATE_KEY
+ * Env: CREDITCOIN_RPC_URL, SEPOLIA_RPC_URL, GOPASS_ADDR, VERIFIER_ADDR, PRIVATE_KEY (worker/owner), WORKER_PRIVATE_KEY
  */
 import 'dotenv/config';
 import { JsonRpcProvider, Wallet, Contract, keccak256, AbiCoder } from 'ethers';
@@ -12,10 +12,10 @@ import { chainInfo } from '@gluwa/usc-sdk';
 const CC_RPC = process.env.CREDITCOIN_RPC_URL || 'https://rpc.cc3-testnet.creditcoin.network';
 const SEPOLIA_RPC = process.env.SEPOLIA_RPC_URL || process.env.SOURCE_CHAIN_RPC_URL || '';
 const GOPASS_ADDR = process.env.GOPASS_ADDR || '';
-const MIRROR_ADDR = process.env.MIRROR_ADDR || '';
+const VERIFIER_ADDR = process.env.VERIFIER_ADDR || '';
 const PK = process.env.WORKER_PRIVATE_KEY || process.env.PRIVATE_KEY || process.env.CREDITCOIN_WALLET_PRIVATE_KEY || '';
 
-if (!GOPASS_ADDR || !MIRROR_ADDR) { console.error('GOPASS_ADDR/MIRROR_ADDR missing'); process.exit(1); }
+if (!GOPASS_ADDR || !VERIFIER_ADDR) { console.error('GOPASS_ADDR/VERIFIER_ADDR missing'); process.exit(1); }
 if (!SEPOLIA_RPC) { console.error('SEPOLIA_RPC_URL missing'); process.exit(1); }
 if (!PK || !PK.startsWith('0x')) { console.error('WORKER_PRIVATE_KEY/PRIVATE_KEY missing'); process.exit(1); }
 
@@ -23,7 +23,7 @@ const HUB_ABI = [
   'function getRecord(address) view returns (tuple(uint8 tier,uint8 subTier,bytes2 group,bytes2 subGroup,uint256 countryBitmap,uint64 expiry,bool frozen,bytes32 customerIdHash))',
   'function recordHash(address) view returns (bytes32)',
 ] as const;
-const MIRROR_ABI = [
+const VERIFIER_ABI = [
   'function markVerified(address wallet, tuple(uint8 tier,uint8 subTier,bytes2 group,bytes2 subGroup,uint256 countryBitmap,uint64 expiry,bool frozen,bytes32 customerIdHash) r) external',
   'function isEligibleCached(address wallet, tuple(bytes2 allowed_group,bytes2 allowed_sub_group,uint8 min_tier,uint8 min_sub_tier,bool is_black_list,uint256 countriesBitmap) rule) view returns (bool)',
 ] as const;
@@ -37,7 +37,7 @@ async function main() {
   const sepolia = new JsonRpcProvider(SEPOLIA_RPC);
   const w = new Wallet(PK, sepolia);
   const hub = new Contract(GOPASS_ADDR, HUB_ABI, cc);
-  const mirror = new Contract(MIRROR_ADDR, MIRROR_ABI, w);
+  const verifier = new Contract(VERIFIER_ADDR, VERIFIER_ABI, w);
 
   console.log(`fetching record for ${walletAddr} on CC...`);
   const rec: any = await (hub as any).getRecord(walletAddr);
@@ -55,15 +55,15 @@ async function main() {
     console.log(`  CC latest attested check (mock): height field present — worker trusts continuityLen=2 already`);
   } catch {}
 
-  // off-chain verified, now markVerified on mirror (B path, no on-chain proof)
+  // off-chain verified, now markVerified on Verifier (B path, no on-chain proof)
   const tuple = { tier: rec.tier, subTier: rec.subTier, group: rec.group, subGroup: rec.subGroup, countryBitmap: rec.countryBitmap, expiry: rec.expiry, frozen: rec.frozen, customerIdHash: rec.customerIdHash };
-  console.log('  calling mirror.markVerified...');
-  const tx = await (mirror as any).markVerified(walletAddr, tuple);
+  console.log('  calling verifier.markVerified...');
+  const tx = await (verifier as any).markVerified(walletAddr, tuple);
   console.log(`  tx ${tx.hash} waiting...`);
   const rc = await tx.wait();
   console.log(`  mined block ${rc.blockNumber} status=${rc.status}`);
   const rule = { allowed_group: '0x0000', allowed_sub_group: '0x0000', min_tier: 10, min_sub_tier: 0, is_black_list: false, countriesBitmap: 3n } as any;
-  console.log(`  isEligibleCached: ${await (mirror as any).isEligibleCached(walletAddr, rule)}`);
+  console.log(`  isEligibleCached: ${await (verifier as any).isEligibleCached(walletAddr, rule)}`);
   console.log('done — AI inbox can now show Ready to Receive');
 }
 

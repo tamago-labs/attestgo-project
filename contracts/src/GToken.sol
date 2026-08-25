@@ -3,15 +3,15 @@ pragma solidity 0.8.19;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {GOPassMirror} from "./GOPassMirror.sol";
+import {GOPassVerifier} from "./GOPassVerifier.sol";
 
 /**
- * GToken — example compliant RWA (USD T-Bill) gated by GOPassMirror like AuxiliaryAdvance vault
- * Mirrors Cleanverse atoken/launch rule + AuxiliaryAdvance.authorized flow.
- * Uses GOPassMirror.isEligibleCached for every mint/burn/transfer (check both from/to where applicable).
+ * GToken — example compliant RWA (USD T-Bill) gated by GOPassVerifier
+ * Enforces the same Rule shape as Cleanverse atoken/launch (allowed_group, min_tier, countriesBitmap).
+ * Uses verifier.isEligibleCached for every mint/burn/transfer (checks both from and to).
  */
 contract GToken is ERC20, Ownable {
-    GOPassMirror public immutable mirror;
+    GOPassVerifier public immutable verifier;
     string public gIconURI;
 
     struct Rule {
@@ -34,9 +34,9 @@ contract GToken is ERC20, Ownable {
         _;
     }
 
-    constructor(string memory name_, string memory symbol_, address mirrorAddr, Rule memory rule_, string memory iconURI_) ERC20(name_, symbol_) {
-        require(mirrorAddr != address(0), "mirror zero");
-        mirror = GOPassMirror(mirrorAddr);
+    constructor(string memory name_, string memory symbol_, address verifierAddr, Rule memory rule_, string memory iconURI_) ERC20(name_, symbol_) {
+        require(verifierAddr != address(0), "verifier zero");
+        verifier = GOPassVerifier(verifierAddr);
         rule = rule_;
         gIconURI = iconURI_;
     }
@@ -51,8 +51,8 @@ contract GToken is ERC20, Ownable {
         emit PausedSet(p);
     }
 
-    function _ruleForMirror() internal view returns (GOPassMirror.Rule memory) {
-        return GOPassMirror.Rule({
+    function _ruleForVerifier() internal view returns (GOPassVerifier.Rule memory) {
+        return GOPassVerifier.Rule({
             allowed_group: rule.allowed_group,
             allowed_sub_group: rule.allowed_sub_group,
             min_tier: rule.min_tier,
@@ -63,10 +63,9 @@ contract GToken is ERC20, Ownable {
     }
 
     function _checkEligible(address wallet) internal view {
-        // owner/admin exempt for mint setup? No — even owner must be eligible unless we allow initial holder bypass once.
-        // Keep strict: all holders must be eligible (like Cleanverse). Use mirror bypass for zero-address.
+        // All holders must be eligible. Zero-address (mint/burn) is bypassed.
         if (wallet == address(0)) return;
-        require(mirror.isEligibleCached(wallet, _ruleForMirror()), "PassNotEligible");
+        require(verifier.isEligibleCached(wallet, _ruleForVerifier()), "PassNotEligible");
     }
 
     // Compliance-gated mint — like atoken launch after admin grants MINTER_ROLE (here onlyOwner)

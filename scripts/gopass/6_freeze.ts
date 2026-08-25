@@ -1,7 +1,7 @@
 /**
- * 6_freeze.ts — hub freeze + mirror invalidate (like AdvanceManager markExpired)
+ * 6_freeze.ts — hub freeze + verifier invalidate
  * Usage: npx tsx scripts/gopass/6_freeze.ts --wallet 0x... --frozen true
- * Env: CREDITCOIN_RPC_URL, SEPOLIA_RPC_URL, GOPASS_ADDR, MIRROR_ADDR, PRIVATE_KEY (owner), WORKER_PRIVATE_KEY
+ * Env: CREDITCOIN_RPC_URL, SEPOLIA_RPC_URL, GOPASS_ADDR, VERIFIER_ADDR, PRIVATE_KEY (owner), WORKER_PRIVATE_KEY
  */
 import 'dotenv/config';
 import { JsonRpcProvider, Wallet, Contract } from 'ethers';
@@ -9,11 +9,11 @@ import { JsonRpcProvider, Wallet, Contract } from 'ethers';
 const CC_RPC = process.env.CREDITCOIN_RPC_URL || 'https://rpc.cc3-testnet.creditcoin.network';
 const SEPOLIA_RPC = process.env.SEPOLIA_RPC_URL || process.env.SOURCE_CHAIN_RPC_URL || '';
 const GOPASS_ADDR = process.env.GOPASS_ADDR || '';
-const MIRROR_ADDR = process.env.MIRROR_ADDR || '';
+const VERIFIER_ADDR = process.env.VERIFIER_ADDR || '';
 const PK_OWNER = process.env.PRIVATE_KEY || '';
 const PK_WORKER = process.env.WORKER_PRIVATE_KEY || PK_OWNER;
 
-if (!GOPASS_ADDR || !MIRROR_ADDR) { console.error('GOPASS_ADDR/MIRROR_ADDR missing'); process.exit(1); }
+if (!GOPASS_ADDR || !VERIFIER_ADDR) { console.error('GOPASS_ADDR/VERIFIER_ADDR missing'); process.exit(1); }
 if (!PK_OWNER) { console.error('PRIVATE_KEY missing'); process.exit(1); }
 
 function arg(k: string) { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : undefined; }
@@ -32,12 +32,12 @@ async function main() {
   if (SEPOLIA_RPC && PK_WORKER) {
     const se = new JsonRpcProvider(SEPOLIA_RPC);
     const worker = new Wallet(PK_WORKER, se);
-    const mirror = new Contract(MIRROR_ADDR, ['function invalidate(address) external', 'function markVerified(address, tuple(uint8 tier,uint8 subTier,bytes2 group,bytes2 subGroup,uint256 countryBitmap,uint64 expiry,bool frozen,bytes32 customerIdHash)) external', 'function getCached(address) view returns (tuple(uint8 tier,uint8,uint256,uint64,bool,bytes32))'], worker);
+    const verifier = new Contract(VERIFIER_ADDR, ['function invalidate(address) external', 'function markVerified(address, tuple(uint8 tier,uint8 subTier,bytes2 group,bytes2 subGroup,uint256 countryBitmap,uint64 expiry,bool frozen,bytes32 customerIdHash)) external', 'function getCached(address) view returns (tuple(uint8 tier,uint8,uint256,uint64,bool,bytes32))'], worker);
     if (frozen) {
-      console.log('mirror invalidate...');
-      const tx2 = await (mirror as any).invalidate(wallet);
+      console.log('verifier invalidate...');
+      const tx2 = await (verifier as any).invalidate(wallet);
       await tx2.wait();
-      console.log(`mirror invalidated ${tx2.hash}`);
+      console.log(`verifier invalidated ${tx2.hash}`);
     } else {
       console.log('unfrozen — re-sync via 3_worker_sync.ts to re-verify');
     }
