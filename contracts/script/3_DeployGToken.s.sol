@@ -5,29 +5,30 @@ import {Script, console} from "forge-std/Script.sol";
 import {GToken} from "../src/GToken.sol";
 
 /**
- * 3_DeployGToken — RWA example USD T-Bill on dest
+ * 3_DeployGToken — RWA example USD T-Bill on Sepolia (same chain as GOPass hub)
  * Usage:
- *   MIRROR_ADDR=0x... forge script contracts/script/3_DeployGToken.s.sol --rpc-url $SEPOLIA_RPC_URL --broadcast --legacy
- * Env: PRIVATE_KEY, MIRROR_ADDR, TOKEN_NAME/SYMBOL optional, MIN_TIER, COUNTRIES_BITMAP optional
+ *   GOPASS_ADDR=0x... forge script script/3_DeployGToken.s.sol --rpc-url $SEPOLIA_RPC_URL --broadcast --legacy
+ * Env: PRIVATE_KEY, GOPASS_ADDR, TOKEN_NAME/SYMBOL optional, MIN_TIER, COUNTRIES_BITMAP optional
  */
 contract DeployGToken is Script {
     function run() external {
         string memory pkStr = vm.envString("PRIVATE_KEY");
         uint256 pk = _parse(pkStr);
         address deployer = vm.addr(pk);
-        address mirror = vm.envAddress("MIRROR_ADDR");
+        address gopass = vm.envAddress("GOPASS_ADDR");
         string memory name = vm.envOr("TOKEN_NAME", string("USD T-Bill"));
         string memory symbol = vm.envOr("TOKEN_SYMBOL", string("USD-TBILL"));
         uint8 minTier = uint8(vm.envOr("MIN_TIER", uint256(10)));
-        uint256 bitmap = vm.envOr("COUNTRIES_BITMAP", uint256(3)); // US|SG
+        uint256 bitmap = vm.envOr("COUNTRIES_BITMAP", uint256(1)); // US only (one country per pass)
 
         console.log("Deploy GToken");
         console.log(name);
         console.log(symbol);
-        console.log("mirror", mirror);
+        console.log("gopass", gopass);
         console.log("deployer", deployer);
         console.log("chain", block.chainid);
-        require(mirror != address(0), "MIRROR_ADDR zero");
+        require(block.chainid == 11155111 || block.chainid == 84532 || block.chainid == 8453 || block.chainid == 31337, "Wrong chain: GToken must be Sepolia/Base");
+        require(gopass != address(0), "GOPASS_ADDR zero");
 
         GToken.Rule memory rule = GToken.Rule({
             allowed_group: bytes2(0),
@@ -39,7 +40,7 @@ contract DeployGToken is Script {
         });
 
         vm.startBroadcast(pk);
-        GToken g = new GToken(name, symbol, mirror, rule, "https://icons.test/usd-tbill.svg");
+        GToken g = new GToken(name, symbol, gopass, rule, "https://icons.test/usd-tbill.svg");
         vm.stopBroadcast();
 
         console.log("GToken at %s", address(g));

@@ -1,7 +1,7 @@
 /**
- * 6_freeze.ts — hub freeze + verifier invalidate
+ * 6_freeze.ts — hub freeze + verifier invalidate (trustless: sync new frozen record via proof, or owner invalidate)
  * Usage: npx tsx scripts/gopass/6_freeze.ts --wallet 0x... --frozen true
- * Env: CREDITCOIN_RPC_URL, SEPOLIA_RPC_URL, GOPASS_ADDR, VERIFIER_ADDR, PRIVATE_KEY (owner), WORKER_PRIVATE_KEY
+ * Env: CREDITCOIN_RPC_URL, SEPOLIA_RPC_URL, GOPASS_ADDR, VERIFIER_ADDR, PRIVATE_KEY (owner)
  */
 import 'dotenv/config';
 import { JsonRpcProvider, Wallet, Contract } from 'ethers';
@@ -11,7 +11,6 @@ const SEPOLIA_RPC = process.env.SEPOLIA_RPC_URL || process.env.SOURCE_CHAIN_RPC_
 const GOPASS_ADDR = process.env.GOPASS_ADDR || '';
 const VERIFIER_ADDR = process.env.VERIFIER_ADDR || '';
 const PK_OWNER = process.env.PRIVATE_KEY || '';
-const PK_WORKER = process.env.WORKER_PRIVATE_KEY || PK_OWNER;
 
 if (!GOPASS_ADDR || !VERIFIER_ADDR) { console.error('GOPASS_ADDR/VERIFIER_ADDR missing'); process.exit(1); }
 if (!PK_OWNER) { console.error('PRIVATE_KEY missing'); process.exit(1); }
@@ -29,12 +28,12 @@ async function main() {
   const tx1 = await (hub as any).setFrozen(wallet, frozen);
   await tx1.wait();
   console.log(`hub mined ${tx1.hash}`);
-  if (SEPOLIA_RPC && PK_WORKER) {
+  if (SEPOLIA_RPC) {
     const se = new JsonRpcProvider(SEPOLIA_RPC);
-    const worker = new Wallet(PK_WORKER, se);
-    const verifier = new Contract(VERIFIER_ADDR, ['function invalidate(address) external', 'function markVerified(address, tuple(uint8 tier,uint8 subTier,bytes2 group,bytes2 subGroup,uint256 countryBitmap,uint64 expiry,bool frozen,bytes32 customerIdHash)) external', 'function getRecord(address) view returns (tuple(uint8 tier,uint8,uint256,uint64,bool,bytes32))'], worker);
+    const ownerSe = new Wallet(PK_OWNER, se);
+    const verifier = new Contract(VERIFIER_ADDR, ['function invalidate(address) external', 'function syncPass(address, tuple(uint8 tier,uint8 subTier,bytes2 group,bytes2 subGroup,uint256 countryBitmap,uint64 expiry,bool frozen,bytes32 customerIdHash), bytes) external', 'function getRecord(address) view returns (tuple(uint8 tier,uint8,uint256,uint64,bool,bytes32))'], ownerSe);
     if (frozen) {
-      console.log('verifier invalidate...');
+      console.log('verifier invalidate (owner only, trustless sync is via 3_worker_sync with frozen record)...');
       const tx2 = await (verifier as any).invalidate(wallet);
       await tx2.wait();
       console.log(`verifier invalidated ${tx2.hash}`);

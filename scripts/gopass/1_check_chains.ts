@@ -3,6 +3,25 @@
  * Usage: npx tsx scripts/gopass/1_check_chains.ts
  * Env: CREDITCOIN_RPC_URL, SEPOLIA_RPC_URL, GOPASS_ADDR, VERIFIER_ADDR, GTOKEN_ADDR
  */
+
+// PS C:\projects\attestgo-project> npx tsx scripts/gopass/1_check_chains.ts
+// GO Pass chain check
+
+// 🔗 Creditcoin: https://rpc.cc3-testnet.creditcoin.network...
+//   chainId=102031 block=5370125
+
+// ✅ CC3 supported chains (2):
+//   key=3 id=1 name=0x457468657265756d
+//   key=1 id=11155111 name=0x5365706f6c696120657468657265756d
+//   GOPass 0x343B31905A1c9EdDA115027A14F8a4a1e0519cD5: no code
+
+// 🔗 Sepolia: https://eth-sepolia.g.alchemy.com/v2/46BFnBkjDdWActWG5HvRV...
+//   chainId=11155111 block=11562353
+//   GToken 0xf194eec4e6EcA244BcA03b6A7cb91768084991DA: 13140 bytes
+//     owner=0xB045bbB51f3CE266A506f332EDBDe176C9862Ff3
+
+// Done.
+
 import 'dotenv/config';
 import { JsonRpcProvider, Contract } from 'ethers';
 import { chainInfo } from '@gluwa/usc-sdk';
