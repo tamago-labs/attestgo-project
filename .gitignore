@@ -43,3 +43,6 @@ usc-testnet-bridge-examples/
 .amplify
 amplify_outputs*
 amplifyconfiguration*
+
+# cleanverse internal docs
+scripts/cleanverse-docs.txt
