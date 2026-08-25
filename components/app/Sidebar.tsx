@@ -5,8 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Inbox,
-  BadgeCheck,
+  CreditCard,
   Send,
+  ArrowDownToLine,
   History,
   Compass,
   Settings,
@@ -16,8 +17,9 @@ import {
 
 const navItems = [
   { label: "Inbox", href: "/app", icon: Inbox },
-  { label: "Identity", href: "/app/identity", icon: BadgeCheck },
+  { label: "Identity", href: "/app/identity", icon: CreditCard },
   { label: "Send", href: "/app/send", icon: Send },
+  { label: "Borrow", href: "/app/borrow", icon: ArrowDownToLine },
   { label: "History", href: "/app/history", icon: History },
   { label: "Discover", href: "/app/discover", icon: Compass },
   { label: "Settings", href: "/app/settings", icon: Settings },
