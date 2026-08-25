@@ -7,7 +7,8 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 /**
  * GOPass — hub registry + soulbound NFT on Creditcoin (102031 testnet)
  * Single source of truth: mint by AttestGO operator (owner), verifiable anywhere via Attestcoin proof.
- * Mirrors Advance pattern: hub register, dest mirror via worker markVerified.
+ * Hub stores Records on Creditcoin; destination chains cache verified Records via a trusted
+ * worker (off-chain eth_getProof, continuityLen=2) and an on-chain proof fallback via precompile 0x0FD2.
  * Soulbound: no transfers (mint/burn only), tokenId = uint160(wallet).
  * Record hash commitment: mapping(address=>bytes32) = 1 slot/wallet for cheap storage proof.
  */
