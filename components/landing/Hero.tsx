@@ -105,13 +105,13 @@ export default function Hero() {
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 pt-20 sm:pt-24 pb-10 sm:pb-12 z-10">
         <div className="max-w-3xl">
           <span className="font-mono text-[11px] sm:text-xs uppercase tracking-widest text-amber">
-            IDENTITY × RWA × COMPLIANCE × AI
+            IDENTITY × RWA × COMPLIANCE
           </span>
           <h1 className="mt-4 font-display font-semibold text-4xl sm:text-5xl lg:text-6xl leading-[1.05] tracking-tight">
             The Infrastructure for <span className="glow-text">Compliant Onchain Finance</span>
           </h1>
 
-          <p className="mt-6 text-xs sm:text-lg text-muted max-w-2xl leading-relaxed">
+          <p className="mt-6 text-sm sm:text-lg text-muted max-w-2xl leading-relaxed">
             AttestGO connects verified identity, compliant assets, and payment flows across networks, using <span className="glow-text font-medium">Attestcoin Protocol</span> to make every transaction provable and auditable, with AI turning every payment into a human-readable inbox.
           </p>
 
@@ -121,7 +121,7 @@ export default function Hero() {
               className="inline-flex items-center justify-center rounded-lg px-6 py-3 text-sm font-medium min-h-[44px]"
               style={{ background: "linear-gradient(90deg,#FDB750,#8B7CF0)", color: "#0A0D13" }}
             >
-              Mint Pass
+              Mint GO Pass
             </a>
             <ButtonGlow href="https://github.com/tamago-labs/attestgo-project" className="hidden sm:inline-flex px-6 py-3 min-h-[44px] justify-center">View GitHub</ButtonGlow>
           </div>

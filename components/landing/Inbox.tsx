@@ -7,7 +7,7 @@ export default function Inbox() {
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 grid lg:grid-cols-12 gap-10 sm:gap-14 items-center">
         <div className="lg:col-span-5">
           <span className="font-mono text-[11px] sm:text-xs uppercase tracking-widest text-amber">
-            Email-Like Interface
+            AI Composed Inbox
           </span>
           <h2 className="mt-4 font-display font-semibold text-2xl sm:text-3xl lg:text-4xl leading-tight tracking-tight">
             AI Decodes Every Action Into Your Inbox
