@@ -74,7 +74,7 @@ contract GOPassVerifier is Ownable {
         cacheTTL = ttl;
     }
 
-    // B primary: worker already verified off-chain (eth_getProof + continuityLen), just cache
+    // worker already verified off-chain (eth_getProof + continuityLen), just cache
     function markVerified(address wallet, Record calldata r) external onlyWorkerOrOwner {
         require(wallet != address(0), "wallet zero");
         require(r.expiry > block.timestamp, "expiry past");
@@ -114,7 +114,7 @@ contract GOPassVerifier is Ownable {
         emit PassInvalidated(wallet);
     }
 
-    function isEligibleCached(address wallet, Rule calldata rule) public view returns (bool) {
+    function isEligible(address wallet, Rule calldata rule) public view returns (bool) {
         if (!isVerified[wallet]) return false;
         Record storage rec = cached[wallet];
         if (rec.frozen) return false;
@@ -134,7 +134,7 @@ contract GOPassVerifier is Ownable {
         return true;
     }
 
-    function getCached(address wallet) external view returns (Record memory) {
+    function getRecord(address wallet) external view returns (Record memory) {
         return cached[wallet];
     }
 }

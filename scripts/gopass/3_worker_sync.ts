@@ -25,7 +25,7 @@ const HUB_ABI = [
 ] as const;
 const VERIFIER_ABI = [
   'function markVerified(address wallet, tuple(uint8 tier,uint8 subTier,bytes2 group,bytes2 subGroup,uint256 countryBitmap,uint64 expiry,bool frozen,bytes32 customerIdHash) r) external',
-  'function isEligibleCached(address wallet, tuple(bytes2 allowed_group,bytes2 allowed_sub_group,uint8 min_tier,uint8 min_sub_tier,bool is_black_list,uint256 countriesBitmap) rule) view returns (bool)',
+  'function isEligible(address wallet, tuple(bytes2 allowed_group,bytes2 allowed_sub_group,uint8 min_tier,uint8 min_sub_tier,bool is_black_list,uint256 countriesBitmap) rule) view returns (bool)',
 ] as const;
 
 function arg(k: string) { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : undefined; }
@@ -63,7 +63,7 @@ async function main() {
   const rc = await tx.wait();
   console.log(`  mined block ${rc.blockNumber} status=${rc.status}`);
   const rule = { allowed_group: '0x0000', allowed_sub_group: '0x0000', min_tier: 10, min_sub_tier: 0, is_black_list: false, countriesBitmap: 3n } as any;
-  console.log(`  isEligibleCached: ${await (verifier as any).isEligibleCached(walletAddr, rule)}`);
+  console.log(`  isEligible: ${await (verifier as any).isEligible(walletAddr, rule)}`);
   console.log('done — AI inbox can now show Ready to Receive');
 }
 

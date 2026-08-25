@@ -8,7 +8,7 @@ import {GOPassVerifier} from "./GOPassVerifier.sol";
 /**
  * GToken — example compliant RWA (USD T-Bill) gated by GOPassVerifier
  * Enforces the same Rule shape as Cleanverse atoken/launch (allowed_group, min_tier, countriesBitmap).
- * Uses verifier.isEligibleCached for every mint/burn/transfer (checks both from and to).
+ * Uses verifier.isEligible for every mint/burn/transfer (checks both from and to).
  */
 contract GToken is ERC20, Ownable {
     GOPassVerifier public immutable verifier;
@@ -65,7 +65,7 @@ contract GToken is ERC20, Ownable {
     function _checkEligible(address wallet) internal view {
         // All holders must be eligible. Zero-address (mint/burn) is bypassed.
         if (wallet == address(0)) return;
-        require(verifier.isEligibleCached(wallet, _ruleForVerifier()), "PassNotEligible");
+        require(verifier.isEligible(wallet, _ruleForVerifier()), "PassNotEligible");
     }
 
     // Compliance-gated mint — like atoken launch after admin grants MINTER_ROLE (here onlyOwner)

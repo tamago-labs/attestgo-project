@@ -32,7 +32,7 @@ async function main() {
   if (SEPOLIA_RPC && PK_WORKER) {
     const se = new JsonRpcProvider(SEPOLIA_RPC);
     const worker = new Wallet(PK_WORKER, se);
-    const verifier = new Contract(VERIFIER_ADDR, ['function invalidate(address) external', 'function markVerified(address, tuple(uint8 tier,uint8 subTier,bytes2 group,bytes2 subGroup,uint256 countryBitmap,uint64 expiry,bool frozen,bytes32 customerIdHash)) external', 'function getCached(address) view returns (tuple(uint8 tier,uint8,uint256,uint64,bool,bytes32))'], worker);
+    const verifier = new Contract(VERIFIER_ADDR, ['function invalidate(address) external', 'function markVerified(address, tuple(uint8 tier,uint8 subTier,bytes2 group,bytes2 subGroup,uint256 countryBitmap,uint64 expiry,bool frozen,bytes32 customerIdHash)) external', 'function getRecord(address) view returns (tuple(uint8 tier,uint8,uint256,uint64,bool,bytes32))'], worker);
     if (frozen) {
       console.log('verifier invalidate...');
       const tx2 = await (verifier as any).invalidate(wallet);

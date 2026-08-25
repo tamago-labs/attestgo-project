@@ -129,18 +129,18 @@ contract GOPassTest is Test {
         vm.prank(worker);
         mirror.markVerified(alice, r);
         GOPassVerifier.Rule memory rule = GOPassVerifier.Rule(bytes2(0), bytes2(0), 10, 0, false, 3);
-        assertTrue(mirror.isEligibleCached(alice, rule));
+        assertTrue(mirror.isEligible(alice, rule));
         // tier too low
         rule.min_tier = 20;
-        assertFalse(mirror.isEligibleCached(alice, rule));
+        assertFalse(mirror.isEligible(alice, rule));
         rule.min_tier = 10;
         // whitelist mismatch
         rule.countriesBitmap = uint256(1) << 2; // JP only
-        assertFalse(mirror.isEligibleCached(alice, rule));
+        assertFalse(mirror.isEligible(alice, rule));
         // blacklist
         rule.countriesBitmap = 3;
         rule.is_black_list = true;
-        assertFalse(mirror.isEligibleCached(alice, rule)); // has US|SG so blocked
+        assertFalse(mirror.isEligible(alice, rule)); // has US|SG so blocked
     }
 
     function test_mirror_expiry_and_invalidate() public {
@@ -149,18 +149,18 @@ contract GOPassTest is Test {
         vm.prank(worker);
         mirror.markVerified(alice, r);
         GOPassVerifier.Rule memory rule = GOPassVerifier.Rule(bytes2(0), bytes2(0), 10, 0, false, 3);
-        assertTrue(mirror.isEligibleCached(alice, rule));
+        assertTrue(mirror.isEligible(alice, rule));
         vm.warp(block.timestamp + 101);
-        assertFalse(mirror.isEligibleCached(alice, rule)); // expired
+        assertFalse(mirror.isEligible(alice, rule)); // expired
         vm.warp(block.timestamp - 101);
         vm.prank(worker);
         mirror.markVerified(alice, r);
         vm.warp(block.timestamp + 25 hours);
-        assertFalse(mirror.isEligibleCached(alice, rule)); // verifiedUntil expired (24h)
+        assertFalse(mirror.isEligible(alice, rule)); // verifiedUntil expired (24h)
         vm.warp(block.timestamp - 25 hours);
         vm.prank(worker);
         mirror.invalidate(alice);
-        assertFalse(mirror.isEligibleCached(alice, rule));
+        assertFalse(mirror.isEligible(alice, rule));
     }
 
     function test_mirror_onlyWorkerOrOwner() public {
