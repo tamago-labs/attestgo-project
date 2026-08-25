@@ -29,13 +29,20 @@ function keccakPlaceholder(s: string) {
 }
 
 export default function RegisterPage() {
-  const { address } = useWallet();
+  const { address, isConnected } = useWallet();
   const router = useRouter();
   const [country, setCountry] = useState("US");
   const [customerId, setCustomerId] = useState("");
   const [kycSource, setKycSource] = useState("sumsub");
   const [step, setStep] = useState<"form" | "kyc" | "creating" | "done">("form");
   const [kycLoading, setKycLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isConnected) {
+      router.replace("/app/identity");
+      return;
+    }
+  }, [isConnected, router]);
 
   useEffect(() => {
     if (!address) return;
@@ -46,6 +53,19 @@ export default function RegisterPage() {
   }, [address]);
 
   const wallet = address || "0x0000000000000000000000000000000000000000";
+
+  if (!isConnected) {
+    return (
+      <div className="max-w-2xl mx-auto w-full px-2 sm:px-0 py-2 space-y-6">
+        <Link href="/app/identity" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-white">
+          <ArrowLeft size={14} /> Back to Identity
+        </Link>
+        <div className="rounded-xl border border-dashed border-white/15 bg-panel/40 p-8 text-center">
+          <p className="text-sm text-muted">Connect your wallet to register a GO Pass.</p>
+        </div>
+      </div>
+    );
+  }
   const expiry = Math.floor(Date.now() / 1000) + 365 * 86400;
   const expiryLabel = new Date(expiry * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 

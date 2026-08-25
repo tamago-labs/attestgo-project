@@ -1,12 +1,18 @@
 "use client";
 
+import { Amplify } from "aws-amplify";
 import { generateClient } from "aws-amplify/data";
 import type { Schema } from "@/amplify/data/resource";
 import { verifyMessage } from "ethers";
+import outputs from "@/amplify_outputs.json";
 
 let _client: ReturnType<typeof generateClient<Schema>> | null = null;
 function getClient() {
   if (_client) return _client;
+  // fallback configure if ConfigureAmplify not yet run (e.g. direct import before layout)
+  try {
+    Amplify.configure(outputs, { ssr: true });
+  } catch {}
   _client = generateClient<Schema>();
   return _client;
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import ConfigureAmplify from "@/components/ConfigureAmplify";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -33,7 +34,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} bg-canvas text-white font-body antialiased`}
       >
-        {children}
+        <ConfigureAmplify>{children}</ConfigureAmplify>
       </body>
     </html>
   );

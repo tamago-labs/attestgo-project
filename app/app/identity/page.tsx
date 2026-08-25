@@ -82,13 +82,19 @@ export default function IdentityPage() {
               <UserRoundX className="text-white/40" size={20} />
             </div>
             <div className="mt-3 font-medium text-white text-sm">Verification required</div>
-            <div className="mt-1 text-xs text-muted max-w-[32ch]">Create your GO Pass to send, stream, and receive compliant assets.</div>
-            <Link href="/app/identity/register" className="mt-4">
-              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-canvas text-sm font-medium hover:bg-white/90 transition-colors">
+            <div className="mt-1 text-xs text-muted max-w-[36ch]">Create your GO Pass to send/receive compliant assets and use them as collateral to borrow.</div>
+            {isConnected ? (
+              <Link href="/app/identity/register" className="mt-4">
+                <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-canvas text-sm font-medium hover:bg-white/90 transition-colors">
+                  Register GO Pass
+                </span>
+              </Link>
+            ) : (
+              <span className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 text-white/40 text-sm font-medium cursor-not-allowed">
                 Register GO Pass
               </span>
-            </Link>
-            {!isConnected && <div className="mt-2 text-[11px] text-white/30">Connect wallet to register</div>}
+            )}
+            {!isConnected && <div className="mt-2 text-[11px] text-white/40">Connect wallet to register</div>}
           </div>
         )}
       </div>
@@ -165,12 +171,41 @@ export default function IdentityPage() {
         </>
       ) : (
         <div className="rounded-xl border border-border bg-panel p-4">
-          <div className="text-sm font-medium text-white">What you get</div>
-          <ul className="mt-2 space-y-1.5 text-sm text-muted list-disc pl-4">
-            <li>Soulbound NFT bound to your wallet — non-transferable</li>
-            <li>One country per wallet, same pass on every chain</li>
-            <li>Privacy hash <span className="font-mono text-white/60">customerIdHash</span> on-chain</li>
-          </ul>
+          <div className="text-sm font-medium text-white">How to get your GO Pass</div>
+          <ol className="mt-3 space-y-3">
+            <li className="flex gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/10 border border-white/10 text-xs font-medium text-white">
+                1
+              </span>
+              <div className="text-sm leading-relaxed">
+                <span className="font-medium text-white">Choose your chain:</span> <span className="text-muted">Select where your GO Pass NFT will be minted.</span>
+              </div>
+            </li>
+            <li className="flex gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/10 border border-white/10 text-xs font-medium text-white">
+                2
+              </span>
+              <div className="text-sm leading-relaxed">
+                <span className="font-medium text-white">Verify with Sumsub:</span> <span className="text-muted">Complete KYC with Sumsub including liveness check.</span>
+              </div>
+            </li>
+            <li className="flex gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/10 border border-white/10 text-xs font-medium text-white">
+                3
+              </span>
+              <div className="text-sm leading-relaxed">
+                <span className="font-medium text-white">Attest & activate:</span> <span className="text-muted">Your pass is attested to Creditcoin via Attestcoin Protocol. AttestGO verifies the attestation then marks your NFT Active.</span>
+              </div>
+            </li>
+            <li className="flex gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/10 border border-white/10 text-xs font-medium text-white">
+                4
+              </span>
+              <div className="text-sm leading-relaxed">
+                <span className="font-medium text-white">Use everywhere:</span> <span className="text-muted">Any new chain mirrors the same record for instant compliance.</span>
+              </div>
+            </li>
+          </ol>
         </div>
       )}
 
