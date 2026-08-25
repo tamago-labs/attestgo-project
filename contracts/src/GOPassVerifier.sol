@@ -11,7 +11,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
  * Sync is two paths: (1) trusted worker verifies Creditcoin storage off-chain (eth_getProof,
  * continuityLen=2) and calls markVerified — primary, gas ~40k once per wallet per cacheTTL;
  * (2) anyone calls syncPass with a storage proof verified on-chain via precompile 0x0FD2 —
- * fallback when worker is down. GToken calls isEligibleCached; no proof per transfer.
+ * fallback when worker is down. GToken calls isEligible; no proof per transfer.
  */
 interface IBlockProver {
     // Creditcoin CC3 precompile 0x0FD2 — view verify. Exact signature varies by network fork;
@@ -36,8 +36,8 @@ contract GOPassVerifier is Ownable {
         bytes2 allowed_sub_group;
         uint8 min_tier;
         uint8 min_sub_tier;
-        bool is_black_list;
-        uint256 countriesBitmap;
+        bool is_black_list; // true = countriesBitmap is blocklist (reject if wallet has any bit in it), false = allowlist (require at least one bit)
+        uint256 countriesBitmap; // ISO2 bitmap e.g. US|SG = bits 0,1; CN|HK = bits 5,3 via CountryBitmap
     }
 
     mapping(address => Record) public cached;
@@ -74,7 +74,7 @@ contract GOPassVerifier is Ownable {
         cacheTTL = ttl;
     }
 
-    // worker already verified off-chain (eth_getProof + continuityLen), just cache
+    // worker already verified off-chain (eth_getProof + continuityLen), just cache (blocklist/allowlist enforced in isEligible)
     function markVerified(address wallet, Record calldata r) external onlyWorkerOrOwner {
         require(wallet != address(0), "wallet zero");
         require(r.expiry > block.timestamp, "expiry past");
