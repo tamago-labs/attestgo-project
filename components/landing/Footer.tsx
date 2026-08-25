@@ -85,7 +85,7 @@ export default function Footer() {
       </div>
       <div className="border-t border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-6 flex flex-col sm:flex-row flex-wrap items-center justify-between gap-3 sm:gap-4 text-xs text-muted">
-          <span>© 2026 AttestGO. All rights reserved.</span>
+          <span>© 2026 Tamago Labs. All rights reserved.</span>
           <div className="flex items-center gap-6">
             <a href="#" className="hover:text-white transition-colors">
               Twitter
