@@ -3,15 +3,26 @@ pragma solidity 0.8.19;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {GOPassVerifier} from "./GOPassVerifier.sol";
+interface IGOPassEligible {
+    struct Rule {
+        bytes2 allowed_group;
+        bytes2 allowed_sub_group;
+        uint8 min_tier;
+        uint8 min_sub_tier;
+        bool is_black_list;
+        uint256 countriesBitmap;
+    }
+    function isEligible(address wallet, Rule calldata rule) external view returns (bool);
+}
 
 /**
- * GToken — example compliant RWA (USD T-Bill) gated by GOPassVerifier
+ * GToken — example compliant RWA (USD T-Bill) gated by GOPass (Sepolia) or GOPassMirror (Base, universal pass)
  * Enforces the same Rule shape as Cleanverse atoken/launch (allowed_group, min_tier, countriesBitmap).
- * Uses verifier.isEligible for every mint/burn/transfer (checks both from and to).
+ * On Sepolia, set gopass/mirror to GOPass (local); on new chain (Base chainKey 2) set to GOPassMirror synced from CC — no new mint.
+ * Uses isEligible for every mint/burn/transfer (checks both from and to, requires active).
  */
 contract GToken is ERC20, Ownable {
-    GOPassVerifier public immutable verifier;
+    address public immutable eligibleProvider; // GOPass on Sepolia or GOPassMirror on Base (universal)
     string public gIconURI;
 
     struct Rule {
@@ -34,9 +45,9 @@ contract GToken is ERC20, Ownable {
         _;
     }
 
-    constructor(string memory name_, string memory symbol_, address verifierAddr, Rule memory rule_, string memory iconURI_) ERC20(name_, symbol_) {
-        require(verifierAddr != address(0), "verifier zero");
-        verifier = GOPassVerifier(verifierAddr);
+    constructor(string memory name_, string memory symbol_, address providerAddr, Rule memory rule_, string memory iconURI_) ERC20(name_, symbol_) {
+        require(providerAddr != address(0), "provider zero");
+        eligibleProvider = providerAddr;
         rule = rule_;
         gIconURI = iconURI_;
     }
@@ -51,8 +62,8 @@ contract GToken is ERC20, Ownable {
         emit PausedSet(p);
     }
 
-    function _ruleForVerifier() internal view returns (GOPassVerifier.Rule memory) {
-        return GOPassVerifier.Rule({
+    function _ruleForProvider() internal view returns (IGOPassEligible.Rule memory) {
+        return IGOPassEligible.Rule({
             allowed_group: rule.allowed_group,
             allowed_sub_group: rule.allowed_sub_group,
             min_tier: rule.min_tier,
@@ -63,9 +74,9 @@ contract GToken is ERC20, Ownable {
     }
 
     function _checkEligible(address wallet) internal view {
-        // All holders must be eligible. Zero-address (mint/burn) is bypassed.
+        // All holders must be eligible (active + not frozen). Zero-address (mint/burn) is bypassed.
         if (wallet == address(0)) return;
-        require(verifier.isEligible(wallet, _ruleForVerifier()), "PassNotEligible");
+        require(IGOPassEligible(eligibleProvider).isEligible(wallet, _ruleForProvider()), "PassNotEligible");
     }
 
     // Compliance-gated mint — like atoken launch after admin grants MINTER_ROLE (here onlyOwner)
