@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, Shield, ExternalLink, Check, Loader2 } from "lucide-react";
 import { useWallet } from "@/components/app/WalletContext";
 import { saveMockPass, type MockPass } from "@/lib/mockPass";
-import { loadProfile } from "@/lib/userProfile";
+import { buildMessage, loadProfile, saveProfile } from "@/lib/userProfile";
 
 const COUNTRIES = [
   { code: "US", label: "United States — US" },
@@ -29,13 +29,17 @@ function keccakPlaceholder(s: string) {
 }
 
 export default function RegisterPage() {
-  const { address, isConnected } = useWallet();
+  const { address, isConnected, signer } = useWallet();
   const router = useRouter();
   const [country, setCountry] = useState("US");
-  const [customerId, setCustomerId] = useState("");
-  const [kycSource, setKycSource] = useState("sumsub");
+  const [displayName, setDisplayName] = useState("");
+  const [kycSource] = useState("sumsub");
   const [step, setStep] = useState<"form" | "kyc" | "creating" | "done">("form");
   const [kycLoading, setKycLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hasProfile, setHasProfile] = useState(false);
+  const [sourceChainId] = useState(11155111);
 
   useEffect(() => {
     if (!isConnected) {
@@ -47,8 +51,13 @@ export default function RegisterPage() {
   useEffect(() => {
     if (!address) return;
     loadProfile(address).then((p) => {
-      if (p?.country) setCountry(p.country);
-      if (p?.displayName) setCustomerId((cur) => cur || p.displayName);
+      if (p) {
+        setHasProfile(true);
+        if (p?.country) setCountry(p.country);
+        if (p?.displayName) setDisplayName((cur) => cur || p.displayName);
+      } else {
+        setHasProfile(false);
+      }
     });
   }, [address]);
 
@@ -69,20 +78,38 @@ export default function RegisterPage() {
   const expiry = Math.floor(Date.now() / 1000) + 365 * 86400;
   const expiryLabel = new Date(expiry * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-  const handleContinue = () => {
-    if (!country) return;
-    setStep("kyc");
+  const handleSaveProfile = async () => {
+    if (!country || !displayName.trim()) {
+      setError("Display name and country required");
+      return;
+    }
+    if (!address || !signer) {
+      setError("Connect wallet to continue");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const name = displayName.trim();
+      const message = buildMessage(address, name, country);
+      const signature = await (signer as unknown as { signMessage: (m: string) => Promise<string> }).signMessage(message);
+      await saveProfile({ walletAddress: address, displayName: name, country, message, signature });
+      setHasProfile(true);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg || "Failed to save profile");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleKyc = async () => {
     setKycLoading(true);
-    // simulate Sumsub iframe success
     await new Promise((r) => setTimeout(r, 1400));
     setKycLoading(false);
     setStep("creating");
-    // simulate mint + Creditcoin approval
     await new Promise((r) => setTimeout(r, 900));
-    const cid = customerId.trim() || `cust-${Date.now()}`;
+    const cid = displayName.trim() || `cust-${Date.now()}`;
     const mock: MockPass = {
       wallet,
       tier: 10,
@@ -107,22 +134,23 @@ export default function RegisterPage() {
 
       <div>
         <h1 className="font-display font-semibold text-2xl text-white">Register GO Pass</h1>
-        <p className="mt-1 text-sm text-muted">
-          One wallet one country. Mirrors <span className="font-mono text-white/70">scripts/gopass/2_mint.ts</span> — tier 10, bitmap 1 country, expiry 365d, active after CC.
-        </p>
+        <p className="mt-1 text-sm text-muted">Get verified for compliant transfers and borrowing — one pass for every chain.</p>
       </div>
 
       {step === "form" && (
-        <div className="rounded-xl border border-border bg-panel p-5 space-y-4">
-          <div>
-            <label className="text-xs font-medium text-white/80 uppercase tracking-widest">Wallet</label>
-            <div className="mt-1.5 px-3 py-2.5 rounded-lg bg-canvas border border-border font-mono text-sm text-white/70 truncate">
-              {wallet}
+        <div className="space-y-4">
+          {/* Card 1 — profile, like EditProfileModal */}
+          <div className="rounded-xl border border-border bg-panel p-5 space-y-4">
+            <div>
+              <label className="text-xs font-medium text-white/80 uppercase tracking-widest">Full name (as on ID)</label>
+              <input
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="Alex Rivera"
+                maxLength={32}
+                className="mt-1.5 w-full px-3 py-2.5 rounded-lg bg-canvas border border-border text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-violet-500/50"
+              />
             </div>
-            {!address && <div className="mt-1 text-xs text-amber/80">Connect wallet to bind pass — using placeholder.</div>}
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-medium text-white/80 uppercase tracking-widest">Country *</label>
               <select
@@ -136,64 +164,66 @@ export default function RegisterPage() {
                   </option>
                 ))}
               </select>
-              <div className="mt-1 text-[11px] text-white/30">Single country → bitmap 1&lt;&lt;bit (e.g. US=0 → 1)</div>
+            </div>
+            {error && <div className="text-xs text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</div>}
+            <button
+              onClick={handleSaveProfile}
+              disabled={saving}
+              className="w-full py-2.5 rounded-lg bg-white text-canvas text-sm font-medium hover:bg-white/90 disabled:opacity-60 transition-colors inline-flex justify-center items-center gap-2"
+            >
+              {saving ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" /> Saving profile…
+                </>
+              ) : (
+                <>Save profile</>
+              )}
+            </button>
+          </div>
+
+          {/* Card 2 — rest of GO Pass data */}
+          <div className="rounded-xl border border-border bg-panel p-5 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-medium text-white/80 uppercase tracking-widest">Source chain</label>
+                <div className="mt-1.5 relative">
+                  <select
+                    value={sourceChainId}
+                    onChange={() => {}}
+                    className="w-full appearance-none pl-9 pr-8 py-2.5 rounded-lg bg-canvas border border-border text-sm text-white focus:outline-none focus:border-violet-500/50"
+                  >
+                    <option value={11155111}>ETH Sepolia</option>
+                  </select>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628"
+                    alt="ETH Sepolia"
+                    className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-white p-0.5 object-contain"
+                  />
+                  <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-muted">▾</span>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-white/80 uppercase tracking-widest">Expiry</label>
+                <div className="mt-1.5 px-3 py-2.5 rounded-lg bg-canvas border border-border text-sm text-white/70">{expiryLabel}</div>
+              </div>
             </div>
             <div>
-              <label className="text-xs font-medium text-white/80 uppercase tracking-widest">Tier</label>
-              <div className="mt-1.5 px-3 py-2.5 rounded-lg bg-canvas border border-border text-sm text-white/50">10 — Standard (fixed)</div>
+              <label className="text-xs font-medium text-white/80 uppercase tracking-widest">Wallet to verify</label>
+              <div className="mt-1.5 flex items-center gap-2 px-3 py-2.5 rounded-lg bg-canvas border border-border">
+                <span className="flex-1 font-mono text-sm text-white/70 truncate">{wallet}</span>
+                <span className="shrink-0 px-1.5 py-0.5 rounded-full border border-amber/20 bg-amber/10 text-[10px] font-medium text-amber">Silver • Tier 10</span>
+              </div>
             </div>
+            <button
+              onClick={() => setStep("kyc")}
+              disabled={!hasProfile}
+              className="w-full py-2.5 rounded-lg bg-white text-canvas text-sm font-medium hover:bg-white/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors inline-flex justify-center items-center gap-2"
+            >
+              Continue to KYC <ExternalLink size={14} />
+            </button>
+            {!hasProfile && <p className="text-xs text-amber/80 text-center">Save profile first to continue</p>}
           </div>
-
-          <div>
-            <label className="text-xs font-medium text-white/80 uppercase tracking-widest">Customer ID (optional)</label>
-            <input
-              value={customerId}
-              onChange={(e) => setCustomerId(e.target.value)}
-              placeholder="cust-123 or leave blank → auto"
-              className="mt-1.5 w-full px-3 py-2.5 rounded-lg bg-canvas border border-border text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-violet-500/50"
-            />
-            <div className="mt-1 text-[11px] text-white/30 font-mono break-all">hash → {keccakPlaceholder(customerId || "cust-auto")}</div>
-          </div>
-
-          <div>
-            <label className="text-xs font-medium text-white/80 uppercase tracking-widest">KYC Provider</label>
-            <div className="mt-1.5 flex gap-2">
-              {[
-                { v: "sumsub", l: "Sumsub" },
-                { v: "", l: "None (blank)" },
-              ].map((o) => (
-                <button
-                  key={o.v || "blank"}
-                  onClick={() => setKycSource(o.v)}
-                  className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                    kycSource === o.v ? "bg-white text-canvas border-white" : "bg-canvas border-border text-muted hover:text-white"
-                  }`}
-                >
-                  {o.l}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-lg bg-canvas border border-border p-3 text-xs text-muted space-y-1">
-            <div className="flex justify-between">
-              <span>Expiry</span>
-              <span className="text-white/70">{expiryLabel} (365 days)</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Record</span>
-              <span className="font-mono text-white/50">
-                tier 10 • bitmap 1 • active false → pending CC
-              </span>
-            </div>
-          </div>
-
-          <button
-            onClick={handleContinue}
-            className="w-full py-2.5 rounded-lg bg-white text-canvas text-sm font-medium hover:bg-white/90 transition-colors inline-flex justify-center items-center gap-2"
-          >
-            Continue to KYC <ExternalLink size={14} />
-          </button>
         </div>
       )}
 

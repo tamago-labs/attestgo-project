@@ -19,9 +19,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AttestGO — The Compliance Layer for Onchain Finance With Attestcoin Protocol",
+  title: "AttestGO — The Compliance Layer for Onchain Finance Powered by Attestcoin Protocol",
   description:
-    "AttestGO is the compliance layer for onchain finance — verified identity, compliant assets and AI composed inbox with Attestcoin Protocol.",
+    "AttestGO is the compliance layer for onchain finance — verified identity, compliant assets and AI composed inbox powered by Attestcoin Protocol.",
 };
 
 export default function RootLayout({

@@ -111,7 +111,7 @@ export default function EditProfileModal({
 
             <div className="mt-4 space-y-4">
               <div>
-                <label className="text-xs font-medium text-white/80 uppercase tracking-widest">Display name</label>
+                <label className="text-xs font-medium text-white/80 uppercase tracking-widest">Full name (as on ID)</label>
                 <input
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
