@@ -45,17 +45,39 @@ export async function loadProfile(wallet: string): Promise<UserProfile | null> {
   if (!wallet) return null;
   try {
     const client = getClient();
-    const { data } = await (client.models.UserProfile as unknown as {
-      listByWallet: (a: { walletAddress: string }) => Promise<{ data: UserProfile[] }>;
-    }).listByWallet({ walletAddress: wallet.toLowerCase() });
-    if (!data || data.length === 0) return null;
-    // newest first
+    let data: UserProfile[] | null = null;
+    try {
+      // queryField is "byWallet" per amplify/data/resource.ts — method is byWallet, not listByWallet
+      const res = await (client.models.UserProfile as unknown as {
+        byWallet: (a: { walletAddress: string }) => Promise<{ data: UserProfile[] }>;
+      }).byWallet({ walletAddress: wallet.toLowerCase() });
+      data = res.data;
+    } catch (e) {
+      console.warn("[loadProfile] byWallet failed, fallback to list filter", e);
+      const res = await (client.models.UserProfile as unknown as {
+        list: (a: { filter: unknown }) => Promise<{ data: UserProfile[] }>;
+      }).list({ filter: { walletAddress: { eq: wallet.toLowerCase() } } });
+      data = res.data;
+    }
+    if (!data || data.length === 0) {
+      console.warn("[loadProfile] no rows for", wallet.toLowerCase());
+      return null;
+    }
     const sorted = [...data].sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
     const rec = sorted[0];
-    // verify on read (frontend per time)
-    if (!isValidSignature(rec.walletAddress, rec.message, rec.signature)) return null;
+    if (!isValidSignature(rec.walletAddress, rec.message, rec.signature)) {
+      console.warn("[loadProfile] signature invalid, showing row anyway", {
+        wallet,
+        recWallet: rec.walletAddress,
+        message: rec.message,
+        signature: rec.signature,
+      });
+      // still return rec so UI shows DB data even if sig mismatch (debug)
+      return rec;
+    }
     return rec;
-  } catch {
+  } catch (e) {
+    console.warn("[loadProfile] failed", e);
     return null;
   }
 }

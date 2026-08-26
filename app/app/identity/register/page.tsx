@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Shield, ExternalLink, Check, Loader2 } from "lucide-react";
 import { useWallet } from "@/components/app/WalletContext";
-import { saveMockPass, type MockPass } from "@/lib/mockPass";
 import { buildMessage, loadProfile, saveProfile } from "@/lib/userProfile";
 
 const COUNTRIES = [
@@ -40,6 +39,7 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [hasProfile, setHasProfile] = useState(false);
   const [sourceChainId] = useState(11155111);
+  const [pendingTx, setPendingTx] = useState<{ hash: string; block: number } | null>(null);
 
   useEffect(() => {
     if (!isConnected) {
@@ -105,25 +105,40 @@ export default function RegisterPage() {
 
   const handleKyc = async () => {
     setKycLoading(true);
-    await new Promise((r) => setTimeout(r, 1400));
+    await new Promise((r) => setTimeout(r, 800));
     setKycLoading(false);
     setStep("creating");
-    await new Promise((r) => setTimeout(r, 900));
-    const cid = displayName.trim() || `cust-${Date.now()}`;
-    const mock: MockPass = {
-      wallet,
-      tier: 10,
-      country,
-      customerId: cid,
-      customerIdHash: keccakPlaceholder(cid),
-      kycSource: kycSource || "",
-      expiry,
-      status: "Active",
-      createdAt: Date.now(),
-    };
-    saveMockPass(mock);
-    setStep("done");
-    setTimeout(() => router.push("/app/identity"), 900);
+    setError(null);
+    try {
+      const profile = await loadProfile(address!);
+      if (!profile) throw new Error("Profile not found — save first");
+      const { generateClient } = await import("aws-amplify/data");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const client: any = generateClient<any>();
+      // call backend mintPass (owner PK via secret) — triggers ethers popup on Lambda, not wallet
+      const res = await client.mutations.mintPass({ userProfileId: (profile as unknown as { id: string }).id });
+      if (res.errors) throw new Error(res.errors.map((e: { message: string }) => e.message).join(", "));
+      const data = res.data as { txHash: string; blockNumber: number; recordHash: string } | null;
+      if (!data?.txHash) throw new Error("mintPass failed");
+      setPendingTx({ hash: data.txHash, block: data.blockNumber });
+      // backend already mints; create PassRequest pending (handler may have created, fallback)
+      try {
+        await client.models.PassRequest.create({
+          userProfileId: (profile as unknown as { id: string }).id,
+          chainId: sourceChainId,
+          txHash: data.txHash,
+          blockNumber: data.blockNumber,
+          recordHash: data.recordHash,
+          status: "pending",
+        });
+      } catch {}
+      setStep("done");
+      setTimeout(() => router.push("/app/identity"), 900);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg || "KYC failed");
+      setStep("kyc");
+    }
   };
 
   return (
@@ -273,10 +288,37 @@ export default function RegisterPage() {
       )}
 
       {step === "creating" && (
-        <div className="rounded-xl border border-border bg-panel p-8 text-center">
+        <div className="rounded-xl border border-border bg-panel p-6 text-center space-y-3">
           <Loader2 size={20} className="animate-spin mx-auto text-white/60" />
-          <div className="mt-3 text-sm text-white">Creating GO Pass…</div>
-          <div className="mt-1 text-xs text-muted">Minting soulbound token • keccak hash • pending Creditcoin verification → active</div>
+          <div className="text-sm text-white">Creating GO Pass…</div>
+          {pendingTx && (
+            <div className="rounded-lg bg-canvas border border-border p-3 text-xs font-mono break-all text-left space-y-1">
+              <div className="flex justify-between">
+                <span className="text-muted">Tx</span>
+                <a
+                  href={`https://sepolia.etherscan.io/tx/${pendingTx.hash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-amber hover:text-white inline-flex items-center gap-1"
+                >
+                  {pendingTx.hash.slice(0, 10)}…{pendingTx.hash.slice(-6)} <ExternalLink size={10} />
+                </a>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted">Block</span>
+                <span className="text-white/70">{pendingTx.block}</span>
+              </div>
+              <a
+                href={`https://sepolia.etherscan.io/tx/${pendingTx.hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-center mt-2 text-amber hover:text-white"
+              >
+                View on explorer
+              </a>
+            </div>
+          )}
+          <div className="text-xs text-muted">Minting soulbound token • pending Creditcoin attestation</div>
         </div>
       )}
 

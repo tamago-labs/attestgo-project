@@ -1,4 +1,5 @@
 import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
+import { mintPass } from "../functions/mintPass/resource";
 
 const schema = a.schema({
   UserProfile: a
@@ -25,6 +26,13 @@ const schema = a.schema({
     })
     .authorization((allow) => [allow.publicApiKey().to(["read", "create", "update"])])
     .secondaryIndexes((index) => [index("userProfileId").queryField("byUserProfile")]),
+
+  mintPass: a
+    .mutation()
+    .arguments({ userProfileId: a.id().required() })
+    .returns(a.json())
+    .handler(a.handler.function(mintPass))
+    .authorization((allow) => [allow.publicApiKey()]),
 });
 
 export type Schema = ClientSchema<typeof schema>;
