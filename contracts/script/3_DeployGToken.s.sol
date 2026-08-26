@@ -43,17 +43,19 @@ contract DeployGToken is Script {
         });
 
         address underlying = vm.envOr("UNDERLYING_ADDR", address(0));
+        address tokenOwner = vm.envOr("TOKEN_OWNER", deployer); // issuer becomes GToken owner; platform API pays gas
         // prefer factory if set
         address factoryAddr = vm.envOr("FACTORY_ADDR", address(0));
         if (factoryAddr != address(0)) {
             console.log("via factory", factoryAddr, "underlying", underlying);
+            console.log("tokenOwner", tokenOwner);
             GTokenFactory f = GTokenFactory(factoryAddr);
             vm.startBroadcast(pk);
             address token;
             if (underlying != address(0)) {
-                token = f.createWrappedGToken(underlying, name, symbol, rule, "https://icons.test/usd-tbill.svg");
+                token = f.createWrappedGTokenFor(tokenOwner, underlying, name, symbol, rule, "https://icons.test/usd-tbill.svg");
             } else {
-                token = f.createGToken(name, symbol, rule, "https://icons.test/usd-tbill.svg");
+                token = f.createGTokenFor(tokenOwner, name, symbol, rule, "https://icons.test/usd-tbill.svg");
             }
             vm.stopBroadcast();
             console.log("GToken via factory at %s", token);

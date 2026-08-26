@@ -1,13 +1,15 @@
 import { defineFunction, secret } from "@aws-amplify/backend";
 
-export const mintPass = defineFunction({
-  name: "mintPass",
+export const createGToken = defineFunction({
+  name: "createGToken",
   entry: "./handler.ts",
   runtime: 22,
   timeoutSeconds: 60,
   environment: {
-    GOPASS_ADDR: "0x9236590Ffa4FA7B633F1F6ce3a23338b532a5302",
+    FACTORY_ADDR: "0xEB263edDaED69C1bAc361Db2E50eAe6813145803",
+    CHAIN_ID: "11155111",
     SEPOLIA_RPC_URL: secret("SEPOLIA_RPC_URL"),
     OWNER_PK: secret("OWNER_PK"),
+    PLATFORM_API_KEY: secret("PLATFORM_API_KEY"),
   },
 });

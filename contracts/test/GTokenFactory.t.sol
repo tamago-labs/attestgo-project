@@ -143,4 +143,27 @@ contract GTokenFactoryTest is Test {
         factory.setProvider(newProvider);
         assertEq(factory.eligibleProvider(), newProvider);
     }
+
+    function test_factory_createFor_onBehalf_platform_pays_gas() public {
+        // platform = owner, issuer = alice, platform pays gas but alice becomes owner
+        address platform = owner;
+        address issuer = alice;
+        // platform creates for issuer
+        vm.prank(platform);
+        address token = factory.createGTokenFor(issuer, "TBILL", "TBILL", _rule(1), "");
+        assertEq(GToken(token).owner(), issuer);
+        assertEq(factory.creatorOf(token), issuer);
+        assertEq(factory.getTokensByCreator(issuer).length, 1);
+        // operator can also create
+        address operator = bob;
+        vm.prank(owner);
+        factory.setOperator(operator, true);
+        vm.prank(operator);
+        address token2 = factory.createWrappedGTokenFor(issuer, address(usdc), "wUSDC", "wUSDC", _rule(1), "");
+        assertEq(GToken(token2).owner(), issuer);
+        // stranger not operator -> revert
+        vm.prank(stranger);
+        vm.expectRevert(bytes("not operator/owner"));
+        factory.createGTokenFor(issuer, "FAIL", "FAIL", _rule(1), "");
+    }
 }
