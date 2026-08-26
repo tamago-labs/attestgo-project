@@ -28,12 +28,12 @@ export const handler = async (event: { arguments: { userProfileId: string } }) =
   if (!profile) throw new Error("UserProfile not found");
 
   const pid = userProfileId;
-  const { data: rowsRaw } = await client.models.PassRequest.list({ filter: { userProfileId: { eq: pid } } }) as unknown as { data: { id: string; txHash: string; blockNumber: number; status: string }[] };
-  const rows = rowsRaw ? [...rowsRaw] : [];
+  const { data: rowsRaw } = (await client.models.PassRequest.list({ filter: { userProfileId: { eq: pid } } })) as unknown as { data: { id: string; txHash: string; blockNumber: number; status: string }[] };
+  const rows = rowsRaw ? ([...rowsRaw] as unknown as { id: string; txHash: string; blockNumber: number; status: string }[]) : [];
   const reqRaw = rows[0];
   if (!reqRaw) throw new Error("PassRequest not found");
-  const req = { ...reqRaw } as { id: string; txHash: string; blockNumber: number; status: string };
-  if (req.status === "active") return { status: "active", txHash: req.txHash };
+  const req = { ...reqRaw };
+  if (req.status === "active") return JSON.stringify({ status: "active", txHash: req.txHash });
 
   const walletAddress = (profile as unknown as { walletAddress: string }).walletAddress;
 
@@ -57,7 +57,14 @@ export const handler = async (event: { arguments: { userProfileId: string } }) =
     }
     throw new Error(`Proof generation failed: ${(res as unknown as { error: string }).error}`);
   }
-  const d = res.data as unknown as { headerNumber: number; chainKey: number; txBytes: string; merkleProof: { root: string; siblings: { hash: string; isLeft: boolean }[] }; continuityProof: { lowerEndpointDigest: string; roots: string[] } };
+  const raw = res.data as unknown as { headerNumber: number; chainKey: number; txBytes: string; merkleProof: { root: string; siblings: { hash: string; isLeft: boolean }[] }; continuityProof: { lowerEndpointDigest: string; roots: string[] } };
+  const d = {
+    headerNumber: raw.headerNumber,
+    chainKey: raw.chainKey,
+    txBytes: raw.txBytes,
+    merkleProof: { root: raw.merkleProof.root, siblings: [...raw.merkleProof.siblings.map((s) => ({ ...s }))] },
+    continuityProof: { lowerEndpointDigest: raw.continuityProof.lowerEndpointDigest, roots: [...raw.continuityProof.roots] },
+  };
 
   const prover = new blockProver.PrecompileBlockProver(cc);
   const ok = await prover.verifySingle(d.chainKey, d.headerNumber, d.txBytes, d.merkleProof, d.continuityProof);
@@ -73,7 +80,7 @@ export const handler = async (event: { arguments: { userProfileId: string } }) =
     d.headerNumber,
     d.txBytes,
     d.merkleProof.root,
-    d.merkleProof.siblings.map((s: { hash: string } | string) => (typeof s === "string" ? s : s.hash)),
+    d.merkleProof.siblings.map((s) => s.hash),
     d.continuityProof.lowerEndpointDigest,
     d.continuityProof.roots
   );
@@ -82,7 +89,7 @@ export const handler = async (event: { arguments: { userProfileId: string } }) =
   await (gopassOwner as unknown as { setActive: (a: string, b: boolean) => Promise<ethers.TransactionResponse> }).setActive(walletAddress, true);
 
   const updateClient = generateClient<Schema>();
-  await updateClient.models.PassRequest.update({ id: req.id, status: "active" });
+  await updateClient.models.PassRequest.update({ id: req.id, status: "active" } as unknown as { id: string; status: "active" });
 
-  return { status: "active", txHash };
+  return JSON.stringify({ status: "active", txHash });
 };
