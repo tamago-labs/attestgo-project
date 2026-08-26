@@ -33,7 +33,7 @@ const schema = a.schema({
     .returns(a.json())
     .handler(a.handler.function(mintPass))
     .authorization((allow) => [allow.publicApiKey()]),
-});
+}).authorization((allow) => [allow.resource(mintPass)]);
 
 export type Schema = ClientSchema<typeof schema>;
 

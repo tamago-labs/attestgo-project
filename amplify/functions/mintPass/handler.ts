@@ -1,7 +1,15 @@
 import type { Schema } from "../../data/resource";
+import { Amplify } from "aws-amplify";
+import { getAmplifyDataClientConfig } from "@aws-amplify/backend/function/runtime";
 import { generateClient } from "aws-amplify/data";
 import { env } from "$amplify/env/mintPass";
 import { ethers, keccak256, toUtf8Bytes } from "ethers";
+
+const { resourceConfig, libraryOptions } = await getAmplifyDataClientConfig(env);
+
+Amplify.configure(resourceConfig, libraryOptions);
+
+const client = generateClient<Schema>();
 
 const GOPASS_ABI = [
   "function mint(address to, tuple(uint8 tier, uint8 subTier, bytes2 group, bytes2 subGroup, uint256 countryBitmap, uint64 expiry, bool frozen, bool active, bytes32 customerIdHash, string kycSource) r) external",
@@ -21,8 +29,6 @@ type Args = { userProfileId: string };
 export const handler: Schema["mintPass"]["functionHandler"] = async (event) => {
   const { userProfileId } = event.arguments as Args;
   if (!userProfileId) throw new Error("userProfileId required");
-
-  const client = generateClient<Schema>({ authMode: "apiKey" });
 
   const { data: profile } = await client.models.UserProfile.get({ id: userProfileId });
   if (!profile) throw new Error("UserProfile not found");

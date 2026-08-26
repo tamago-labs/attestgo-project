@@ -104,25 +104,30 @@ export default function RegisterPage() {
   };
 
   const handleKyc = async () => {
+    console.log("[handleKyc] start", { address, hasProfile, country, displayName });
     setKycLoading(true);
     await new Promise((r) => setTimeout(r, 800));
     setKycLoading(false);
     setStep("creating");
     setError(null);
     try {
+      console.log("[handleKyc] loading profile");
       const profile = await loadProfile(address!);
+      console.log("[handleKyc] profile", profile);
       if (!profile) throw new Error("Profile not found — save first");
       const { generateClient } = await import("aws-amplify/data");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const client: any = generateClient<any>();
-      // call backend mintPass (owner PK via secret) — triggers ethers popup on Lambda, not wallet
+      console.log("[handleKyc] calling mintPass", (profile as unknown as { id: string }).id);
       const res = await client.mutations.mintPass({ userProfileId: (profile as unknown as { id: string }).id });
+      console.log("[handleKyc] mintPass res", res);
       if (res.errors) throw new Error(res.errors.map((e: { message: string }) => e.message).join(", "));
       const data = res.data as { txHash: string; blockNumber: number; recordHash: string } | null;
-      if (!data?.txHash) throw new Error("mintPass failed");
+      console.log("[handleKyc] mintPass data", data);
+      if (!data?.txHash) throw new Error("mintPass failed: no txHash");
       setPendingTx({ hash: data.txHash, block: data.blockNumber });
-      // backend already mints; create PassRequest pending (handler may have created, fallback)
       try {
+        console.log("[handleKyc] creating PassRequest pending");
         await client.models.PassRequest.create({
           userProfileId: (profile as unknown as { id: string }).id,
           chainId: sourceChainId,
@@ -131,11 +136,15 @@ export default function RegisterPage() {
           recordHash: data.recordHash,
           status: "pending",
         });
-      } catch {}
+        console.log("[handleKyc] PassRequest created");
+      } catch (e) {
+        console.warn("[handleKyc] PassRequest create failed (maybe already exists)", e);
+      }
       setStep("done");
       setTimeout(() => router.push("/app/identity"), 900);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
+      console.error("[handleKyc] error", e);
       setError(msg || "KYC failed");
       setStep("kyc");
     }
@@ -253,6 +262,7 @@ export default function RegisterPage() {
             <p className="mt-1 text-xs text-muted">Simulated Sumsub — no real verification. Click verify to create pass.</p>
           </div>
           <div className="p-5 space-y-4">
+            {error && <div className="text-xs text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</div>}
             <div className="rounded-lg border border-border bg-canvas p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
                 <Shield size={18} className="text-white/60" />
