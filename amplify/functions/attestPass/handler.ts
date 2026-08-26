@@ -4,7 +4,7 @@ import { getAmplifyDataClientConfig } from "@aws-amplify/backend/function/runtim
 import { generateClient } from "aws-amplify/data";
 import { env } from "$amplify/env/attestPass";
 import { ethers } from "ethers";
-import { ProofBuilder, PrecompileBlockProver, PrecompileChainInfoProvider } from "@gluwa/usc-sdk";
+import { proofProvider, blockProver } from "@gluwa/usc-sdk";
 
 const { resourceConfig, libraryOptions } = await getAmplifyDataClientConfig(env);
 Amplify.configure(resourceConfig, libraryOptions);
@@ -44,23 +44,22 @@ export const handler: Schema["attestPass"]["functionHandler"] = async (event) =>
   const record = await (hub as unknown as { getRecord: (a: string) => Promise<unknown> }).getRecord(walletAddress);
 
   const txHash = req.txHash;
-  const builder = new ProofBuilder(1, env.SEPOLIA_RPC_URL as string, env.PROOF_BUILDER_URL as string);
-  const chainInfo = new PrecompileChainInfoProvider(cc);
+  const builder = new proofProvider.service.ProofBuilder(1, env.SEPOLIA_RPC_URL as string, env.PROOF_BUILDER_URL as string);
 
   const tx = await sepolia.getTransaction(txHash);
   if (!tx?.blockNumber) throw new Error(`tx ${txHash} not found on Sepolia`);
 
   const res = await builder.getProof(txHash);
   if (!res.success || !res.data) {
-    const msg = String(res.error || "");
+    const msg = String((res as unknown as { error: string }).error || "");
     if (msg.toLowerCase().includes("not yet attested") || msg.toLowerCase().includes("not yet") || msg.toLowerCase().includes("height")) {
       throw new Error(`not attested yet: ${msg}`);
     }
-    throw new Error(`Proof generation failed: ${res.error}`);
+    throw new Error(`Proof generation failed: ${(res as unknown as { error: string }).error}`);
   }
   const d = res.data as unknown as { headerNumber: number; chainKey: number; txBytes: string; merkleProof: { root: string; siblings: { hash: string }[] }; continuityProof: { lowerEndpointDigest: string; roots: string[] } };
 
-  const prover = new PrecompileBlockProver(cc);
+  const prover = new blockProver.PrecompileBlockProver(cc);
   const ok = await prover.verifySingle(d.chainKey, d.headerNumber, d.txBytes, d.merkleProof as unknown as { root: string; siblings: string[] }, d.continuityProof as unknown as { lowerEndpointDigest: string; roots: string[] });
   if (!ok) throw new Error("verifySingle failed");
 
