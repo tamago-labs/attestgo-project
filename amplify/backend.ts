@@ -27,11 +27,6 @@ const api = new apigateway.RestApi(apiStack, 'TokenRestApi', {
 });
 const tokens = api.root.addResource('tokens');
 tokens.addMethod('POST', new apigateway.LambdaIntegration(backend.createGToken.resources.lambda));
-tokens.addCorsPreflight({
-  allowOrigins: apigateway.Cors.ALL_ORIGINS,
-  allowMethods: ['POST', 'OPTIONS', 'GET'],
-  allowHeaders: ['Content-Type', 'x-api-key', 'x-platform-api-key', 'Authorization'],
-});
 // also support POST /createGToken alias
 api.root.addResource('createGToken').addMethod('POST', new apigateway.LambdaIntegration(backend.createGToken.resources.lambda));
 
