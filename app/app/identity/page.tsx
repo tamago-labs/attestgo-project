@@ -24,6 +24,7 @@ export default function IdentityPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [copied, setCopied] = useState(false);
   const [countdown, setCountdown] = useState(60);
+  const [attestNote, setAttestNote] = useState<string | null>(null);
 
   useEffect(() => {
     setPass(loadMockPass());
@@ -105,17 +106,40 @@ export default function IdentityPage() {
           console.log("[poll] attestPass res", r);
           if (r.errors) {
             const msg = JSON.stringify(r.errors);
-            // ExecutionTimeoutException still means backend likely succeeded (update done before timeout) - refetch below will show active
             if (msg.includes("ExecutionTimeoutException") || msg.includes("timed out")) {
               console.warn("[poll] attestPass timeout - will refetch PassRequest immediately", r.errors);
+              setAttestNote("Attestation is processing (40s task) — will retry in 60s");
+            } else if (msg.includes("404") || msg.toLowerCase().includes("not yet attested") || msg.includes("Failed to generate proof")) {
+              // from handler 404 -> Lambda:Unhandled Proof generation failed 404 - show friendly, not just countdown
+              setAttestNote(`Block ${passRequest.blockNumber} not yet attested on Creditcoin — prover 404. Retrying in 60s (usually 2–5 min).`);
             } else {
               console.warn("[poll] attestPass errors", r.errors);
+              const m = (r.errors as unknown as { message?: string }[])?.[0]?.message?.slice(0, 180) || "Attestation pending";
+              setAttestNote(m);
             }
-          } else if ((r.data as unknown as string)?.includes?.("active")) {
-            attestOk = true;
+          } else if (r.data) {
+            try {
+              const parsed = typeof r.data === "string" ? JSON.parse(r.data as unknown as string) : (r.data as unknown as Record<string, unknown>);
+              if ((parsed as Record<string, unknown>).status === "active") {
+                attestOk = true;
+                setAttestNote(null);
+              } else if ((parsed as Record<string, unknown>).status === "pending" && (parsed as Record<string, unknown>).reason) {
+                const reason = String((parsed as Record<string, unknown>).reason).slice(0, 220);
+                setAttestNote(reason.includes("404") || reason.toLowerCase().includes("not yet") ? `Block ${passRequest.blockNumber} not yet attested — ${reason.slice(0, 120)}` : reason);
+              } else if ((r.data as unknown as string)?.includes?.("active")) {
+                attestOk = true;
+                setAttestNote(null);
+              }
+            } catch {
+              if ((r.data as unknown as string)?.includes?.("active")) {
+                attestOk = true;
+                setAttestNote(null);
+              }
+            }
           }
         } catch (e) {
           console.warn("[poll] attestPass throw", e);
+          setAttestNote("Network error — retrying in 60s");
         }
         // always refetch - even on timeout the Lambda may have updated PassRequest before timing out (see handler: update before return, 60s wait cap)
         const res = await client.models.PassRequest.byUserProfile({ userProfileId: pid }).catch(async () => {
@@ -250,6 +274,7 @@ export default function IdentityPage() {
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-white">Waiting for attestation to Creditcoin</div>
                   <div className="mt-1 text-xs text-muted">Polling… {countdown}s</div>
+                  {attestNote && <div className="mt-1 text-xs text-amber/80 leading-relaxed">{attestNote}</div>}
                 </div>
               </div>
               {/* Step 3 */}

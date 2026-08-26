@@ -55,7 +55,16 @@ export const handler: Schema["attestPass"]["functionHandler"] = async (event) =>
   const txHash = req.txHash;
   const builder = new proofProvider.service.ProofBuilder(1, env.PROOF_BUILDER_URL as string, 5000);
   const res = await builder.getProof(txHash);
-  if (!res.success || !res.data) throw new Error(`Proof generation failed: ${(res as unknown as { error: string }).error}`);
+  if (!res.success || !res.data) {
+    const rawErr = String((res as unknown as { error: string }).error || "");
+    const is404 = rawErr.includes("404") || rawErr.toLowerCase().includes("not yet attested") || rawErr.toLowerCase().includes("not yet");
+    console.warn("[attestPass] proof not ready", rawErr);
+    if (is404) {
+      // like 3_worker_sync.ts waitUntilHeightAttested — return pending cleanly so frontend shows friendly message instead of Lambda:Unhandled
+      return JSON.stringify({ status: "pending", txHash, reason: rawErr.slice(0, 300), blockNumber: (req as unknown as { blockNumber: number }).blockNumber });
+    }
+    throw new Error(`Proof generation failed: ${rawErr}`);
+  }
   const d = res.data as any;
   console.log("[attestPass] proof header", d.headerNumber, "siblings", d.merkleProof.siblings.length);
 
