@@ -36,7 +36,7 @@ export default function Navbar() {
           <a href="#products" className="hover:text-white transition-colors">How it works</a>
           <a href="/app/identity" className="hover:text-white transition-colors">Identity</a>
           <a href="/app/defi" className="hover:text-white transition-colors">Earn</a>
-          <a href="#" className="hover:text-white transition-colors">Docs</a>
+          <a href="/docs" className="hover:text-white transition-colors">Docs</a>
           <a href="https://github.com/tamago-labs/attestgo-project" target="_blank" rel="noopener" className="hover:text-white transition-colors">GitHub</a>
         </div>
 
@@ -64,7 +64,7 @@ export default function Navbar() {
             <a onClick={() => setOpen(false)} href="#products" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">How it works</a>
             <a onClick={() => setOpen(false)} href="/app/identity" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">Identity</a>
             <a onClick={() => setOpen(false)} href="/app/defi" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">Earn</a>
-            <a onClick={() => setOpen(false)} href="#" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">Docs</a>
+            <a onClick={() => setOpen(false)} href="/docs" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">Docs</a>
             <a onClick={() => setOpen(false)} href="https://github.com/tamago-labs/attestgo-project" target="_blank" rel="noopener" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">GitHub</a>
           </div>
         </div>
