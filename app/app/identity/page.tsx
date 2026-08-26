@@ -23,7 +23,7 @@ export default function IdentityPage() {
   const [passRequest, setPassRequest] = useState<{ status: string; txHash: string; blockNumber: number } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [countdown, setCountdown] = useState(30);
+  const [countdown, setCountdown] = useState(60);
 
   useEffect(() => {
     setPass(loadMockPass());
@@ -77,11 +77,12 @@ export default function IdentityPage() {
 
   useEffect(() => {
     if (!passRequest || passRequest.status === "active") return;
+    setCountdown(60);
     const id = setInterval(() => {
-      setCountdown((c) => (c <= 1 ? 30 : c - 1));
+      setCountdown((c) => (c <= 1 ? 60 : c - 1));
     }, 1000);
     return () => clearInterval(id);
-  }, [passRequest]);
+  }, [passRequest?.status]);
 
   // polling PassRequest pending -> active via attestPass
   useEffect(() => {
@@ -146,7 +147,7 @@ export default function IdentityPage() {
       }
     };
     poll();
-    const iid = setInterval(poll, 30000);
+    const iid = setInterval(poll, 60000);
     return () => {
       cancelled = true;
       clearInterval(iid);
