@@ -28,13 +28,11 @@ export const handler = async (event: { arguments: { userProfileId: string } }) =
   if (!profile) throw new Error("UserProfile not found");
 
   const pid = userProfileId;
-  const { data: rowsRaw } = await (client.models.PassRequest as unknown as { byUserProfile: (a: { userProfileId: string }) => Promise<{ data: { id: string; txHash: string; blockNumber: number; status: string }[] }> }).byUserProfile({ userProfileId: pid }).catch(async () => {
-    return client.models.PassRequest.list({ filter: { userProfileId: { eq: pid } } }) as unknown as { data: { id: string; txHash: string; blockNumber: number; status: string }[] };
-  });
-  const rows = rowsRaw ? [...(rowsRaw as unknown as { id: string; txHash: string; blockNumber: number; status: string }[])] : [];
+  const { data: rowsRaw } = await client.models.PassRequest.list({ filter: { userProfileId: { eq: pid } } }) as unknown as { data: { id: string; txHash: string; blockNumber: number; status: string }[] };
+  const rows = rowsRaw ? [...rowsRaw] : [];
   const reqRaw = rows[0];
   if (!reqRaw) throw new Error("PassRequest not found");
-  const req = { ...reqRaw };
+  const req = { ...reqRaw } as { id: string; txHash: string; blockNumber: number; status: string };
   if (req.status === "active") return { status: "active", txHash: req.txHash };
 
   const walletAddress = (profile as unknown as { walletAddress: string }).walletAddress;
@@ -83,7 +81,8 @@ export const handler = async (event: { arguments: { userProfileId: string } }) =
   const gopassOwner = new ethers.Contract(env.GOPASS_ADDR as string, GOPASS_ABI, new ethers.Wallet(pk, sepolia));
   await (gopassOwner as unknown as { setActive: (a: string, b: boolean) => Promise<ethers.TransactionResponse> }).setActive(walletAddress, true);
 
-  await client.models.PassRequest.update({ id: req.id, status: "active" });
+  const updateClient = generateClient<Schema>();
+  await updateClient.models.PassRequest.update({ id: req.id, status: "active" });
 
   return { status: "active", txHash };
 };
