@@ -89,37 +89,43 @@ export default function IdentityPage() {
     let cancelled = false;
     const poll = async () => {
       try {
+        console.log("[poll] attestPass start", passRequest.txHash);
         const { generateClient } = await import("aws-amplify/data");
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const client: any = generateClient<any>();
         const pid = (await loadProfile(address))?.id;
-        if (!pid) return;
-        // trigger attestPass
+        if (!pid) {
+          console.warn("[poll] no profile");
+          return;
+        }
         try {
-          await client.mutations.attestPass({ userProfileId: pid });
-        } catch {}
-        // re-fetch status
+          const r = await client.mutations.attestPass({ userProfileId: pid });
+          console.log("[poll] attestPass res", r);
+          if (r.errors) console.warn("[poll] attestPass errors", r.errors);
+        } catch (e) {
+          console.warn("[poll] attestPass throw", e);
+        }
         const res = await client.models.PassRequest.byUserProfile({ userProfileId: pid }).catch(async () => {
           return client.models.PassRequest.list({ filter: { userProfileId: { eq: pid } } });
         });
+        console.log("[poll] PassRequest rows", res.data);
         const rows = (res.data as unknown as { status: string; txHash: string; blockNumber: number }[]) || [];
         if (!cancelled && rows.length > 0) {
           const sorted = [...rows].sort((a, b) => (b.blockNumber || 0) - (a.blockNumber || 0));
+          console.log("[poll] sorted", sorted[0]);
           if (sorted[0].status === "active") setPassRequest(sorted[0]);
         }
-      } catch {}
+      } catch (e) {
+        console.warn("[poll] failed", e);
+      }
     };
-    const iid = setInterval(poll, 8000);
-    // also trigger once after countdown hits 0
-    const onCountdownZero = setInterval(() => {
-      if (countdown === 1) poll();
-    }, 1000);
+    poll();
+    const iid = setInterval(poll, 30000);
     return () => {
       cancelled = true;
       clearInterval(iid);
-      clearInterval(onCountdownZero);
     };
-  }, [passRequest, address, countdown]);
+  }, [passRequest?.status, address]);
 
   const hasPass = !!pass || !!passRequest;
   const displayPass = passRequest

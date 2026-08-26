@@ -28,11 +28,13 @@ export const handler = async (event: { arguments: { userProfileId: string } }) =
   if (!profile) throw new Error("UserProfile not found");
 
   const pid = userProfileId;
-  const { data: rows } = await (client.models.PassRequest as unknown as { byUserProfile: (a: { userProfileId: string }) => Promise<{ data: { id: string; txHash: string; blockNumber: number; status: string }[] }> }).byUserProfile({ userProfileId: pid }).catch(async () => {
+  const { data: rowsRaw } = await (client.models.PassRequest as unknown as { byUserProfile: (a: { userProfileId: string }) => Promise<{ data: { id: string; txHash: string; blockNumber: number; status: string }[] }> }).byUserProfile({ userProfileId: pid }).catch(async () => {
     return client.models.PassRequest.list({ filter: { userProfileId: { eq: pid } } }) as unknown as { data: { id: string; txHash: string; blockNumber: number; status: string }[] };
   });
-  const req = (rows as unknown as { id: string; txHash: string; blockNumber: number; status: string }[])?.[0];
-  if (!req) throw new Error("PassRequest not found");
+  const rows = rowsRaw ? [...(rowsRaw as unknown as { id: string; txHash: string; blockNumber: number; status: string }[])] : [];
+  const reqRaw = rows[0];
+  if (!reqRaw) throw new Error("PassRequest not found");
+  const req = { ...reqRaw };
   if (req.status === "active") return { status: "active", txHash: req.txHash };
 
   const walletAddress = (profile as unknown as { walletAddress: string }).walletAddress;
