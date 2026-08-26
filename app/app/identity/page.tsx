@@ -108,7 +108,6 @@ export default function IdentityPage() {
             const msg = JSON.stringify(r.errors);
             if (msg.includes("ExecutionTimeoutException") || msg.includes("timed out")) {
               console.warn("[poll] attestPass timeout - will refetch PassRequest immediately", r.errors);
-              setAttestNote("Attestation is processing (40s task) — will retry in 60s");
             } else if (msg.includes("404") || msg.toLowerCase().includes("not yet attested") || msg.includes("Failed to generate proof")) {
               // from handler 404 -> Lambda:Unhandled Proof generation failed 404 - show friendly, not just countdown
               setAttestNote(`Block ${passRequest.blockNumber} not yet attested on Creditcoin — prover 404. Retrying in 60s (usually 2–5 min).`);
