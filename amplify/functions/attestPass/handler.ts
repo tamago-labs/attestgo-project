@@ -67,7 +67,6 @@ export const handler: Schema["attestPass"]["functionHandler"] = async (event) =>
   const pk = env.OWNER_PK as string;
   const owner = new ethers.Wallet(pk, cc);
   const registry = new ethers.Contract(env.GOPASS_REGISTRY_ADDR as string, REGISTRY_ABI, owner);
-  // follow script: siblings map s.hash ?? s
   const tx1 = await (registry as any).syncPassWithTxProof(
     walletAddress,
     tuple,
@@ -79,13 +78,23 @@ export const handler: Schema["attestPass"]["functionHandler"] = async (event) =>
     d.continuityProof.roots
   );
   console.log("[attestPass] sync", tx1.hash);
-  await tx1.wait();
+  try {
+    await tx1.wait(1, 60000);
+  } catch (e) {
+    console.warn("[attestPass] sync wait timeout/err", e);
+  }
 
   const gopassOwner = new ethers.Contract(env.GOPASS_ADDR as string, GOPASS_ABI, new ethers.Wallet(pk, sepolia));
   const tx2 = await (gopassOwner as any).setActive(walletAddress, true);
   console.log("[attestPass] active", tx2.hash);
-  await tx2.wait();
+  try {
+    await tx2.wait(1, 60000);
+  } catch (e) {
+    console.warn("[attestPass] active wait timeout/err", e);
+  }
 
+  // update before return even if waits timed out - frontend will see active on refresh/poll
   await client.models.PassRequest.update({ id: req.id, status: "active" } as unknown as { id: string; status: "active" });
-  return JSON.stringify({ status: "active", txHash });
+  // also return registry/active hashes so frontend can show without extra fetch
+  return JSON.stringify({ status: "active", txHash, registryTx: tx1.hash, activeTx: tx2.hash });
 };

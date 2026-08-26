@@ -98,13 +98,25 @@ export default function IdentityPage() {
           console.warn("[poll] no profile");
           return;
         }
+        let attestOk = false;
         try {
           const r = await client.mutations.attestPass({ userProfileId: pid });
           console.log("[poll] attestPass res", r);
-          if (r.errors) console.warn("[poll] attestPass errors", r.errors);
+          if (r.errors) {
+            const msg = JSON.stringify(r.errors);
+            // ExecutionTimeoutException still means backend likely succeeded (update done before timeout) - refetch below will show active
+            if (msg.includes("ExecutionTimeoutException") || msg.includes("timed out")) {
+              console.warn("[poll] attestPass timeout - will refetch PassRequest immediately", r.errors);
+            } else {
+              console.warn("[poll] attestPass errors", r.errors);
+            }
+          } else if ((r.data as unknown as string)?.includes?.("active")) {
+            attestOk = true;
+          }
         } catch (e) {
           console.warn("[poll] attestPass throw", e);
         }
+        // always refetch - even on timeout the Lambda may have updated PassRequest before timing out (see handler: update before return, 60s wait cap)
         const res = await client.models.PassRequest.byUserProfile({ userProfileId: pid }).catch(async () => {
           return client.models.PassRequest.list({ filter: { userProfileId: { eq: pid } } });
         });
@@ -113,7 +125,21 @@ export default function IdentityPage() {
         if (!cancelled && rows.length > 0) {
           const sorted = (JSON.parse(JSON.stringify(rows)) as typeof rows).sort((a, b) => (b.blockNumber || 0) - (a.blockNumber || 0));
           console.log("[poll] sorted", sorted[0]);
-          if (sorted[0].status === "active") setPassRequest(sorted[0]);
+          if (sorted[0].status === "active") {
+            setPassRequest(sorted[0]);
+            return;
+          }
+          // if attest returned active but DB still pending (eventual consistency), retry quickly
+          if (attestOk) {
+            setTimeout(async () => {
+              try {
+                const r2 = await client.models.PassRequest.byUserProfile({ userProfileId: pid }).catch(async () => client.models.PassRequest.list({ filter: { userProfileId: { eq: pid } } }));
+                const rows2 = (r2.data as unknown as typeof rows) || [];
+                const s2 = (JSON.parse(JSON.stringify(rows2)) as typeof rows).sort((a, b) => (b.blockNumber || 0) - (a.blockNumber || 0));
+                if (s2[0]?.status === "active") setPassRequest(s2[0]);
+              } catch {}
+            }, 2000);
+          }
         }
       } catch (e) {
         console.warn("[poll] failed", e);
