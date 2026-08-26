@@ -34,7 +34,8 @@ export default function Navbar() {
 
         <div className="hidden md:flex items-center gap-8 text-sm text-muted">
           <a href="#products" className="hover:text-white transition-colors">How it works</a>
-          <a href="#why" className="hover:text-white transition-colors">Why AttestGO</a>
+          <a href="/app/identity" className="hover:text-white transition-colors">Identity</a>
+          <a href="/app/defi" className="hover:text-white transition-colors">Earn</a>
           <a href="#" className="hover:text-white transition-colors">Docs</a>
           <a href="https://github.com/tamago-labs/attestgo-project" target="_blank" rel="noopener" className="hover:text-white transition-colors">GitHub</a>
         </div>
@@ -60,10 +61,11 @@ export default function Navbar() {
       {open && (
         <div className="md:hidden border-t border-border bg-canvas/95 backdrop-blur-md">
           <div className="px-4 py-3 space-y-1">
-            <a onClick={() => setOpen(false)} href="#" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">Protocol</a>
-            <a onClick={() => setOpen(false)} href="#" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">Verification</a>
+            <a onClick={() => setOpen(false)} href="#products" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">How it works</a>
+            <a onClick={() => setOpen(false)} href="/app/identity" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">Identity</a>
+            <a onClick={() => setOpen(false)} href="/app/defi" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">Earn</a>
             <a onClick={() => setOpen(false)} href="#" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">Docs</a>
-            <a onClick={() => setOpen(false)} href="#" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">GitHub</a>
+            <a onClick={() => setOpen(false)} href="https://github.com/tamago-labs/attestgo-project" target="_blank" rel="noopener" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">GitHub</a>
           </div>
         </div>
       )}

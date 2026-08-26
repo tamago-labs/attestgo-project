@@ -112,7 +112,7 @@ export default function Hero() {
           </h1>
 
           <p className="mt-6 text-sm sm:text-lg text-muted max-w-2xl leading-relaxed">
-            AttestGO connects verified identity, compliant assets, and payment flows across networks, using <span className="glow-text font-medium">Attestcoin Protocol</span> to make every transaction provable and auditable, with AI turning every payment into a human-readable inbox.
+            AttestGO connects verified identity, compliant assets, payments and DeFi across networks, using <span className="glow-text font-medium">Attestcoin Protocol</span> to make every transaction provable and auditable, with AI turning every payment into a human-readable inbox.
           </p>
 
           <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 sm:gap-4">
