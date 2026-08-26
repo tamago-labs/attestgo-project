@@ -18,6 +18,32 @@ const FACTORY_ABI = [
 const GTOKEN_ABI = ["function decimals() view returns (uint8)"] as const;
 const ZERO = "0x0000000000000000000000000000000000000000";
 
+const COUNTRY_BIT: Record<string, number> = { US: 0, SG: 1, JP: 2, HK: 3, DE: 4, CN: 5, GB: 6, FR: 7, AE: 8, CH: 9 };
+const BIT_COUNTRY: Record<number, string> = Object.fromEntries(Object.entries(COUNTRY_BIT).map(([k, v]) => [v, k.toLowerCase()]));
+
+function bitmapFromCodes(codes: string[]): bigint {
+  let b = 0n;
+  for (const c of codes) {
+    const uc = c.trim().toUpperCase();
+    const bit = COUNTRY_BIT[uc];
+    if (bit === undefined) throw new Error(`unknown country code: ${c} (allowed: ${Object.keys(COUNTRY_BIT).join(", ")})`);
+    b |= 1n << BigInt(bit);
+  }
+  if (b === 0n) throw new Error("countries must contain at least one code");
+  return b;
+}
+function codesFromBitmap(bmp: string | bigint): string[] {
+  const b = typeof bmp === "string" ? BigInt(bmp) : bmp;
+  const out: string[] = [];
+  for (const [code, bit] of Object.entries(COUNTRY_BIT)) {
+    if ((b & (1n << BigInt(bit))) !== 0n) out.push(code.toLowerCase());
+  }
+  return out;
+}
+function withCountries<T extends { ruleBitmap?: string }>(items: T[]): (T & { countries: string[] })[] {
+  return (items || []).map((it) => ({ ...it, countries: codesFromBitmap((it as any).ruleBitmap || "0") }));
+}
+
 function json(statusCode: number, body: unknown) {
   return {
     statusCode,
@@ -40,14 +66,42 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     };
   }
 
-  // separate API key check — not the Amplify Data apiKey
+  // GET /tokens public read — no platform key required (mirrors Data public read)
+  if (event.httpMethod === "GET") {
+    const qs = event.queryStringParameters || {};
+    const issuerQ = String(qs.issuer || qs.address || "").trim().toLowerCase();
+    const limit = Math.min(Math.max(Number(qs.limit || 50), 1), 100);
+    const nextToken = (qs.nextToken as string) || undefined;
+    if (issuerQ) {
+      if (!ethers.isAddress(issuerQ)) return json(400, { error: "issuer query must be valid address" });
+      try {
+        const { data, nextToken: nt } = (await (client.models.TokenRecord as any).listByIssuer(
+          { issuer: issuerQ },
+          { limit, nextToken }
+        )) as any;
+        return json(200, { items: withCountries(data || []), nextToken: nt || null, count: (data || []).length });
+      } catch (e: any) {
+        console.error("[listByIssuer] err", e);
+        return json(500, { error: String(e?.message || e).slice(0, 500) });
+      }
+    }
+    // list all (fallback) — scan via list with limit
+    try {
+      const { data, nextToken: nt } = (await (client.models.TokenRecord as any).list({ limit, nextToken })) as any;
+      return json(200, { items: withCountries(data || []), nextToken: nt || null, count: (data || []).length });
+    } catch (e: any) {
+      return json(500, { error: String(e?.message || e).slice(0, 500) });
+    }
+  }
+
+  // separate API key check — not the Amplify Data apiKey (POST only)
   const headers = Object.fromEntries(Object.entries(event.headers || {}).map(([k, v]) => [k.toLowerCase(), String(v || "")]));
   const provided = headers["x-platform-api-key"] || headers["x-api-key"] || headers["authorization"]?.replace(/^Bearer\s+/i, "") || "";
   const expected = (env.PLATFORM_API_KEY as string) || "";
   if (!expected) return json(500, { error: "PLATFORM_API_KEY not configured" });
   if (!provided || provided !== expected) return json(401, { error: "unauthorized: invalid platform api key" });
 
-  if (event.httpMethod !== "POST") return json(405, { error: "method not allowed, use POST" });
+  if (event.httpMethod !== "POST") return json(405, { error: "method not allowed, use GET or POST" });
 
   let body: any;
   try {
@@ -60,7 +114,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   const name: string = String(body.name || "").trim();
   const symbol: string = String(body.symbol || "").trim();
   const minTier = Number(body.minTier ?? body.min_tier ?? 10);
-  const countriesBitmapStr: string = String(body.countriesBitmap ?? body.bitmap ?? "1");
   const iconURI: string = String(body.iconURI || "https://icons.test/tbill.svg");
   const underlying: string = body.underlying ? String(body.underlying).trim() : ZERO;
   const factoryAddr = (env.FACTORY_ADDR as string) || ZERO;
@@ -69,11 +122,43 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   if (!ethers.isAddress(issuer)) return json(400, { error: "issuer must be valid address" });
   if (!name || !symbol) return json(400, { error: "name and symbol required" });
   if (!Number.isFinite(minTier) || minTier < 0 || minTier > 255) return json(400, { error: "minTier 0..255" });
+  // countries: friendly ["us","sg"] preferred; fallback to countriesBitmap for backward compat
   let bitmap: bigint;
-  try {
-    bitmap = BigInt(countriesBitmapStr);
-  } catch {
-    return json(400, { error: "countriesBitmap must be integer string (bigint)" });
+  let countries: string[] = [];
+  const rawCountries = body.countries ?? body.countryCodes ?? body.allowedCountries ?? null;
+  if (Array.isArray(rawCountries)) {
+    try {
+      bitmap = bitmapFromCodes(rawCountries);
+      countries = rawCountries.map((c: string) => String(c).toLowerCase());
+    } catch (e: any) {
+      return json(400, { error: String(e.message || e).slice(0, 400) });
+    }
+  } else if (typeof body.countries === "string") {
+    // single string "us,sg"
+    const arr = String(body.countries)
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    try {
+      bitmap = bitmapFromCodes(arr);
+      countries = arr.map((c) => c.toLowerCase());
+    } catch (e: any) {
+      return json(400, { error: String(e.message || e).slice(0, 400) });
+    }
+  } else {
+    const countriesBitmapStr: string = String(body.countriesBitmap ?? body.bitmap ?? "");
+    if (countriesBitmapStr) {
+      try {
+        bitmap = BigInt(countriesBitmapStr);
+        countries = codesFromBitmap(bitmap);
+      } catch {
+        return json(400, { error: "countriesBitmap must be integer string (bigint), or use countries: [\"us\",\"sg\"]" });
+      }
+    } else {
+      // default US
+      bitmap = 1n;
+      countries = ["us"];
+    }
   }
   const underlyingAddr = underlying && underlying !== "" ? underlying : ZERO;
   const isWrapped = underlyingAddr.toLowerCase() !== ZERO.toLowerCase();
@@ -229,6 +314,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       decimals,
       underlying: isWrapped ? underlyingAddr.toLowerCase() : ZERO,
       isWrapped,
+      countries,
+      countriesBitmap: bitmap.toString(),
       txHash: tx.hash,
       blockNumber,
       pending: true,

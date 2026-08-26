@@ -27,8 +27,11 @@ const api = new apigateway.RestApi(apiStack, 'TokenRestApi', {
 });
 const tokens = api.root.addResource('tokens');
 tokens.addMethod('POST', new apigateway.LambdaIntegration(backend.createGToken.resources.lambda));
+tokens.addMethod('GET', new apigateway.LambdaIntegration(backend.createGToken.resources.lambda));
 // also support POST /createGToken alias
-api.root.addResource('createGToken').addMethod('POST', new apigateway.LambdaIntegration(backend.createGToken.resources.lambda));
+const cgt = api.root.addResource('createGToken');
+cgt.addMethod('POST', new apigateway.LambdaIntegration(backend.createGToken.resources.lambda));
+cgt.addMethod('GET', new apigateway.LambdaIntegration(backend.createGToken.resources.lambda));
 
 backend.addOutput({
   custom: {

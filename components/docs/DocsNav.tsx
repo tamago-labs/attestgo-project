@@ -8,7 +8,6 @@ const items = [
   { id: "quickstart", label: "Quickstart" },
   { id: "auth", label: "Authentication" },
   { id: "endpoints", label: "Endpoints" },
-  { id: "model", label: "Data model" },
   { id: "networks", label: "Networks" },
   { id: "errors", label: "Errors" },
 ];
@@ -42,14 +41,6 @@ export default function DocsNav() {
           {it.label}
         </a>
       ))}
-      <div className="pt-4 mt-4 border-t border-border space-y-2">
-        <a href="https://github.com/tamago-labs/attestgo-project" target="_blank" rel="noopener" className="flex items-center gap-2 text-muted hover:text-white text-xs">
-          <span className="w-2 h-2 rounded-full bg-emerald-400" /> GitHub
-        </a>
-        <a href="/app" className="flex items-center gap-2 text-muted hover:text-white text-xs">
-          Launch app →
-        </a>
-      </div>
     </nav>
   );
 }
