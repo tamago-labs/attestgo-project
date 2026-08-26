@@ -79,7 +79,7 @@ export const handler: Schema["attestPass"]["functionHandler"] = async (event) =>
   );
   console.log("[attestPass] sync", tx1.hash);
   try {
-    await tx1.wait(1, 60000);
+    await tx1.wait(1, 120000);
   } catch (e) {
     console.warn("[attestPass] sync wait timeout/err", e);
   }
@@ -88,7 +88,7 @@ export const handler: Schema["attestPass"]["functionHandler"] = async (event) =>
   const tx2 = await (gopassOwner as any).setActive(walletAddress, true);
   console.log("[attestPass] active", tx2.hash);
   try {
-    await tx2.wait(1, 60000);
+    await tx2.wait(1, 120000);
   } catch (e) {
     console.warn("[attestPass] active wait timeout/err", e);
   }
