@@ -153,7 +153,7 @@ export default function RegisterPage() {
 
       <div>
         <h1 className="font-display font-semibold text-2xl text-white">Register GO Pass</h1>
-        <p className="mt-1 text-sm text-muted">Get verified for compliant transfers and borrowing — one pass for every chain.</p>
+        <p className="mt-1 text-sm text-muted">Your universal identity for onchain finance.</p>
       </div>
 
       {step === "form" && (
