@@ -64,7 +64,7 @@ export default function IdentityPage() {
           rows = (res.data as unknown as typeof rows) || null;
         }
         if (rows && (rows as unknown as { length: number }).length > 0) {
-          const sorted = [...(rows as unknown as { status: string; txHash: string; blockNumber: number }[])].sort((a, b) => (b.blockNumber || 0) - (a.blockNumber || 0));
+          const sorted = (JSON.parse(JSON.stringify(rows)) as { status: string; txHash: string; blockNumber: number }[]).sort((a, b) => (b.blockNumber || 0) - (a.blockNumber || 0));
           setPassRequest(sorted[0]);
         } else {
           setPassRequest(null);
@@ -111,7 +111,7 @@ export default function IdentityPage() {
         console.log("[poll] PassRequest rows", res.data);
         const rows = (res.data as unknown as { status: string; txHash: string; blockNumber: number }[]) || [];
         if (!cancelled && rows.length > 0) {
-          const sorted = [...rows].sort((a, b) => (b.blockNumber || 0) - (a.blockNumber || 0));
+          const sorted = (JSON.parse(JSON.stringify(rows)) as typeof rows).sort((a, b) => (b.blockNumber || 0) - (a.blockNumber || 0));
           console.log("[poll] sorted", sorted[0]);
           if (sorted[0].status === "active") setPassRequest(sorted[0]);
         }
