@@ -1,5 +1,6 @@
 import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
 import { mintPass } from "../functions/mintPass/resource";
+import { attestPass } from "../functions/attestPass/resource";
 
 const schema = a.schema({
   UserProfile: a
@@ -33,7 +34,14 @@ const schema = a.schema({
     .returns(a.json())
     .handler(a.handler.function(mintPass))
     .authorization((allow) => [allow.publicApiKey()]),
-}).authorization((allow) => [allow.resource(mintPass)]);
+
+  attestPass: a
+    .mutation()
+    .arguments({ userProfileId: a.id().required() })
+    .returns(a.json())
+    .handler(a.handler.function(attestPass))
+    .authorization((allow) => [allow.publicApiKey()]),
+}).authorization((allow) => [allow.resource(mintPass), allow.resource(attestPass)]);
 
 export type Schema = ClientSchema<typeof schema>;
 

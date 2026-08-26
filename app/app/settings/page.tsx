@@ -79,11 +79,11 @@ export default function SettingsPage() {
               {shortAddr(address)} {copied ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
             </button>
           </div>
-          <div className="ml-auto flex items-center gap-1.5 shrink-0">
+          <div className="ml-auto flex flex-col items-end gap-1 shrink-0">
             {profile ? (
               <>
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-[10px] font-medium text-emerald-300">
-                  <Check size={10} /> Verified
+                  <Check size={10} /> Signature Verified
                 </span>
                 <span className="px-1.5 py-0.5 rounded-full border border-white/10 bg-white/5 text-[10px] font-mono text-white/60">
                   {country}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ShieldCheck, Trash2, Copy, ExternalLink, Clock, Globe, BadgeCheck, QrCode, RefreshCw, UserRoundX } from "lucide-react";
+import { ShieldCheck, Trash2, Copy, ExternalLink, Clock, Globe, BadgeCheck, QrCode, RefreshCw, UserRoundX, Check } from "lucide-react";
 import GOPassCard from "@/components/app/GOPassCard";
 import ButtonGlow from "@/components/ui/ButtonGlow";
 import { useWallet } from "@/components/app/WalletContext";
@@ -19,14 +19,16 @@ export default function IdentityPage() {
   const router = useRouter();
   const [pass, setPass] = useState<MockPass | null>(null);
   const [profileName, setProfileName] = useState<string>("");
+  const [profileCountry, setProfileCountry] = useState<string>("");
+  const [passRequest, setPassRequest] = useState<{ status: string; txHash: string; blockNumber: number } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [countdown, setCountdown] = useState(30);
 
   useEffect(() => {
     setPass(loadMockPass());
     const onStorage = () => setPass(loadMockPass());
     window.addEventListener("storage", onStorage);
-    // also poll for same-tab updates after register
     const id = setInterval(() => setPass(loadMockPass()), 800);
     return () => {
       window.removeEventListener("storage", onStorage);
@@ -37,12 +39,100 @@ export default function IdentityPage() {
   useEffect(() => {
     if (!address) {
       setProfileName("");
+      setProfileCountry("");
+      setPassRequest(null);
       return;
     }
-    loadProfile(address).then((p) => setProfileName(p?.displayName || ""));
+    loadProfile(address).then(async (p) => {
+      setProfileName(p?.displayName || "");
+      setProfileCountry(p?.country || "");
+      if (!p) {
+        setPassRequest(null);
+        return;
+      }
+      try {
+        const { generateClient } = await import("aws-amplify/data");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const client: any = generateClient<any>();
+        const pid = (p as unknown as { id: string }).id;
+        let rows: { status: string; txHash: string; blockNumber: number }[] | null = null;
+        try {
+          const res: { data: unknown } = await client.models.PassRequest.byUserProfile({ userProfileId: pid });
+          rows = res.data as unknown as typeof rows;
+        } catch {
+          const res: { data: unknown } = await client.models.PassRequest.list({ filter: { userProfileId: { eq: pid } } });
+          rows = (res.data as unknown as typeof rows) || null;
+        }
+        if (rows && (rows as unknown as { length: number }).length > 0) {
+          const sorted = [...(rows as unknown as { status: string; txHash: string; blockNumber: number }[])].sort((a, b) => (b.blockNumber || 0) - (a.blockNumber || 0));
+          setPassRequest(sorted[0]);
+        } else {
+          setPassRequest(null);
+        }
+      } catch {
+        setPassRequest(null);
+      }
+    });
   }, [address]);
 
-  const hasPass = !!pass;
+  useEffect(() => {
+    if (!passRequest || passRequest.status === "active") return;
+    const id = setInterval(() => {
+      setCountdown((c) => (c <= 1 ? 30 : c - 1));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [passRequest]);
+
+  // polling PassRequest pending -> active via attestPass
+  useEffect(() => {
+    if (!passRequest || passRequest.status === "active" || !address) return;
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const { generateClient } = await import("aws-amplify/data");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const client: any = generateClient<any>();
+        const pid = (await loadProfile(address))?.id;
+        if (!pid) return;
+        // trigger attestPass
+        try {
+          await client.mutations.attestPass({ userProfileId: pid });
+        } catch {}
+        // re-fetch status
+        const res = await client.models.PassRequest.byUserProfile({ userProfileId: pid }).catch(async () => {
+          return client.models.PassRequest.list({ filter: { userProfileId: { eq: pid } } });
+        });
+        const rows = (res.data as unknown as { status: string; txHash: string; blockNumber: number }[]) || [];
+        if (!cancelled && rows.length > 0) {
+          const sorted = [...rows].sort((a, b) => (b.blockNumber || 0) - (a.blockNumber || 0));
+          if (sorted[0].status === "active") setPassRequest(sorted[0]);
+        }
+      } catch {}
+    };
+    const iid = setInterval(poll, 8000);
+    // also trigger once after countdown hits 0
+    const onCountdownZero = setInterval(() => {
+      if (countdown === 1) poll();
+    }, 1000);
+    return () => {
+      cancelled = true;
+      clearInterval(iid);
+      clearInterval(onCountdownZero);
+    };
+  }, [passRequest, address, countdown]);
+
+  const hasPass = !!pass || !!passRequest;
+  const displayPass = passRequest
+    ? {
+        wallet: address || "",
+        country: profileCountry || "US",
+        tier: 10,
+        status: passRequest.status === "active" ? ("Active" as const) : ("Pending" as const),
+        customerId: pass?.customerId || "",
+        customerIdHash: pass?.customerIdHash || "",
+        expiry: pass?.expiry || Math.floor(Date.now() / 1000) + 365 * 86400,
+      }
+    : pass;
 
   const handleDelete = () => {
     deleteMockPass();
@@ -58,23 +148,23 @@ export default function IdentityPage() {
     } catch {}
   };
 
-  const verifiedUntil = pass ? new Date(pass.expiry * 1000).toLocaleDateString("en-US", { month: "2-digit", year: "2-digit" }) : "—";
-  const expiryLabel = pass ? new Date(pass.expiry * 1000).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : undefined;
+  const verifiedUntil = displayPass ? new Date(displayPass.expiry * 1000).toLocaleDateString("en-US", { month: "2-digit", year: "2-digit" }) : "—";
+  const expiryLabel = displayPass ? new Date(displayPass.expiry * 1000).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : undefined;
 
   return (
     <div className="max-w-2xl mx-auto w-full px-2 sm:px-0 py-2 space-y-6">
       {/* Card */}
       <div className="w-full max-w-[420px] mx-auto">
-        {hasPass && pass ? (
+        {hasPass && displayPass ? (
           <GOPassCard
-            wallet={pass.wallet}
-            country={pass.country}
+            wallet={displayPass.wallet}
+            country={displayPass.country}
             group=""
             verifiedUntil={verifiedUntil}
             expiryLabel={expiryLabel}
-            status={pass.status}
-            tierLabel={pass.tier >= 20 ? "Gold" : "Silver"}
-            name={(profileName || shortAddr(pass.wallet)).toUpperCase()}
+            status={displayPass.status}
+            tierLabel={displayPass.tier >= 20 ? "Gold" : "Silver"}
+            name={(profileName || shortAddr(displayPass.wallet)).toUpperCase()}
           />
         ) : (
           <div className="relative aspect-[1.586/1] rounded-2xl border border-dashed border-white/15 bg-panel/40 flex flex-col items-center justify-center p-6 text-center">
@@ -100,74 +190,58 @@ export default function IdentityPage() {
       </div>
 
       {/* Actions when no pass already covered; when has pass show list */}
-      {hasPass && pass ? (
+      {hasPass && displayPass ? (
         <>
-          {/* Menu list */}
-          <div className="rounded-xl border border-border bg-panel overflow-hidden divide-y divide-border">
-            <div className="px-4 py-3 flex items-center justify-between hover:bg-white/[0.03] transition-colors">
-              <div className="flex items-center gap-3">
-                <Globe size={16} className="text-muted" />
-                <div>
-                  <div className="text-sm text-white">Country</div>
-                  <div className="text-xs text-muted">Single country per wallet — soulbound</div>
-                </div>
-              </div>
-              <span className="text-sm font-mono text-white/80">{pass.country}</span>
-            </div>
-
-            <div className="px-4 py-3 flex items-center justify-between hover:bg-white/[0.03] transition-colors">
-              <div className="flex items-center gap-3">
-                <BadgeCheck size={16} className="text-muted" />
-                <div>
-                  <div className="text-sm text-white">Tier</div>
-                  <div className="text-xs text-muted">min_tier 10 to pass gToken</div>
-                </div>
-              </div>
-              <span className="text-sm font-mono text-white/80">{pass.tier}</span>
-            </div>
-
-            <div className="px-4 py-3 flex items-center justify-between hover:bg-white/[0.03] transition-colors">
-              <div className="flex items-center gap-3">
-                <Clock size={16} className="text-muted" />
-                <div>
-                  <div className="text-sm text-white">Customer ID</div>
-                  <div className="text-xs text-muted font-mono truncate max-w-[18ch]">{pass.customerId}</div>
-                </div>
-              </div>
-              <button onClick={() => handleCopy(pass.customerIdHash)} className="text-xs text-muted hover:text-white inline-flex items-center gap-1">
-                <Copy size={12} /> hash
-              </button>
-            </div>
-
-            <button
-              onClick={() => handleCopy(pass.wallet)}
-              className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/[0.03] transition-colors text-left"
-            >
-              <span className="flex items-center gap-3">
-                <QrCode size={16} className="text-muted" />
-                <span className="text-sm text-white">Wallet / QR</span>
-              </span>
-              <span className="text-xs text-muted inline-flex items-center gap-1">
-                {shortAddr(pass.wallet)} <ExternalLink size={12} />
-              </span>
-            </button>
-
-            <div className="px-4 py-2 flex items-center gap-2 bg-canvas/50">
-              <Link href="/app/identity/register" className="flex-1">
-                <span className="w-full inline-flex justify-center items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-white/5 hover:bg-white/10 text-sm text-white transition-colors">
-                  <RefreshCw size={14} /> Reissue
+          {passRequest && passRequest.status !== "active" && (
+            <div className="rounded-xl border border-border bg-panel p-4 space-y-3">
+              {/* Step 1 */}
+              <div className="flex gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+                  <Check size={12} />
                 </span>
-              </Link>
-              <button
-                onClick={() => setConfirmDelete(true)}
-                className="flex-1 inline-flex justify-center items-center gap-1.5 px-3 py-2 rounded-lg border border-red-500/20 bg-red-500/10 hover:bg-red-500/20 text-sm text-red-300 transition-colors"
-              >
-                <Trash2 size={14} /> Delete pass
-              </button>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-white">Completed mint on Sepolia</div>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="text-xs font-mono text-muted">{shortAddr(passRequest.txHash)}</span>
+                    <a href={`https://sepolia.etherscan.io/tx/${passRequest.txHash}`} target="_blank" rel="noopener noreferrer" className="text-xs text-amber hover:text-white inline-flex items-center gap-1 shrink-0">
+                      View <ExternalLink size={10} />
+                    </a>
+                  </div>
+                </div>
+              </div>
+              {/* Step 2 */}
+              <div className="flex gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber/15 border-amber/20 text-amber">
+                  <Clock size={12} />
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-white">Waiting for attestation to Creditcoin</div>
+                  <div className="mt-1 text-xs text-muted">Polling… {countdown}s</div>
+                </div>
+              </div>
+              {/* Step 3 */}
+              <div className="flex gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/5 border-white/10 text-white/30">
+                  <span className="text-xs">3</span>
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-white/40">Your pass is ready</div>
+                  <div className="mt-1 text-xs text-muted">Waiting for activation</div>
+                </div>
+              </div>
             </div>
-          </div>
-
-          <p className="text-[11px] text-white/30 text-center">Delete removes local mock only. On-chain burn is owner-only via GOPass.burn.</p>
+          )}
+          {passRequest && passRequest.status === "active" && (
+            <div className="rounded-xl border border-border bg-panel p-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-medium border border-emerald-500/20 bg-emerald-500/10 text-emerald-300">active</span>
+                <span className="text-xs font-mono text-muted">{shortAddr(passRequest.txHash)}</span>
+              </div>
+              <a href={`https://sepolia.etherscan.io/tx/${passRequest.txHash}`} target="_blank" rel="noopener noreferrer" className="text-xs text-amber hover:text-white inline-flex items-center gap-1">
+                View <ExternalLink size={10} />
+              </a>
+            </div>
+          )}
         </>
       ) : (
         <div className="rounded-xl border border-border bg-panel p-4">

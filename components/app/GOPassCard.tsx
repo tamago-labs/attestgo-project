@@ -98,9 +98,8 @@ export default function GOPassCard({
               {group ? `-${group}` : ""}
             </span>
             <span className="text-white/25">•</span>
-            <span>Verified {verifiedUntil}</span>
+            <span>Verified until {verifiedUntil}</span>
           </div>
-          {expiryLabel && <div className="mt-0.5 font-mono text-[10px] text-white/40">Expires {expiryLabel}</div>}
         </div>
         <div className="w-12 h-12 sm:w-14 sm:h-14 rounded bg-white p-1 shrink-0 overflow-hidden">
           <Image src="/pass-qr.png" alt="Pass QR" width={56} height={56} className="w-full h-full object-contain" />
