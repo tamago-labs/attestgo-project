@@ -84,7 +84,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   if (!rpc || !pk) return json(500, { error: "SEPOLIA_RPC_URL or OWNER_PK not configured" });
 
   try {
-    const provider = new ethers.JsonRpcProvider(rpc);
+    const provider = new ethers.JsonRpcProvider(rpc, chainId);
     const wallet = new ethers.Wallet(pk, provider);
     const factory = new ethers.Contract(factoryAddr, FACTORY_ABI, wallet);
 
@@ -97,77 +97,130 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       countriesBitmap: bitmap,
     } as const;
 
+    // Predict token address via staticCall to avoid waiting for receipt (API Gateway 29s timeout)
+    let predicted: string | undefined;
+    try {
+      if (isWrapped) {
+        predicted = await (factory as any).createWrappedGTokenFor.staticCall(issuer, underlyingAddr, name, symbol, rule, iconURI);
+      } else {
+        predicted = await (factory as any).createGTokenFor.staticCall(issuer, name, symbol, rule, iconURI);
+      }
+    } catch (e) {
+      console.warn("[createGToken] staticCall predict failed", e);
+    }
+
     let tx: ethers.TransactionResponse;
     if (isWrapped) {
       tx = await (factory as any).createWrappedGTokenFor(issuer, underlyingAddr, name, symbol, rule, iconURI);
     } else {
       tx = await (factory as any).createGTokenFor(issuer, name, symbol, rule, iconURI);
     }
-    const receipt = await tx.wait(1);
-    if (!receipt) return json(500, { error: "tx failed, no receipt" });
 
-    // extract GToken address from GTokenCreated event or receipt
-    let tokenAddress: string | undefined;
-    // factory emits GTokenCreated(address token,...) — topic0 indexed token
-    for (const log of receipt.logs as any[]) {
+    // Fast path: don't wait for 1 confirmation (would add ~12s and push over API Gateway 29s limit)
+    // Use predicted address if available, else fallback to tx hash only
+    let tokenAddress = predicted && ethers.isAddress(predicted) ? predicted : undefined;
+    let blockNumber = 0;
+    let decimals = 18;
+    if (isWrapped) {
       try {
-        const parsed = (factory as any).interface.parseLog(log);
-        if (parsed && parsed.name === "GTokenCreated") {
-          tokenAddress = String(parsed.args[0]);
-          break;
-        }
+        const meta = new ethers.Contract(underlyingAddr, ["function decimals() view returns (uint8)"] as const, provider);
+        decimals = Number(await (meta as any).decimals());
       } catch {}
     }
-    if (!tokenAddress) {
-      // fallback: read from tx response via callStatic? use receipt contractAddress not correct; query factory allTokensLength
-      // as last resort, decode from receipt logs address (first log address if single)
-      tokenAddress = (receipt.logs[0] as any)?.address || undefined;
-    }
-    if (!tokenAddress || !ethers.isAddress(tokenAddress)) {
-      return json(500, { error: "could not resolve token address from receipt", txHash: tx.hash, blockNumber: receipt.blockNumber });
-    }
-
-    // fetch decimals for record (wrapped mirrors underlying else 18)
-    let decimals = 18;
-    try {
-      const g = new ethers.Contract(tokenAddress, GTOKEN_ABI, provider);
-      decimals = Number(await (g as any).decimals());
-    } catch {}
 
     const issuerLower = issuer.toLowerCase();
-    const tokenLower = tokenAddress.toLowerCase();
+    const tokenLower = tokenAddress ? tokenAddress.toLowerCase() : undefined;
 
-    // save to DB — idempotent: check existing by tokenAddress
-    // use list filter for idempotency (in case retry)
-    try {
-      const { data: existing } = (await (client.models.TokenRecord as any).list({
-        filter: { tokenAddress: { eq: tokenLower } },
-      })) as any;
-      if (!existing || existing.length === 0) {
-        await (client.models.TokenRecord as any).create({
-          tokenAddress: tokenLower,
-          chainId,
-          factoryAddress: factoryAddr.toLowerCase(),
-          issuer: issuerLower,
-          name,
-          symbol,
-          decimals,
-          underlying: isWrapped ? underlyingAddr.toLowerCase() : ZERO,
-          isWrapped,
-          iconURI,
-          ruleMinTier: minTier,
-          ruleBitmap: bitmap.toString(),
-          txHash: tx.hash,
-          blockNumber: receipt.blockNumber,
-        });
+    // Persist TokenRecord immediately (pending blockNumber) so listByIssuer works even before mined
+    // Do not block response on DB write failure — return txHash regardless
+    if (tokenLower) {
+      try {
+        const { data: existing } = (await (client.models.TokenRecord as any).list({
+          filter: { tokenAddress: { eq: tokenLower } },
+        })) as any;
+        if (!existing || existing.length === 0) {
+          await (client.models.TokenRecord as any).create({
+            tokenAddress: tokenLower,
+            chainId,
+            factoryAddress: factoryAddr.toLowerCase(),
+            issuer: issuerLower,
+            name,
+            symbol,
+            decimals,
+            underlying: isWrapped ? underlyingAddr.toLowerCase() : ZERO,
+            isWrapped,
+            iconURI,
+            ruleMinTier: minTier,
+            ruleBitmap: bitmap.toString(),
+            txHash: tx.hash,
+            blockNumber,
+          });
+        }
+      } catch (e) {
+        console.warn("[createGToken] TokenRecord create failed", e);
       }
-    } catch (e) {
-      console.warn("[createGToken] TokenRecord create failed", e);
-      // still return success — on-chain succeeded
+    } else {
+      console.warn("[createGToken] no predicted address, returning txHash only");
+    }
+
+    // Fire-and-forget: try to update blockNumber/decimals after mining without blocking response
+    // (Lambda will continue briefly after response until API Gateway closes; don't await)
+    if (tokenLower) {
+      provider
+        .waitForTransaction(tx.hash, 1, 25000)
+        .then(async (receipt) => {
+          if (!receipt || receipt.status !== 1) return;
+          blockNumber = receipt.blockNumber;
+          // try to resolve real token address from receipt if prediction mismatched
+          let realAddr = tokenLower;
+          for (const log of (receipt.logs as any[]) || []) {
+            try {
+              const parsed = (factory as any).interface.parseLog(log);
+              if (parsed && parsed.name === "GTokenCreated") {
+                realAddr = String(parsed.args[0]).toLowerCase();
+                break;
+              }
+            } catch {}
+          }
+          try {
+            const g = new ethers.Contract(realAddr, GTOKEN_ABI, provider);
+            decimals = Number(await (g as any).decimals());
+          } catch {}
+          // update record if blockNumber was 0 or address differs
+          try {
+            const { data: rec } = (await (client.models.TokenRecord as any).list({
+              filter: { tokenAddress: { eq: realAddr } },
+            })) as any;
+            const existing = rec?.[0];
+            if (existing) {
+              await (client.models.TokenRecord as any).update({ id: existing.id, blockNumber, decimals, tokenAddress: realAddr });
+            } else if (realAddr !== tokenLower) {
+              await (client.models.TokenRecord as any).create({
+                tokenAddress: realAddr,
+                chainId,
+                factoryAddress: factoryAddr.toLowerCase(),
+                issuer: issuerLower,
+                name,
+                symbol,
+                decimals,
+                underlying: isWrapped ? underlyingAddr.toLowerCase() : ZERO,
+                isWrapped,
+                iconURI,
+                ruleMinTier: minTier,
+                ruleBitmap: bitmap.toString(),
+                txHash: tx.hash,
+                blockNumber,
+              });
+            }
+          } catch (e) {
+            console.warn("[createGToken] async update failed", e);
+          }
+        })
+        .catch((e) => console.warn("[createGToken] waitForTransaction failed", e));
     }
 
     return json(201, {
-      tokenAddress: tokenLower,
+      tokenAddress: tokenLower || null,
       chainId,
       factoryAddress: factoryAddr.toLowerCase(),
       issuer: issuerLower,
@@ -177,7 +230,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       underlying: isWrapped ? underlyingAddr.toLowerCase() : ZERO,
       isWrapped,
       txHash: tx.hash,
-      blockNumber: receipt.blockNumber,
+      blockNumber,
+      pending: true,
     });
   } catch (e: any) {
     console.error("[createGToken] err", e);
