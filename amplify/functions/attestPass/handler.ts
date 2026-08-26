@@ -1,7 +1,7 @@
-import type { Schema } from "../../data/resource";
 import { Amplify } from "aws-amplify";
 import { getAmplifyDataClientConfig } from "@aws-amplify/backend/function/runtime";
 import { generateClient } from "aws-amplify/data";
+import type { Schema } from "../../data/resource";
 import { env } from "$amplify/env/attestPass";
 import { ethers } from "ethers";
 import { proofProvider, blockProver } from "@gluwa/usc-sdk";
@@ -20,8 +20,8 @@ const REGISTRY_ABI = [
   "function syncPassWithTxProof(address wallet, tuple(uint8 tier,uint8 subTier,bytes2 group,bytes2 subGroup,uint256 countryBitmap,uint64 expiry,bool frozen,bool active,bytes32 customerIdHash,string kycSource) r, uint64 headerNumber, bytes txBytes, bytes32 merkleRoot, bytes32[] siblings, bytes32 lowerDigest, bytes32[] roots) external",
 ] as const;
 
-export const handler: Schema["attestPass"]["functionHandler"] = async (event) => {
-  const { userProfileId } = event.arguments as { userProfileId: string };
+export const handler = async (event: { arguments: { userProfileId: string } }) => {
+  const { userProfileId } = event.arguments;
   if (!userProfileId) throw new Error("userProfileId required");
 
   const { data: profile } = await client.models.UserProfile.get({ id: userProfileId });
@@ -33,7 +33,7 @@ export const handler: Schema["attestPass"]["functionHandler"] = async (event) =>
   });
   const req = (rows as unknown as { id: string; txHash: string; blockNumber: number; status: string }[])?.[0];
   if (!req) throw new Error("PassRequest not found");
-  if (req.status === "active") return { status: "active", txHash: req.txHash } as unknown as ReturnType<Schema["attestPass"]["functionHandler"]>;
+  if (req.status === "active") return { status: "active", txHash: req.txHash };
 
   const walletAddress = (profile as unknown as { walletAddress: string }).walletAddress;
 
@@ -44,7 +44,7 @@ export const handler: Schema["attestPass"]["functionHandler"] = async (event) =>
   const record = await (hub as unknown as { getRecord: (a: string) => Promise<unknown> }).getRecord(walletAddress);
 
   const txHash = req.txHash;
-  const builder = new proofProvider.service.ProofBuilder(1, env.SEPOLIA_RPC_URL as string, env.PROOF_BUILDER_URL as string);
+  const builder = new proofProvider.service.ProofBuilder(1, env.PROOF_BUILDER_URL as string);
 
   const tx = await sepolia.getTransaction(txHash);
   if (!tx?.blockNumber) throw new Error(`tx ${txHash} not found on Sepolia`);
@@ -60,15 +60,14 @@ export const handler: Schema["attestPass"]["functionHandler"] = async (event) =>
   const d = res.data as unknown as { headerNumber: number; chainKey: number; txBytes: string; merkleProof: { root: string; siblings: { hash: string }[] }; continuityProof: { lowerEndpointDigest: string; roots: string[] } };
 
   const prover = new blockProver.PrecompileBlockProver(cc);
-  const ok = await prover.verifySingle(d.chainKey, d.headerNumber, d.txBytes, d.merkleProof as unknown as { root: string; siblings: string[] }, d.continuityProof as unknown as { lowerEndpointDigest: string; roots: string[] });
+  const ok = await prover.verifySingle(d.chainKey, d.headerNumber, d.txBytes, d.merkleProof, d.continuityProof);
   if (!ok) throw new Error("verifySingle failed");
 
-  // real on-chain registry sync via owner PK
   const pk = env.OWNER_PK as string;
   if (!pk) throw new Error("OWNER_PK not set");
   const owner = new ethers.Wallet(pk, cc);
   const registry = new ethers.Contract(env.GOPASS_REGISTRY_ADDR as string, REGISTRY_ABI, owner);
-  const txResp = await (registry as unknown as { syncPassWithTxProof: (...a: unknown[]) => Promise<ethers.TransactionResponse> }).syncPassWithTxProof(
+  await (registry as unknown as { syncPassWithTxProof: (...a: unknown[]) => Promise<ethers.TransactionResponse> }).syncPassWithTxProof(
     walletAddress,
     record,
     d.headerNumber,
@@ -79,11 +78,10 @@ export const handler: Schema["attestPass"]["functionHandler"] = async (event) =>
     d.continuityProof.roots
   );
 
-  // also activate on Sepolia hub (manual cast send equivalent) — no wait
   const gopassOwner = new ethers.Contract(env.GOPASS_ADDR as string, GOPASS_ABI, new ethers.Wallet(pk, sepolia));
   await (gopassOwner as unknown as { setActive: (a: string, b: boolean) => Promise<ethers.TransactionResponse> }).setActive(walletAddress, true);
 
   await client.models.PassRequest.update({ id: req.id, status: "active" });
 
-  return { status: "active", txHash } as unknown as ReturnType<Schema["attestPass"]["functionHandler"]>;
+  return { status: "active", txHash };
 };
