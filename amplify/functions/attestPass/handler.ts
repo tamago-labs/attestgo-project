@@ -57,7 +57,7 @@ export const handler = async (event: { arguments: { userProfileId: string } }) =
     }
     throw new Error(`Proof generation failed: ${(res as unknown as { error: string }).error}`);
   }
-  const d = res.data as unknown as { headerNumber: number; chainKey: number; txBytes: string; merkleProof: { root: string; siblings: { hash: string }[] }; continuityProof: { lowerEndpointDigest: string; roots: string[] } };
+  const d = res.data as unknown as { headerNumber: number; chainKey: number; txBytes: string; merkleProof: { root: string; siblings: { hash: string; isLeft: boolean }[] }; continuityProof: { lowerEndpointDigest: string; roots: string[] } };
 
   const prover = new blockProver.PrecompileBlockProver(cc);
   const ok = await prover.verifySingle(d.chainKey, d.headerNumber, d.txBytes, d.merkleProof, d.continuityProof);
