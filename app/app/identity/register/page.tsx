@@ -323,7 +323,7 @@ export default function RegisterPage() {
               </a>
             </div>
           )}
-          <div className="text-xs text-muted">Minting soulbound token • pending Creditcoin attestation</div>
+          <div className="text-xs text-muted">Minting your pass gas free, emitting the event that generates your proof</div>
         </div>
       )}
 

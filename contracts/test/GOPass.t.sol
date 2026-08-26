@@ -28,7 +28,7 @@ contract GOPassTest is Test {
             is_black_list: false,
             countriesBitmap: uint256(1) << 0 | uint256(1) << 1
         });
-        gtoken = new GToken("USD T-Bill", "USD-TBILL", address(hub), GToken.Rule(baseRule.allowed_group, baseRule.allowed_sub_group, baseRule.min_tier, baseRule.min_sub_tier, baseRule.is_black_list, baseRule.countriesBitmap), "https://icons.test/usd-tbill.svg");
+        gtoken = new GToken("USD T-Bill", "USD-TBILL", address(hub), GToken.Rule(baseRule.allowed_group, baseRule.allowed_sub_group, baseRule.min_tier, baseRule.min_sub_tier, baseRule.is_black_list, baseRule.countriesBitmap), "https://icons.test/usd-tbill.svg", address(0));
         gtoken.transferOwnership(owner);
         vm.prank(owner);
         hub.setWorker(owner);
