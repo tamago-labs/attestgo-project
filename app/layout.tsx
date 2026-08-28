@@ -19,7 +19,10 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AttestGO — The Compliance Layer for Onchain Finance Powered by Attestcoin Protocol",
+  title: {
+    default: "AttestGO — Compliance Layer for Onchain Finance",
+    template: "%s | AttestGO — Powered by Attestcoin",
+  },
   description:
     "AttestGO is the compliance layer for onchain finance — verified identity, compliant assets and AI composed inbox powered by Attestcoin Protocol.",
 };

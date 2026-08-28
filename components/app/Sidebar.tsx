@@ -18,7 +18,7 @@ const navItems = [
   { label: "Inbox", href: "/app", icon: Inbox },
   { label: "Identity", href: "/app/identity", icon: CreditCard },
   { label: "Send", href: "/app/send", icon: Send },
-  { label: "DeFi", href: "/app/defi", icon: HandCoins },
+  { label: "Earn", href: "/app/defi", icon: HandCoins },
   { label: "Discover", href: "/app/discover", icon: Compass },
   { label: "Settings", href: "/app/settings", icon: Settings },
 ];

@@ -23,7 +23,7 @@ export default function DocsPage() {
       {/* Hero */}
       <div className="space-y-4">
         <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-panel px-3 py-1 text-xs text-muted">
-          <span className="w-2 h-2 rounded-full bg-violet-400" /> API Docs v0.1
+          <span className="w-2 h-2 rounded-full bg-violet-400" /> API for Issuers v0.1
         </div>
         <h1 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight text-white">AttestGO API Guide</h1>
         <p className="text-muted max-w-3xl leading-6">

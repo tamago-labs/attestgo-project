@@ -3,14 +3,14 @@ import Image from "next/image";
 const rows = [
   {
     eyebrow: "Verified Identity",
-    title: "Verify Once, Credentials For Every Chain",
+    title: "Verify Once, Used on Every Chain",
     subtitle:
-      "Mint a universal pass on Creditcoin that applications can use across networks, financial products, and compliant payment flows.",
+      "Mint a universal pass once that applications can use across networks, financial products, and compliant payment flows.",
     bullets: [
-      "Anchored via Attestcoin Protocol as soulbound NFT held in your wallet",
+      "Anchored via Attestcoin Protocol, held in your wallet",
       "Use the same pass on any EVM network",
       "Privacy preserving verification with minimal data exposure",
-      "KYC via Sumsub for verified universal pass issuance",
+      "Supports major KYC providers from day one — Sumsub integrated",
     ],
     gradient: "from-amber-500/20 via-orange-500/10 to-transparent",
   },

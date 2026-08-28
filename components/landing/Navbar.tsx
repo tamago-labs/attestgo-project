@@ -33,7 +33,7 @@ export default function Navbar() {
         </a>
 
         <div className="hidden md:flex items-center gap-8 text-sm text-muted">
-          <a href="#products" className="hover:text-white transition-colors">How it works</a>
+          <a href="#products" className="hover:text-white transition-colors">How It Works</a>
           <a href="/app/identity" className="hover:text-white transition-colors">Identity</a>
           <a href="/app/defi" className="hover:text-white transition-colors">Earn</a>
           <a href="/app/discover" className="hover:text-white transition-colors">Discover</a>
@@ -44,7 +44,7 @@ export default function Navbar() {
             </button>
             <div className="absolute right-0 top-full pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
               <div className="bg-panel border border-border rounded-xl p-2 min-w-[160px] shadow-xl space-y-0.5">
-                <a href="/docs" className="block px-3 py-2 rounded-lg text-sm text-white hover:bg-canvas transition-colors">API Docs</a>
+                <a href="/docs" className="block px-3 py-2 rounded-lg text-sm text-white hover:bg-canvas transition-colors">API for Issuers</a>
                 <a href="https://github.com/tamago-labs/attestgo-project" target="_blank" rel="noopener" className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white hover:bg-canvas transition-colors">GitHub <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden><path d="M2 8L8 2M8 2H4M8 2V6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></a>
               </div>
             </div>
@@ -72,12 +72,12 @@ export default function Navbar() {
       {open && (
         <div className="md:hidden border-t border-border bg-canvas/95 backdrop-blur-md">
           <div className="px-4 py-3 space-y-1">
-            <a onClick={() => setOpen(false)} href="#products" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">How it works</a>
+            <a onClick={() => setOpen(false)} href="#products" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">How It Works</a>
             <a onClick={() => setOpen(false)} href="/app/identity" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">Identity</a>
             <a onClick={() => setOpen(false)} href="/app/defi" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">Earn</a>
             <a onClick={() => setOpen(false)} href="/app/discover" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">Discover</a>
             <div className="border-t border-border my-2 pt-2">
-              <a onClick={() => setOpen(false)} href="/docs" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">API Docs</a>
+              <a onClick={() => setOpen(false)} href="/docs" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">API for Issuers</a>
               <a onClick={() => setOpen(false)} href="https://github.com/tamago-labs/attestgo-project" target="_blank" rel="noopener" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">GitHub →</a>
             </div>
           </div>
