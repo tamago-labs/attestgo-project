@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import { X, Copy, Check, Trash2, Loader2, BookMarked } from "lucide-react";
 import { isAddress } from "ethers";
 import { addAddressBookEntry, listAddressBook, removeAddressBookEntry, resolveContact, type AddressBookEntry } from "@/lib/addressBook";
@@ -23,6 +25,8 @@ export default function AddressBookDrawer({
   onClose: () => void;
   ownerId: string | null;
 }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const [entries, setEntries] = useState<AddressBookEntry[]>([]);
   const [resolved, setResolved] = useState<Record<string, { displayName: string; country: string } | null>>({});
   const [loading, setLoading] = useState(false);
@@ -112,11 +116,26 @@ export default function AddressBookDrawer({
     } catch {}
   };
 
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-[380px] max-w-[92vw] h-full bg-canvas border-l border-border flex flex-col">
+  if (!mounted) return null;
+  const content = (
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-[100] flex justify-end">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={onClose}
+          />
+          <motion.div
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="relative w-[380px] max-w-[92vw] h-full bg-canvas border-l border-border flex flex-col"
+          >
         <div className="px-4 py-4 border-b border-border flex items-center gap-3">
           <BookMarked size={16} className="text-muted" />
           <span className="font-medium text-white text-sm flex-1">Address book</span>
@@ -228,7 +247,10 @@ export default function AddressBookDrawer({
             })
           )}
         </div>
-      </div>
-    </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
+  return createPortal(content, document.body);
 }
