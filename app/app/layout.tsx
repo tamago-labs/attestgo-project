@@ -1,7 +1,7 @@
 import AppLayout from "@/components/app/AppLayout";
 
 export const metadata = {
-  title: "AttestGO — App",
+  title: { absolute: "AttestGO — Inbox" },
 };
 
 export default function AppRootLayout({

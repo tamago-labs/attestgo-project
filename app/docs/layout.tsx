@@ -2,6 +2,10 @@ import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import DocsNav from "@/components/docs/DocsNav";
 
+export const metadata = {
+  title: { absolute: "AttestGO — API for Issuers" },
+};
+
 export default function DocsLayout({ children }: { children: React.ReactNode }) {
   return (
     <>

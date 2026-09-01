@@ -229,7 +229,7 @@ export default function IdentityPage() {
               <UserRoundX className="text-white/40" size={20} />
             </div>
             <div className="mt-3 font-medium text-white text-sm">Verification required</div>
-            <div className="mt-1 text-xs text-muted max-w-[36ch]">Create your GO Pass to send/receive compliant assets and use them as collateral to borrow.</div>
+            <div className="mt-1 text-xs text-muted max-w-[44ch]">Create your GO Pass to send and receive compliant assets and use them as collateral to borrow.</div>
             {isConnected ? (
               <Link href="/app/identity/register" className="mt-4">
                 <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-canvas text-sm font-medium hover:bg-white/90 transition-colors">
@@ -327,14 +327,6 @@ export default function IdentityPage() {
               </span>
               <div className="text-sm leading-relaxed">
                 <span className="font-medium text-white">Attest & activate:</span> <span className="text-muted">Your pass is attested to Creditcoin via Attestcoin Protocol. AttestGO verifies the attestation then marks your NFT Active.</span>
-              </div>
-            </li>
-            <li className="flex gap-3">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/10 border border-white/10 text-xs font-medium text-white">
-                4
-              </span>
-              <div className="text-sm leading-relaxed">
-                <span className="font-medium text-white">Use everywhere:</span> <span className="text-muted">Any new chain mirrors the same record for instant compliance.</span>
               </div>
             </li>
           </ol>
