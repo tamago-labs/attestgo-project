@@ -13,6 +13,7 @@ const schema = a.schema({
       signature: a.string().required(),
       request: a.hasOne("PassRequest", "userProfileId"),
       addressBook: a.hasMany("AddressBookEntry", "ownerId"),
+      registry: a.hasMany("UserTokenRegistry", "userProfileId"),
     })
     .authorization((allow) => [allow.publicApiKey().to(["read", "create", "update", "delete"])])
     .secondaryIndexes((index) => [index("walletAddress").queryField("byWallet")]),
@@ -73,11 +74,33 @@ const schema = a.schema({
       ruleBitmap: a.string().required(),
       txHash: a.string().required(),
       blockNumber: a.integer().required(),
+      subscribers: a.hasMany("UserTokenRegistry", "tokenRecordId"),
     })
     .authorization((allow) => [allow.publicApiKey().to(["read"])])
     .secondaryIndexes((index) => [
       index("issuer").queryField("listByIssuer"),
       index("chainId").queryField("listByChain"),
+    ]),
+
+  UserTokenRegistry: a
+    .model({
+      userProfileId: a.id().required(),
+      userProfile: a.belongsTo("UserProfile", "userProfileId"),
+      tokenRecordId: a.id(),
+      tokenRecord: a.belongsTo("TokenRecord", "tokenRecordId"),
+      tokenAddress: a.string().required(),
+      chainId: a.integer().required(),
+      isCustom: a.boolean().required(),
+      symbol: a.string().required(),
+      name: a.string(),
+      decimals: a.integer(),
+      addedAt: a.datetime(),
+    })
+    .authorization((allow) => [allow.publicApiKey().to(["read", "create", "delete"])])
+    .secondaryIndexes((index) => [
+      index("userProfileId").queryField("listMyTokens"),
+      index("tokenAddress").queryField("byTokenAddress"),
+      index("tokenRecordId").queryField("byTokenRecord"),
     ]),
 }).authorization((allow) => [allow.resource(mintPass), allow.resource(attestPass), allow.resource(createGToken)]);
 

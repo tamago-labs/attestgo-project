@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { UserRound, ChevronRight, Loader2, Copy, Check, BookMarked } from "lucide-react";
+import { UserRound, ChevronRight, Loader2, Copy, Check, BookMarked, Coins } from "lucide-react";
 import { useWallet } from "@/components/app/WalletContext";
 import { loadProfile, type UserProfile } from "@/lib/userProfile";
 import EditProfileModal from "@/components/app/EditProfileModal";
 import AddressBookDrawer from "@/components/app/AddressBookDrawer";
+import TokenRegistryDrawer from "@/components/app/TokenRegistryDrawer";
 
 function shortAddr(a: string) {
   return a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "—";
@@ -24,6 +25,7 @@ export default function SettingsPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [bookOpen, setBookOpen] = useState(false);
+  const [tokenOpen, setTokenOpen] = useState(false);
 
   const fetch = async () => {
     if (!address) {
@@ -85,7 +87,7 @@ export default function SettingsPage() {
               {profile ? (
                 <>
                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-[10px] font-medium text-emerald-300">
-                    <Check size={10} /> Signature Verified
+                    <Check size={10} /> Signature
                   </span>
                   <span className="px-1.5 py-0.5 rounded-full border border-white/10 bg-white/5 text-[10px] font-mono text-white/60">
                     {country}
@@ -129,6 +131,15 @@ export default function SettingsPage() {
           <span className="text-xs text-white/30">{profile ? "Manage" : "—"}</span>
           <ChevronRight size={16} className="text-muted" />
         </button>
+        <button
+          onClick={() => setTokenOpen(true)}
+          className="w-full px-4 py-3.5 flex items-center gap-3 hover:bg-white/[0.03] transition-colors text-left"
+        >
+          <Coins size={16} className="text-muted" />
+          <span className="flex-1 text-sm text-white">Token registry</span>
+          <span className="text-xs text-white/30">{profile ? "Manage" : "—"}</span>
+          <ChevronRight size={16} className="text-muted" />
+        </button>
       </div>
 
       <EditProfileModal
@@ -139,6 +150,7 @@ export default function SettingsPage() {
         onSaved={fetch}
       />
       <AddressBookDrawer open={bookOpen} onClose={() => setBookOpen(false)} ownerId={(profile as unknown as { id: string } | null)?.id || null} />
+      <TokenRegistryDrawer open={tokenOpen} onClose={() => setTokenOpen(false)} ownerId={(profile as unknown as { id: string } | null)?.id || null} />
     </div>
   );
 }
