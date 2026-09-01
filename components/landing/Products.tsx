@@ -16,7 +16,7 @@ const rows = [
   },
   {
     eyebrow: "Compliant Asset Issuance",
-    title: "GO Assets: RWA With Self-Enforcing Rules",
+    title: "GO Assets: RWA + Self-Enforcing Rules",
     subtitle:
       "AttestGO gives issuers the API to create, govern, and distribute digital representations of real-world value with identity-aware controls.",
     bullets: [
@@ -29,7 +29,7 @@ const rows = [
   },
   {
     eyebrow: "Compliant Transfers",
-    title: "Institutional-Ready DeFi & Payments",
+    title: "Institutional-Ready DeFi",
     subtitle:
       "Send or earn in DeFi with the same compliance checks applied to every transfer across networks and payment flows.",
     bullets: [
@@ -131,139 +131,148 @@ export default function Products() {
   </div>
 </div>
                   ) : i === 1 ? (
-                    <div className="w-full max-w-[560px] min-h-[320px] mx-auto rounded-xl border border-border bg-canvas overflow-hidden flex shadow-lg">
+                    <div className="relative w-full max-w-[480px] min-h-[300px] mx-auto rounded-2xl overflow-hidden bg-canvas border border-white/10 p-5 sm:p-6 flex flex-col shadow-xl">
+                      <div
+                        className="pointer-events-none absolute inset-0 opacity-25 mix-blend-overlay"
+                        style={{
+                          background:
+                            "linear-gradient(115deg, transparent 20%, #FDB750 35%, #8B7CF0 45%, #5CC8FF 55%, transparent 70%)",
+                          backgroundSize: "200% 200%",
+                        }}
+                      />
+                      <div
+                        className="pointer-events-none absolute inset-0 opacity-[0.06]"
+                        style={{
+                          backgroundImage:
+                            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+                        }}
+                      />
 
-  {/* Sidebar */}
-  <div className="w-[140px] bg-panel border-r border-border p-3 hidden sm:flex flex-col gap-3 shrink-0">
-    <div className="font-mono text-[10px] tracking-widest text-white/30 uppercase px-2">API Docs</div>
-    <div className="space-y-0.5 text-xs">
-      <div className="px-2 py-1.5 rounded text-muted">Overview</div>
-      <div className="px-2 py-1.5 rounded bg-white/10 text-white font-medium">
-        Launch gToken
-      </div>
-      <div className="px-2 py-1.5 rounded text-muted">Rules</div>
-      <div className="px-2 py-1.5 rounded text-muted">Pause</div>
-      <div className="px-2 py-1.5 rounded text-muted">Webhooks</div>
-    </div>
-  </div>
+                      <div className="relative z-10 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-400 font-mono">
+                            POST
+                          </span>
+                          <span className="font-mono text-xs sm:text-sm text-white/80">
+                            /gtoken/launch
+                          </span>
+                        </div>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-[10px] font-medium text-emerald-400">
+                          201 Created
+                        </span>
+                      </div>
 
-  {/* Main panel */}
-  <div className="flex-1 p-4 sm:p-5 font-mono text-[12px] leading-relaxed overflow-hidden flex flex-col">
+                      <div className="relative z-10 mt-5 sm:mt-6 rounded-lg bg-panel border border-border p-4 font-mono text-[11px] sm:text-xs leading-relaxed text-white/80">
+                        <div className="text-white/30 text-[9px] mb-2 uppercase tracking-[0.15em]">
+                          Request body
+                        </div>
+                        <div className="space-y-1">
+                          <div><span className="text-sky-400">"token_name"</span>: <span className="text-emerald-300">"USD T-Bill"</span>,</div>
+                          <div><span className="text-sky-400">"chain"</span>: <span className="text-emerald-300">"ethereum"</span>,</div>
+                          <div><span className="text-sky-400">"rule"</span>: {"{"} <span className="text-sky-400">"countries"</span>: [<span className="text-emerald-300">"US"</span>, <span className="text-emerald-300">"SG"</span>], <span className="text-sky-400">"min_tier"</span>: <span className="text-amber-300">10</span> {"}"}</div>
+                        </div>
+                      </div>
 
-    {/* Endpoint header */}
-    <div className="flex items-center gap-2">
-      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-400">
-        POST
-      </span>
-      <span className="text-white/80">/gtoken/launch</span>
-    </div>
-
-    {/* Request body */}
-    <div className="mt-3 rounded-lg bg-panel border border-border p-3 text-[11px] text-white/80">
-      <div className="text-white/30 text-[10px] mb-1.5 uppercase tracking-wide">Request body</div>
-      <div className="space-y-0.5">
-        <div><span className="text-sky-400">"token_name"</span>: <span className="text-emerald-300">"USD T-Bill"</span>,</div>
-        <div><span className="text-sky-400">"chain"</span>: <span className="text-emerald-300">"ethereum"</span>,</div>
-        <div><span className="text-sky-400">"rule"</span>: {"{"} <span className="text-sky-400">"allowed_group"</span>: <span className="text-emerald-300">""</span>, <span className="text-sky-400">"countries"</span>: [<span className="text-emerald-300">"US"</span>, <span className="text-emerald-300">"SG"</span>], <span className="text-sky-400">"min_tier"</span>: <span className="text-amber-300">10</span> {"}"}</div>
-      </div>
-    </div>
-
-    {/* Try + response */}
-    <div className="mt-3 flex items-center gap-2">
-      <button className="px-2.5 py-1 rounded bg-white/10 hover:bg-white/15 text-white/80 text-[11px] font-medium transition-colors">
-        Run request
-      </button>
-      <span className="text-[10px] text-white/30">or ⌘⏎</span>
-    </div>
-
-    <div className="mt-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2.5 text-[11px]">
-      <div className="flex items-center gap-2">
-        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400">
-          201
-        </span>
-        <span className="text-emerald-300">Created</span>
-      </div>
-      <div className="mt-1 text-white/60 break-all">
-        gToken <span className="text-white/90">0x9e02…af31</span>
-      </div>
-    </div>
-
-    <div className="mt-auto pt-2 flex items-center justify-between text-[10px] text-white/30">
-      <span>View on Explorer</span>
-      <span>142ms</span>
-    </div>
-  </div>
-</div>
+                      <div className="relative z-10 mt-auto pt-5 flex items-center justify-between font-mono text-[10px] text-white/40">
+                        <span>
+                          gToken <span className="text-white/80">0x9e02…af31</span>
+                        </span>
+                        <span>142ms</span>
+                      </div>
+                    </div>
                   ) : (
-                    <div className="w-full max-w-[560px] min-h-[340px] mx-auto rounded-xl border border-border bg-canvas overflow-hidden flex shadow-lg">
+                    <div className="relative w-full max-w-[560px] min-h-[300px] mx-auto rounded-2xl overflow-hidden bg-canvas border border-white/10 p-5 sm:p-6 flex flex-col shadow-xl">
+                      <div
+                        className="pointer-events-none absolute inset-0 opacity-25 mix-blend-overlay"
+                        style={{
+                          background:
+                            "linear-gradient(115deg, transparent 20%, #FDB750 35%, #8B7CF0 45%, #5CC8FF 55%, transparent 70%)",
+                          backgroundSize: "200% 200%",
+                        }}
+                      />
+                      <div
+                        className="pointer-events-none absolute inset-0 opacity-[0.06]"
+                        style={{
+                          backgroundImage:
+                            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+                        }}
+                      />
 
-  {/* Sidebar */}
-  <div className="w-[104px] bg-panel border-r border-border p-3 hidden sm:flex flex-col gap-1 shrink-0">
-    <div className="space-y-0.5 text-xs">
-      <div className="px-2 py-1.5 rounded text-muted flex items-center gap-2">
-        <i className="ti ti-inbox text-[14px]" aria-hidden="true" /> Inbox
-      </div>
-      <div className="px-2 py-1.5 rounded text-muted flex items-center gap-2">
-        <i className="ti ti-id text-[14px]" aria-hidden="true" /> Identity
-      </div>
-      <div className="px-2 py-1.5 rounded bg-white/10 text-white font-medium flex items-center gap-2">
-        <i className="ti ti-send text-[14px]" aria-hidden="true" /> Send
-      </div>
-      <div className="px-2 py-1.5 rounded text-muted flex items-center gap-2">
-        <i className="ti ti-history text-[14px]" aria-hidden="true" /> History
-      </div>
-      <div className="px-2 py-1.5 rounded text-muted flex items-center gap-2">
-        <i className="ti ti-compass text-[14px]" aria-hidden="true" /> Discover
-      </div>
-    </div>
-  </div>
+                      <div className="relative z-10 flex-1 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-0">
+                        <div className="flex-1 rounded-xl bg-panel border border-border p-4">
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono text-[9px] uppercase tracking-[0.15em] px-1.5 py-0.5 rounded border border-white/15 bg-white/5 text-white/60">
+                              Ethereum · Source
+                            </span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="text-amber shrink-0" aria-hidden>
+                              <rect x="4" y="11" width="16" height="10" rx="2" />
+                              <path d="M8 11V7a4 4 0 1 1 8 0v4" />
+                            </svg>
+                          </div>
+                          <div className="mt-4 font-mono text-[9px] tracking-[0.15em] text-white/40 uppercase">
+                            Collateral locked
+                          </div>
+                          <div className="mt-1 text-lg font-semibold text-white">
+                            T-BILL <span className="font-mono text-white/90">$8,000</span>
+                          </div>
+                          <div className="mt-1 font-mono text-[10px] text-white/40">
+                            Earning 3.1%
+                          </div>
+                        </div>
 
-  {/* Main panel */}
-  <div className="flex-1 p-4 sm:p-5 flex flex-col">
+                        <div className="hidden sm:block w-24 lg:w-32 shrink-0 px-2">
+                          <div className="relative h-px">
+                            <div className="absolute inset-x-0 top-0 border-t border-dashed border-white/15" />
+                            {[0, 1, 2].map((d) => (
+                              <span
+                                key={d}
+                                className="connector-dot"
+                                style={{
+                                  background: d % 2 === 0 ? "#FDB750" : "#8B7CF0",
+                                  boxShadow: `0 0 5px ${d % 2 === 0 ? "#FDB750" : "#8B7CF0"}`,
+                                  animationDelay: `${d * 0.85}s`,
+                                }}
+                              />
+                            ))}
+                            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap font-mono text-[8px] uppercase tracking-[0.12em] px-1.5 py-0.5 rounded-full bg-canvas border border-white/10 text-white/50">
+                              Attestcoin
+                            </span>
+                          </div>
+                        </div>
+                        <div className="sm:hidden flex justify-center">
+                          <div className="h-8 border-l border-dashed border-white/15" />
+                        </div>
 
-    {/* Header */}
-    <div className="flex items-center justify-between">
-      <div>
-        <div className="text-base font-semibold text-white">Send</div>
-        <div className="text-xs text-muted mt-0.5">Choose asset to send, lend, or borrow</div>
-      </div>
-      <div className="text-right">
-        <div className="text-[10px] text-white/30 uppercase tracking-wide">Total balance</div>
-        <div className="text-sm font-semibold text-white">$24,700</div>
-      </div>
-    </div>
+                        <div className="flex-1 rounded-xl bg-panel border border-border p-4">
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono text-[9px] uppercase tracking-[0.15em] px-1.5 py-0.5 rounded border border-white/15 bg-white/5 text-white/60">
+                              Creditcoin L1
+                            </span>
+                          </div>
+                          <div className="mt-4 font-mono text-[9px] tracking-[0.15em] text-white/40 uppercase">
+                            Borrowed
+                          </div>
+                          <div className="mt-1 text-lg font-semibold text-white">
+                            USDC <span className="font-mono text-white/90">$5,000</span>
+                          </div>
+                          <div className="mt-1 font-mono text-[10px] text-white/40">
+                            Borrow at 3.1% · 62% LTV
+                          </div>
+                        </div>
+                      </div>
 
-    {/* Asset list */}
-    <div className="mt-4 space-y-2 flex-1">
-      {[
-        { sym: "USDC", name: "USD Coin", bal: "$12,500", color: "#2775CA", action: "Send" },
-        { sym: "ATC", name: "Attestcoin", bal: "$4,200", color: "#26A17B", action: "Lend" },
-        { sym: "USD T-Bill", name: "AttestGO T-Bill", bal: "$8,000", color: "#8B7CF0", action: "Borrow" },
-      ].map((r) => (
-        <div
-          key={r.sym}
-          className="flex items-center justify-between rounded-lg border border-border bg-panel px-3.5 py-2.5 hover:border-white/20 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <div>
-              <div className="text-sm font-medium text-white">{r.sym}</div>
-              <div className="text-[11px] text-muted">{r.name}</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="text-sm text-white/80 font-medium">{r.bal}</div>
-            <div className="flex items-center gap-3 text-xs font-medium min-w-[72px] justify-end">
-              <a href="#" className="inline-flex items-center justify-end gap-1 text-amber hover:text-white transition-colors min-w-[64px]">
-                {(r as { action: string }).action}
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 3l4 3-4 3" stroke="currentColor" strokeWidth="1.3" /></svg>
-              </a>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-</div>
+                      <div className="relative z-10 mt-5 flex flex-wrap items-center justify-between gap-2 font-mono text-[10px] text-white/40">
+                        <div className="flex flex-wrap gap-x-3 gap-y-1">
+                          <span>GO PASS <span className="text-emerald-400">✓</span></span>
+                        </div>
+                        <span className="flex items-center gap-1.5">
+                          Health <span className="text-white">1.61</span>
+                          <span className="w-12 h-1.5 rounded-full bg-white/10 overflow-hidden inline-block">
+                            <span className="block h-full bg-emerald-400" style={{ width: "72%" }} />
+                          </span>
+                        </span>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
