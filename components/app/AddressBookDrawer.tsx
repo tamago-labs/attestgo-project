@@ -137,7 +137,6 @@ export default function AddressBookDrawer({
             className="relative w-[380px] max-w-[92vw] h-full bg-canvas border-l border-border flex flex-col"
           >
         <div className="px-4 py-4 border-b border-border flex items-center gap-3">
-          <BookMarked size={16} className="text-muted" />
           <span className="font-medium text-white text-sm flex-1">Address book</span>
           <span className="text-xs px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-muted">{entries.length}</span>
           <button onClick={onClose} className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-panel">
