@@ -6,6 +6,10 @@ export default function SendPage() {
       <div className="rounded-xl border border-border bg-panel overflow-hidden grid md:grid-cols-[260px_1fr] flex-1 min-h-0">
         {/* sidebar */}
         <div className="border-b md:border-b-0 md:border-r border-border p-4 bg-panel">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="w-1 h-4 bg-amber rounded" />
+            <span className="font-mono text-xs font-medium text-white">Send</span>
+          </div>
           <p className="text-muted text-sm mb-1">Total balance</p>
           <p className="text-2xl font-semibold tracking-tight text-white mb-4">$24,700.00</p>
 
