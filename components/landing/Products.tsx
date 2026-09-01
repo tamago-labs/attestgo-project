@@ -3,20 +3,20 @@ import Image from "next/image";
 const rows = [
   {
     eyebrow: "Verified Identity",
-    title: "Verify Once, Used on Every Chain",
+    title: "One GO Pass, Every Chain",
     subtitle:
-      "Mint a universal pass once that applications can use across networks, financial products, and compliant payment flows.",
+      "Mint a universal pass once that applications can use across apps and compliant payment flows.",
     bullets: [
-      "Anchored via Attestcoin Protocol, held in your wallet",
-      "Use the same pass on any EVM network",
+      "Attested on Creditcoin via ASC, verifiable on any chain",
+      "Reusable across RWA, DeFi, and payments",
       "Privacy preserving verification with minimal data exposure",
-      "Supports major KYC providers from day one — Sumsub integrated",
+      "KYC by Sumsub from day one",
     ],
     gradient: "from-amber-500/20 via-orange-500/10 to-transparent",
   },
   {
     eyebrow: "Compliant Asset Issuance",
-    title: "Launch RWA That Enforce Themselves",
+    title: "GO Assets: RWA With Self-Enforcing Rules",
     subtitle:
       "AttestGO gives issuers the API to create, govern, and distribute digital representations of real-world value with identity-aware controls.",
     bullets: [
@@ -28,15 +28,15 @@ const rows = [
     gradient: "from-violet-500/20 via-purple-500/10 to-transparent",
   },
   {
-    eyebrow: "Compliant Transfer",
-    title: "Send Once Or Stream Over Time",
+    eyebrow: "Compliant Transfers",
+    title: "Institutional-Ready DeFi & Payments",
     subtitle:
-      "Pick instant or continuous settlement with the same compliance checks applied to every transfer across networks and payment flows.",
+      "Send or earn in DeFi with the same compliance checks applied to every transfer across networks and payment flows.",
     bullets: [
-      "One interface for send and stream — switch without new integration",
-      "Verified before value moves, not after",
-      "Continuous streams settle as you earn with instant cancel",
-      "Travel rule data generated for every transfer and downloadable anytime",
+      "One interface for payments and DeFi with RWA",
+      "Checked via GO Pass and GO Asset rules",
+      "Lend and borrow on Creditcoin, collateral locked on any chain",
+      "Travel rule data generated for every transfer",
     ],
     gradient: "from-emerald-500/15 via-teal-500/10 to-transparent",
   },
@@ -225,7 +225,7 @@ export default function Products() {
     <div className="flex items-center justify-between">
       <div>
         <div className="text-base font-semibold text-white">Send</div>
-        <div className="text-xs text-muted mt-0.5">Choose asset to send or stream</div>
+        <div className="text-xs text-muted mt-0.5">Choose asset to send, lend, or borrow</div>
       </div>
       <div className="text-right">
         <div className="text-[10px] text-white/30 uppercase tracking-wide">Total balance</div>
@@ -236,21 +236,15 @@ export default function Products() {
     {/* Asset list */}
     <div className="mt-4 space-y-2 flex-1">
       {[
-        { sym: "USDC", name: "USD Coin", bal: "$12,500", color: "#2775CA" },
-        { sym: "USDT", name: "Tether", bal: "$4,200", color: "#26A17B" },
-        { sym: "USD T-Bill", name: "T-Bill vault", bal: "$8,000", color: "#8B7CF0" },
+        { sym: "USDC", name: "USD Coin", bal: "$12,500", color: "#2775CA", action: "Send" },
+        { sym: "ATC", name: "Attestcoin", bal: "$4,200", color: "#26A17B", action: "Lend" },
+        { sym: "USD T-Bill", name: "AttestGO T-Bill", bal: "$8,000", color: "#8B7CF0", action: "Borrow" },
       ].map((r) => (
         <div
           key={r.sym}
           className="flex items-center justify-between rounded-lg border border-border bg-panel px-3.5 py-2.5 hover:border-white/20 transition-colors"
         >
           <div className="flex items-center gap-3">
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
-              style={{ backgroundColor: r.color }}
-            >
-              {r.sym.slice(0, 2)}
-            </div>
             <div>
               <div className="text-sm font-medium text-white">{r.sym}</div>
               <div className="text-[11px] text-muted">{r.name}</div>
@@ -258,13 +252,9 @@ export default function Products() {
           </div>
           <div className="flex items-center gap-3">
             <div className="text-sm text-white/80 font-medium">{r.bal}</div>
-            <div className="flex items-center gap-3 text-xs font-medium">
-              <a href="#" className="inline-flex items-center gap-1 text-amber hover:text-white transition-colors">
-                Send
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 3l4 3-4 3" stroke="currentColor" strokeWidth="1.3" /></svg>
-              </a>
-              <a href="#" className="inline-flex items-center gap-1 text-amber hover:text-white transition-colors">
-                Stream
+            <div className="flex items-center gap-3 text-xs font-medium min-w-[72px] justify-end">
+              <a href="#" className="inline-flex items-center justify-end gap-1 text-amber hover:text-white transition-colors min-w-[64px]">
+                {(r as { action: string }).action}
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 3l4 3-4 3" stroke="currentColor" strokeWidth="1.3" /></svg>
               </a>
             </div>
@@ -304,6 +294,14 @@ export default function Products() {
                     </li>
                   ))}
                 </ul>
+                {i === 1 && (
+                  <a href="/docs" className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-amber hover:text-white transition-colors">
+                    View API for Issuers
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+                      <path d="M3 7h8M8 3l4 4-4 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </a>
+                )}
               </div>
             </div>
           ))}

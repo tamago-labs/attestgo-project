@@ -66,11 +66,6 @@ export default function Inbox() {
                 </a>
                 <span className="text-white/20">·</span>
                 <a href="#" className="inline-flex items-center gap-1 text-amber hover:text-white transition-colors">
-                  Travel Rule
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 3l4 3-4 3" stroke="currentColor" strokeWidth="1.3" /></svg>
-                </a>
-                <span className="text-white/20">·</span>
-                <a href="#" className="inline-flex items-center gap-1 text-amber hover:text-white transition-colors">
                   View on Explorer
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 3l4 3-4 3" stroke="currentColor" strokeWidth="1.3" /></svg>
                 </a>

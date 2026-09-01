@@ -22,7 +22,7 @@ export default function Navbar() {
           : "bg-transparent border-b border-transparent"
       }`}
     >
-      <nav className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-10 py-4">
+      <nav className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-10">
         <a href="#" className="flex items-center gap-1.5">
           <span className="font-display font-semibold text-lg tracking-tight text-white">
             attest
@@ -32,8 +32,8 @@ export default function Navbar() {
           </span>
         </a>
 
-        <div className="hidden md:flex items-center gap-8 text-sm text-muted">
-          <a href="#products" className="hover:text-white transition-colors">How It Works</a>
+        <div className="hidden md:flex items-center gap-8 text-sm text-muted my-4">
+          <a href="/app" className="hover:text-white transition-colors">Inbox</a>
           <a href="/app/identity" className="hover:text-white transition-colors">Identity</a>
           <a href="/app/defi" className="hover:text-white transition-colors">Earn</a>
           <a href="/app/discover" className="hover:text-white transition-colors">Discover</a>
@@ -72,7 +72,7 @@ export default function Navbar() {
       {open && (
         <div className="md:hidden border-t border-border bg-canvas/95 backdrop-blur-md">
           <div className="px-4 py-3 space-y-1">
-            <a onClick={() => setOpen(false)} href="#products" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">How It Works</a>
+            <a onClick={() => setOpen(false)} href="/app" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">Inbox</a>
             <a onClick={() => setOpen(false)} href="/app/identity" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">Identity</a>
             <a onClick={() => setOpen(false)} href="/app/defi" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">Earn</a>
             <a onClick={() => setOpen(false)} href="/app/discover" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">Discover</a>
