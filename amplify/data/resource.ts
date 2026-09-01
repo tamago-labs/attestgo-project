@@ -12,6 +12,7 @@ const schema = a.schema({
       message: a.string().required(),
       signature: a.string().required(),
       request: a.hasOne("PassRequest", "userProfileId"),
+      addressBook: a.hasMany("AddressBookEntry", "ownerId"),
     })
     .authorization((allow) => [allow.publicApiKey().to(["read", "create", "update", "delete"])])
     .secondaryIndexes((index) => [index("walletAddress").queryField("byWallet")]),
@@ -28,6 +29,19 @@ const schema = a.schema({
     })
     .authorization((allow) => [allow.publicApiKey().to(["read", "create", "update"])])
     .secondaryIndexes((index) => [index("userProfileId").queryField("byUserProfile")]),
+
+  AddressBookEntry: a
+    .model({
+      ownerId: a.id().required(),
+      owner: a.belongsTo("UserProfile", "ownerId"),
+      contactAddress: a.string().required(),
+      label: a.string(),
+    })
+    .authorization((allow) => [allow.publicApiKey().to(["read", "create", "update", "delete"])])
+    .secondaryIndexes((index) => [
+      index("ownerId").queryField("listByOwner"),
+      index("contactAddress").queryField("byContact"),
+    ]),
 
   mintPass: a
     .mutation()
