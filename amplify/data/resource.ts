@@ -2,6 +2,12 @@ import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
 import { mintPass } from "../functions/mintPass/resource";
 import { attestPass } from "../functions/attestPass/resource";
 import { createGToken } from "../functions/createGToken/resource";
+import { createIssuerProfile } from "../functions/createIssuerProfile/resource";
+import { updateIssuerProfile } from "../functions/updateIssuerProfile/resource";
+import { createRWATokenProfile } from "../functions/createRWATokenProfile/resource";
+import { updateRWATokenProfile } from "../functions/updateRWATokenProfile/resource";
+import { deleteRWATokenProfile } from "../functions/deleteRWATokenProfile/resource";
+import { postAnnouncement } from "../functions/postAnnouncement/resource";
 
 const schema = a.schema({
   UserProfile: a
@@ -166,7 +172,44 @@ const schema = a.schema({
     })
     .authorization((allow) => [allow.publicApiKey().to(["read", "create", "delete"])])
     .secondaryIndexes((index) => [index("announcementId").queryField("listByAnnouncement")]),
-}).authorization((allow) => [allow.resource(mintPass), allow.resource(attestPass), allow.resource(createGToken)]);
+
+  createIssuerProfile: a
+    .mutation()
+    .arguments({ issuerName: a.string().required(), handle: a.string().required(), website: a.string(), description: a.string(), logoURI: a.string(), ownerWallet: a.string().required() })
+    .returns(a.json())
+    .handler(a.handler.function(createIssuerProfile))
+    .authorization((allow) => [allow.publicApiKey()]),
+  updateIssuerProfile: a
+    .mutation()
+    .arguments({ issuerProfileId: a.id().required(), issuerName: a.string(), handle: a.string(), website: a.string(), description: a.string(), logoURI: a.string(), callerWallet: a.string() })
+    .returns(a.json())
+    .handler(a.handler.function(updateIssuerProfile))
+    .authorization((allow) => [allow.publicApiKey()]),
+  createRWATokenProfile: a
+    .mutation()
+    .arguments({ issuerProfileId: a.id().required(), tokenRecordId: a.id().required(), apy: a.string(), tvl: a.string(), desc: a.string(), productUrl: a.string(), callerWallet: a.string() })
+    .returns(a.json())
+    .handler(a.handler.function(createRWATokenProfile))
+    .authorization((allow) => [allow.publicApiKey()]),
+  updateRWATokenProfile: a
+    .mutation()
+    .arguments({ tokenProfileId: a.id().required(), apy: a.string(), tvl: a.string(), desc: a.string(), productUrl: a.string(), status: a.string(), callerWallet: a.string() })
+    .returns(a.json())
+    .handler(a.handler.function(updateRWATokenProfile))
+    .authorization((allow) => [allow.publicApiKey()]),
+  deleteRWATokenProfile: a
+    .mutation()
+    .arguments({ tokenProfileId: a.id().required(), callerWallet: a.string() })
+    .returns(a.json())
+    .handler(a.handler.function(deleteRWATokenProfile))
+    .authorization((allow) => [allow.publicApiKey()]),
+  postAnnouncement: a
+    .mutation()
+    .arguments({ issuerProfileId: a.id().required(), tokenProfileId: a.id(), text: a.string().required(), txHash: a.string(), callerWallet: a.string() })
+    .returns(a.json())
+    .handler(a.handler.function(postAnnouncement))
+    .authorization((allow) => [allow.publicApiKey()]),
+}).authorization((allow) => [allow.resource(mintPass), allow.resource(attestPass), allow.resource(createGToken), allow.resource(createIssuerProfile), allow.resource(updateIssuerProfile), allow.resource(createRWATokenProfile), allow.resource(updateRWATokenProfile), allow.resource(deleteRWATokenProfile), allow.resource(postAnnouncement)]);
 
 export type Schema = ClientSchema<typeof schema>;
 
