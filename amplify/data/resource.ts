@@ -186,19 +186,19 @@ const schema = a.schema({
     .returns(a.json())
     .handler(a.handler.function(updateIssuerProfile))
     .authorization((allow) => [allow.publicApiKey()]),
-  createRWATokenProfile: a
+  createRWATokenListing: a
     .mutation()
     .arguments({ issuerProfileId: a.id().required(), tokenRecordId: a.id().required(), apy: a.string(), tvl: a.string(), desc: a.string(), productUrl: a.string(), callerWallet: a.string() })
     .returns(a.json())
     .handler(a.handler.function(createRWATokenProfile))
     .authorization((allow) => [allow.publicApiKey()]),
-  updateRWATokenProfile: a
+  updateRWATokenListing: a
     .mutation()
     .arguments({ tokenProfileId: a.id().required(), apy: a.string(), tvl: a.string(), desc: a.string(), productUrl: a.string(), status: a.string(), callerWallet: a.string() })
     .returns(a.json())
     .handler(a.handler.function(updateRWATokenProfile))
     .authorization((allow) => [allow.publicApiKey()]),
-  deleteRWATokenProfile: a
+  deleteRWATokenListing: a
     .mutation()
     .arguments({ tokenProfileId: a.id().required(), callerWallet: a.string() })
     .returns(a.json())
