@@ -3,176 +3,77 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, ExternalLink, Plus, Loader2, TrendingUp, ShieldCheck, Globe2, Search, Heart, MessageCircle, ChevronDown, Check } from "lucide-react";
+import { X, ExternalLink, Plus, Loader2, TrendingUp, ShieldCheck, Globe2, Search, Check, ChevronDown } from "lucide-react";
+import { Amplify } from "aws-amplify";
+import { generateClient } from "aws-amplify/data";
+import type { Schema } from "@/amplify/data/resource";
+import outputs from "@/amplify_outputs.json";
 import { useWallet } from "@/components/app/WalletContext";
 import { loadProfile } from "@/lib/userProfile";
 import { addFactoryToken, listMyTokens } from "@/lib/tokenRegistry";
 
+let _client: ReturnType<typeof generateClient<Schema>> | null = null;
+function getClient() {
+  if (_client) return _client;
+  try { Amplify.configure(outputs, { ssr: true }); } catch {}
+  _client = generateClient<Schema>();
+  return _client;
+}
+
 type Offer = {
   id: string;
+  issuerId: string;
   issuer: string;
-  issuerUrl: string;
+  handle: string;
   productName: string;
   symbol: string;
   tokenAddress: string;
   chainId: number;
   chain: string;
   apy: string;
+  tvl: string;
   region: string;
-  cat: "rwa" | "tbill" | "gold";
   desc: string;
-  underlying?: string;
+  productUrl: string;
   isWrapped: boolean;
   ruleMinTier: number;
   countries: string[];
-  productUrl: string;
-  tvl: string;
 };
 
-const OFFERS: Offer[] = [
-  {
-    id: "nikkei-rwa",
-    issuer: "SBI Asset Management",
-    issuerUrl: "https://www.sbiam.co.jp",
-    productName: "Nikkei 225 RWA",
-    symbol: "GO-NIKKEI",
-    tokenAddress: "0xN1kke1RWA100000000000000000000000000001",
-    chainId: 11155111,
-    chain: "Sepolia",
-    apy: "12.8%",
-    region: "JP",
-    cat: "rwa",
-    desc: "Japan Nikkei 225 mutual fund — daily NAV attested on Creditcoin. Transfer restricted to Tier ≥10 JP holders.",
-    isWrapped: false,
-    ruleMinTier: 10,
-    countries: ["JP"],
-    productUrl: "https://issuer.example/nikkei-225-rwa",
-    tvl: "$6.4M",
-  },
-  {
-    id: "usd-tbill",
-    issuer: "Meridian Capital",
-    issuerUrl: "https://issuer.example/usd-tbill",
-    productName: "USD T-Bill",
-    symbol: "GO-TBILL",
-    tokenAddress: "0xTb1llUSDC000000000000000000000000000002",
-    chainId: 11155111,
-    chain: "Sepolia",
-    apy: "6.2%",
-    region: "US",
-    cat: "tbill",
-    desc: "Short-duration US Treasury. Eligible collateral in Morpho on Creditcoin.",
-    isWrapped: false,
-    ruleMinTier: 10,
-    countries: ["US", "SG"],
-    productUrl: "https://issuer.example/usd-tbill",
-    tvl: "$8.0M",
-  },
-  {
-    id: "sg-tbill",
-    issuer: "MAS Licensed",
-    issuerUrl: "https://www.mas.gov.sg",
-    productName: "SGD T-Bill",
-    symbol: "GO-SGTB",
-    tokenAddress: "0xSGTbill000000000000000000000000000003",
-    chainId: 11155111,
-    chain: "Sepolia",
-    apy: "4.5%",
-    region: "SG",
-    cat: "tbill",
-    desc: "Singapore T-Bill backed by MAS. Low volatility, SG holders only.",
-    isWrapped: false,
-    ruleMinTier: 10,
-    countries: ["SG"],
-    productUrl: "https://issuer.example/sgd-tbill",
-    tvl: "$1.4M",
-  },
-  {
-    id: "jreit",
-    issuer: "Northstar RWA",
-    issuerUrl: "https://www.tr.mufg.jp",
-    productName: "J-REIT Index RWA",
-    symbol: "GO-JREIT",
-    tokenAddress: "0xJRe1tRWA000000000000000000000000000004",
-    chainId: 11155111,
-    chain: "Sepolia",
-    apy: "9.4%",
-    region: "JP",
-    cat: "rwa",
-    desc: "Tokyo-listed J-REIT basket. Monthly distribution, JP eligible.",
-    isWrapped: true,
-    underlying: "0xJRe1tUnd000000000000000000000000000004",
-    ruleMinTier: 5,
-    countries: ["JP"],
-    productUrl: "https://issuer.example/jreit",
-    tvl: "$3.1M",
-  },
-  {
-    id: "gold",
-    issuer: "PAMP Suisse",
-    issuerUrl: "https://www.pamp.ch",
-    productName: "Gold Vault",
-    symbol: "GO-GOLD",
-    tokenAddress: "0xGo1dVault000000000000000000000000000005",
-    chainId: 11155111,
-    chain: "Sepolia",
-    apy: "—",
-    region: "CH",
-    cat: "gold",
-    desc: "Physical gold 1:1 vaulted. Transfer unrestricted Tier ≥1.",
-    isWrapped: false,
-    ruleMinTier: 1,
-    countries: [],
-    productUrl: "https://issuer.example/gold-vault",
-    tvl: "$2.7M",
-  },
-  {
-    id: "usdc",
-    issuer: "Circle Issuer",
-    issuerUrl: "https://www.circle.com",
-    productName: "USD Coin",
-    symbol: "USDC",
-    tokenAddress: "0xUSDC0000000000000000000000000000000006",
-    chainId: 11155111,
-    chain: "Sepolia",
-    apy: "—",
-    region: "US",
-    cat: "tbill",
-    desc: "USD Coin base asset.",
-    isWrapped: false,
-    ruleMinTier: 1,
-    countries: [],
-    productUrl: "https://www.circle.com/usdc",
-    tvl: "$12.4M",
-  },
-];
+type FeedItem = {
+  id: string;
+  issuer: string;
+  handle: string;
+  time: string;
+  text: string;
+  tokenProfileId?: string;
+  likes: number;
+  replies: { author: string; text: string; time: string }[];
+  verified: boolean;
+};
 
-type FeedItem = { id: string; issuer: string; handle: string; time: string; text: string; offerId?: string; likes: number; replies: { author: string; text: string; time: string }[]; verified?: boolean };
-
-const FEED: FeedItem[] = [
-  { id: "f1", issuer: "Meridian Capital", handle: "meridian_cap", time: "2h", text: "This week we processed GO-TBILL redemptions for 1,240 holders — all on schedule, zero delays. Built for reliable settlement at institutional scale, verified on Creditcoin in ~1 block.", offerId: "usd-tbill", likes: 128, replies: [], verified: true },
-  {
-    id: "f2",
-    issuer: "Northstar RWA",
-    handle: "northstar_rwa",
-    time: "6h",
-    text: "Heads up: minimum tier for new GO-JREIT allocations is now 10. If you're already holding, you're grandfathered — no action needed. Happy to answer questions below.",
-    offerId: "jreit",
-    likes: 61,
-    replies: [
-      { author: "dana.eth", text: "Does this affect the current pool rate?", time: "45m" },
-      { author: "Northstar RWA", text: "No change for existing holders — pool rate stays as is.", time: "30m" },
-    ],
-    verified: true,
-  },
-  { id: "f3", issuer: "Creditcoin Foundation", handle: "creditcoin", time: "1d", text: "Milestone: $50M+ settlement volume across attested pools this month. Thank you to every issuer and holder building compliant onchain finance with us.", likes: 340, replies: [], verified: false },
-  { id: "f4", issuer: "SBI Asset Management", handle: "sbi_am", time: "1d", text: "Proud to bring Nikkei 225 onchain — GO-NIKKEI is live with daily NAV attested on Creditcoin. 12.8% APY, open for JP Tier 10 holders.", offerId: "nikkei-rwa", likes: 210, replies: [{ author: "Kenji T.", text: "Added to registry — super smooth flow.", time: "3h" }], verified: true },
-  { id: "f5", issuer: "PAMP Suisse", handle: "pamp_suisse", time: "2d", text: "Behind the scenes: 1.2 GO-GOLD redeemed and delivered — from vault to onchain proof seamlessly. Always 1:1 backed and verifiable on Explorer.", offerId: "gold", likes: 88, replies: [], verified: true },
-];
+const CHAIN_NAMES: Record<number, string> = { 11155111: "Sepolia", 102031: "Creditcoin" };
+const COUNTRY_BIT: Record<number, string> = { 0: "US", 1: "SG", 2: "JP", 3: "HK", 4: "DE", 5: "CN", 6: "GB", 7: "FR", 8: "AE", 9: "CH" };
+function bitmapToRegion(bitmap: string): string {
+  try { const n = BigInt(bitmap || "0"); for (let i = 0; i < 10; i++) if ((n & (BigInt(1) << BigInt(i))) !== BigInt(0)) return COUNTRY_BIT[i] || "—"; } catch {}
+  return bitmap && bitmap !== "0" ? bitmap : "—";
+}
+function bitmapToCountries(bitmap: string): string[] {
+  try { const n = BigInt(bitmap || "0"); const out: string[] = []; for (let i = 0; i < 10; i++) if ((n & (BigInt(1) << BigInt(i))) !== BigInt(0)) out.push(COUNTRY_BIT[i]); return out; } catch { return []; }
+}
 
 function shortAddr(a: string) { return a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "—"; }
 function issuerInitials(name: string) { return name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase(); }
 function issuerGradient(name: string) { let h = 0; for (let i = 0; i < 6; i++) h = (h * 31 + name.charCodeAt(i % name.length)) % 360; return `linear-gradient(135deg, hsl(${h} 70% 50%), hsl(${(h + 40) % 360} 70% 45%))`; }
+function timeAgo(iso?: string) {
+  if (!iso) return "now";
+  const d = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(d / 60000);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  return `${Math.floor(h / 24)}d`;
+}
 
 export default function DiscoverPage() {
   const { address } = useWallet();
@@ -187,35 +88,99 @@ export default function DiscoverPage() {
   const [openComments, setOpenComments] = useState<Set<string>>(new Set());
   const [liked, setLiked] = useState<Set<string>>(new Set());
   const [filterOpen, setFilterOpen] = useState(false);
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [feed, setFeed] = useState<FeedItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => setMounted(true), []);
   useEffect(() => { if (!address) { setOwnerId(null); return; } loadProfile(address).then((p) => setOwnerId((p as unknown as { id: string } | null)?.id || null)); }, [address]);
   useEffect(() => { if (!ownerId) { setAddedIds(new Set()); return; } listMyTokens(ownerId).then((rows) => { const s = new Set<string>(); rows.forEach((r) => s.add(`${r.tokenAddress.toLowerCase()}:${r.chainId}`)); setAddedIds(s); }); }, [ownerId]);
 
+  useEffect(() => {
+    const fetch = async () => {
+      setLoading(true);
+      try {
+        const client = getClient();
+        const { data: tokenProfiles } = await (client.models.RWATokenProfile as any).byTokenStatus({ status: "listed" });
+        const list: Offer[] = [];
+        for (const tp of (tokenProfiles as any[]) || []) {
+          const { data: issuer } = await (client.models.RWAIssuerProfile as any).get({ id: tp.issuerProfileId });
+          if (!issuer || issuer.status !== "verified") continue;
+          const { data: token } = await (client.models.TokenRecord as any).get({ id: tp.tokenRecordId });
+          if (!token) continue;
+          list.push({
+            id: tp.id,
+            issuerId: issuer.id,
+            issuer: issuer.issuerName,
+            handle: issuer.handle,
+            productName: token.name,
+            symbol: token.symbol,
+            tokenAddress: token.tokenAddress,
+            chainId: token.chainId,
+            chain: CHAIN_NAMES[token.chainId] || String(token.chainId),
+            apy: tp.apy || "—",
+            tvl: tp.tvl || "—",
+            region: bitmapToRegion(token.ruleBitmap),
+            desc: tp.desc || "",
+            productUrl: tp.productUrl || "",
+            isWrapped: token.isWrapped,
+            ruleMinTier: token.ruleMinTier,
+            countries: bitmapToCountries(token.ruleBitmap),
+          });
+        }
+        setOffers(list);
+        const { data: announcements } = await (client.models.IssuerAnnouncement as any).list({ limit: 50 });
+        const feedList: FeedItem[] = [];
+        for (const a of ((announcements as any[]) || []).slice(0, 20)) {
+          const { data: issuer } = await (client.models.RWAIssuerProfile as any).get({ id: a.issuerProfileId });
+          if (!issuer || issuer.status !== "verified") continue;
+          const { data: replies } = await (client.models.AnnouncementReply as any).listByAnnouncement({ announcementId: a.id });
+          feedList.push({
+            id: a.id,
+            issuer: issuer.issuerName,
+            handle: issuer.handle,
+            time: timeAgo(a.createdAt),
+            text: a.text,
+            tokenProfileId: a.tokenProfileId || undefined,
+            likes: a.likesCount || 0,
+            replies: ((replies as any[]) || []).map((r: any) => ({ author: r.authorWallet.slice(0, 6) + "…" + r.authorWallet.slice(-4), text: r.text, time: timeAgo(r.createdAt) })),
+            verified: issuer.status === "verified",
+          });
+        }
+        feedList.sort((a, b) => b.likes - a.likes);
+        setFeed(feedList);
+      } catch (e) { console.error(e); }
+      setLoading(false);
+    };
+    fetch();
+  }, []);
+
   const handleAdd = async (o: Offer) => {
     setErr(null);
     if (!ownerId) { setErr("Connect wallet and save profile in Settings first"); return; }
     setAdding(true);
-    try { await addFactoryToken(ownerId, { id: o.id, tokenAddress: o.tokenAddress, chainId: o.chainId, symbol: o.symbol, name: o.productName, decimals: 18 }); setAddedIds((prev) => new Set(prev).add(`${o.tokenAddress.toLowerCase()}:${o.chainId}`)); } catch (e) { setErr(e instanceof Error ? e.message : String(e)); } finally { setAdding(false); }
+    try {
+      const client = getClient();
+      const { data: tp } = await (client.models.RWATokenProfile as any).get({ id: o.id });
+      await addFactoryToken(ownerId, { id: tp?.tokenRecordId || o.id, tokenAddress: o.tokenAddress, chainId: o.chainId, symbol: o.symbol, name: o.productName, decimals: 18 });
+      setAddedIds((prev) => new Set(prev).add(`${o.tokenAddress.toLowerCase()}:${o.chainId}`));
+    } catch (e) { setErr(e instanceof Error ? e.message : String(e)); } finally { setAdding(false); }
   };
 
   const isAdded = (o: Offer) => addedIds.has(`${o.tokenAddress.toLowerCase()}:${o.chainId}`);
   const toggleComments = (id: string) => setOpenComments((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
-  const filteredOffers = OFFERS.filter((o) => (filter !== "all" ? o.cat === filter : true) && (search ? `${o.symbol} ${o.productName} ${o.issuer}`.toLowerCase().includes(search.toLowerCase()) : true))
-    .sort((a, b) => {
-      const av = a.apy === "—" ? -1 : parseFloat(a.apy);
-      const bv = b.apy === "—" ? -1 : parseFloat(b.apy);
-      return bv - av;
-    });
-  const filteredFeed = FEED.filter((f) => {
-    if (!search) {
-      if (filter === "all") return true;
-      if (!f.offerId) return false;
-      const o = OFFERS.find((x) => x.id === f.offerId);
-      return o?.cat === filter;
+  const q = search.toLowerCase();
+  const filteredOffers = offers.filter((o) => (search ? `${o.symbol} ${o.productName} ${o.issuer} ${o.handle}`.toLowerCase().includes(q) : true))
+    .sort((a, b) => { const av = a.apy === "—" ? -1 : parseFloat(a.apy); const bv = b.apy === "—" ? -1 : parseFloat(b.apy); return bv - av; });
+  const filteredFeed = feed.filter((f) => {
+    if (search) return `${f.issuer} ${f.handle} ${f.text}`.toLowerCase().includes(q);
+    if (filter !== "all") {
+      const o = f.tokenProfileId ? filteredOffers.find((x) => x.id === f.tokenProfileId) : undefined;
+      if (!o) return false;
+      // simple cat filter by region/apy? map tvl? keep all for now when filter not all
     }
-    return `${f.issuer} ${f.text}`.toLowerCase().includes(search.toLowerCase());
+    return true;
   });
 
   const drawer = mounted && selected ? (
@@ -241,15 +206,14 @@ export default function DiscoverPage() {
             </div>
             <div className="rounded-lg border border-border bg-panel p-3 space-y-2">
               <div className="text-xs font-mono text-white/40">Token</div><div className="text-xs font-mono text-white break-all">{selected.tokenAddress}</div><div className="text-xs text-muted">{selected.chain} · {selected.chainId}</div>
-              <div className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-mono border ${selected.isWrapped ? "bg-violet-500/10 border-violet-500/20 text-violet-300" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-300"}`}>{selected.isWrapped ? `Wrapped · ${shortAddr(selected.underlying || "")}` : "Native"}</div>
+              <div className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-mono border ${selected.isWrapped ? "bg-violet-500/10 border-violet-500/20 text-violet-300" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-300"}`}>{selected.isWrapped ? `Wrapped` : "Native"}</div>
             </div>
             <div className="flex gap-2">
               <button onClick={() => handleAdd(selected)} disabled={adding || isAdded(selected) || !ownerId} className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-white text-canvas text-sm font-medium hover:bg-white/90 disabled:opacity-40">{adding ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} {isAdded(selected) ? "Added" : "Add to registry"}</button>
-              <a href={selected.productUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-1 px-4 py-2.5 rounded-lg border border-border bg-panel text-sm text-white hover:bg-white/[0.04]">View product <ExternalLink size={12} /></a>
+              {selected.productUrl && <a href={selected.productUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-1 px-4 py-2.5 rounded-lg border border-border bg-panel text-sm text-white hover:bg-white/[0.04]">View product <ExternalLink size={12} /></a>}
             </div>
             {err && <div className="text-xs text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{err}</div>}
             {!ownerId && <div className="text-xs text-amber-200/70">Save profile in Settings to add tokens.</div>}
-            <div className="pt-2 border-t border-border text-xs text-muted">Issuer <a href={selected.issuerUrl} target="_blank" rel="noreferrer" className="text-white hover:underline">{selected.issuer}</a> · via API for Issuers (later)</div>
           </div>
         </motion.div>
       </div>
@@ -262,10 +226,7 @@ export default function DiscoverPage() {
     <div className="w-full">
       <div className="grid lg:grid-cols-[1fr_280px] gap-6 mb-3 items-center">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="w-1 h-4 bg-amber rounded" />
-            <span className="font-mono text-xs font-medium text-white">Discover</span>
-          </div>
+          <div className="flex items-center gap-2"><span className="w-1 h-4 bg-amber rounded" /><span className="font-mono text-xs font-medium text-white">Discover</span></div>
           <div className="relative">
             <button onClick={() => setFilterOpen((v) => !v)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-panel text-xs font-medium text-white hover:bg-white/[0.04]">
               {pills.find((p) => p.id === filter)?.label} <ChevronDown size={12} className={`transition-transform ${filterOpen ? "rotate-180" : ""}`} />
@@ -273,11 +234,7 @@ export default function DiscoverPage() {
             {filterOpen && (
               <div className="absolute right-0 mt-2 w-36 rounded-lg border border-border bg-panel shadow-lg overflow-hidden z-20">
                 {pills.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => { setFilter(p.id); setFilterOpen(false); }}
-                    className={`w-full text-left px-3 py-2 text-xs hover:bg-white/[0.04] ${filter === p.id ? "text-white bg-white/[0.04]" : "text-muted"}`}
-                  >
+                  <button key={p.id} onClick={() => { setFilter(p.id); setFilterOpen(false); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-white/[0.04] ${filter === p.id ? "text-white bg-white/[0.04]" : "text-muted"}`}>
                     {p.label}
                   </button>
                 ))}
@@ -287,13 +244,16 @@ export default function DiscoverPage() {
         </div>
         <div className="hidden lg:block" />
       </div>
-      <div className="grid lg:grid-cols-[1fr_280px] gap-6 items-start">
-        {/* left — social cards with gap */}
-        <div className="space-y-3">
-            {filteredFeed.length === 0 ? <div className="rounded-xl border border-border bg-panel p-8 text-center text-sm text-muted">No posts for this filter.</div> : filteredFeed.map((f) => {
-              const offer = f.offerId ? OFFERS.find((o) => o.id === f.offerId) : null;
-              const isOpen = openComments.has(f.id);
-              return (
+
+      {loading ? (
+        <div className="flex items-center justify-center py-16 text-sm text-muted"><Loader2 size={16} className="animate-spin mr-2" /> Loading listings...</div>
+      ) : (
+        <div className="grid lg:grid-cols-[1fr_280px] gap-6 items-start">
+          <div className="space-y-3">
+            {filteredFeed.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-white/15 bg-panel/40 p-8 text-center text-sm text-muted">No announcements yet.</div>
+            ) : (
+              filteredFeed.map((f) => (
                 <div key={f.id} className="rounded-xl border border-border bg-panel overflow-hidden">
                   <div className="p-4">
                     <div className="flex gap-3">
@@ -307,47 +267,58 @@ export default function DiscoverPage() {
                         <p className="text-white text-sm mt-1 leading-relaxed">{f.text}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-5 mt-2 text-white/30 text-xs font-mono">
-                      <button onClick={() => setLiked((prev) => { const n = new Set(prev); if (n.has(f.id)) n.delete(f.id); else n.add(f.id); return n; })} className={`hover:text-white ${liked.has(f.id) ? "text-red-300" : ""}`}>♡ {f.likes + (liked.has(f.id) ? 1 : 0)}</button>
-                      <button onClick={() => toggleComments(f.id)} className="hover:text-white">💬 {f.replies.length}</button>
-                      {offer && <button onClick={() => setSelected(offer)} className="hover:text-white">↗ View</button>}
+                    <div className="mt-3 flex items-center gap-5">
+                      <button onClick={() => setLiked((prev) => { const n = new Set(prev); if (n.has(f.id)) n.delete(f.id); else n.add(f.id); return n; })} className={`inline-flex items-center gap-1.5 text-xs ${liked.has(f.id) ? "text-red-300" : "text-white/40 hover:text-white"}`}>
+                        ♥ {f.likes + (liked.has(f.id) ? 1 : 0)}
+                      </button>
+                      <button onClick={() => toggleComments(f.id)} className={`inline-flex items-center gap-1.5 text-xs ${openComments.has(f.id) ? "text-white" : "text-white/40 hover:text-white"}`}>
+                        💬 {f.replies.length} {openComments.has(f.id) ? "hide" : "reply"}
+                      </button>
+                      {f.tokenProfileId && (
+                        <button onClick={() => { const o = offers.find((x) => x.id === f.tokenProfileId); if (o) setSelected(o); }} className="ml-auto text-xs text-white/30 hover:text-white">↗ View</button>
+                      )}
                     </div>
-                    {isOpen && f.replies.length > 0 && (
-                      <div className="mt-3 pl-3 border-l border-border space-y-2">
-                        {f.replies.map((r, i) => (
-                          <p key={i} className="text-xs"><span className="font-medium text-white">{r.author}</span> <span className="text-muted">{r.text}</span> <span className="text-white/25">{r.time}</span></p>
-                        ))}
-                      </div>
-                    )}
                   </div>
+                  {openComments.has(f.id) && (
+                    <div className="border-t border-border bg-canvas/30 px-4 py-3 space-y-2">
+                      {f.replies.length === 0 ? <p className="text-xs text-muted">No replies yet — be first.</p> : f.replies.map((r, i) => (
+                        <div key={i} className="rounded-lg bg-white/[0.04] border border-white/5 px-3 py-2">
+                          <p className="text-xs"><span className="font-medium text-white">{r.author}</span> <span className="text-muted">{r.text}</span> <span className="text-white/25">· {r.time}</span></p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              );
-            })}
-        </div>
-
-        {/* right — sticky aside like design */}
-        <aside className="lg:sticky lg:top-24 self-start">
-          <div className="border border-border rounded-lg p-4 bg-panel">
-            <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/25" />
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products..." className="w-full bg-canvas border border-border rounded-md pl-9 pr-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-violet-500/50" />
-            </div>
-            <p className="text-white/30 text-xs uppercase tracking-wide mt-4 mb-2">All products</p>
-            <ol className="space-y-1 text-sm">
-              {filteredOffers.map((o, i) => (
-                <li key={o.id} className="flex items-center justify-between px-2 py-2 rounded-md hover:bg-white/[0.04] cursor-pointer" onClick={() => setSelected(o)}>
-                  <span className="flex items-center gap-2 min-w-0">
-                    <span className="text-white/20 text-xs font-mono w-3 shrink-0">{i + 1}</span>
-                    <span className="text-white truncate">{o.symbol}</span>
-                  </span>
-                  <span className="text-white/25 text-xs font-mono shrink-0 ml-2">{o.tvl}</span>
-                </li>
-              ))}
-            </ol>
-            {err && <div className="mt-3 text-xs text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{err}</div>}
+              ))
+            )}
           </div>
-        </aside>
-      </div>
+          <aside className="lg:sticky lg:top-24 self-start">
+            <div className="border border-border rounded-lg p-4 bg-panel">
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/25" />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products..." className="w-full bg-canvas border border-border rounded-md pl-9 pr-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-violet-500/50" />
+              </div>
+              <p className="text-white/30 text-xs uppercase tracking-wide mt-4 mb-2">All products</p>
+              {filteredOffers.length === 0 ? (
+                <div className="text-xs text-muted py-4 text-center border border-dashed border-white/10 rounded-lg">No listings yet.</div>
+              ) : (
+                <ol className="space-y-1 text-sm">
+                  {filteredOffers.map((o, i) => (
+                    <li key={o.id} className="flex items-center justify-between px-2 py-2 rounded-md hover:bg-white/[0.04] cursor-pointer" onClick={() => setSelected(o)}>
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span className="text-white/20 text-xs font-mono w-3 shrink-0">{i + 1}</span>
+                        <span className="text-white truncate">{o.symbol}</span>
+                      </span>
+                      <span className="text-white/25 text-xs font-mono shrink-0 ml-2">{o.tvl}</span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+              {err && <div className="mt-3 text-xs text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{err}</div>}
+            </div>
+          </aside>
+        </div>
+      )}
       {mounted ? createPortal(drawer, document.body) : null}
     </div>
   );
