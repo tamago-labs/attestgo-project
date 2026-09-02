@@ -20,11 +20,11 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "AttestGO — Compliance Layer for Onchain Finance",
+    default: "AttestGO — Identity, RWA & Compliance for Onchain Finance",
     template: "%s | AttestGO — Powered by Attestcoin",
   },
   description:
-    "AttestGO is the compliance layer for onchain finance — verified identity, compliant assets and AI composed inbox powered by Attestcoin Protocol.",
+    "AI makes compliance simple — AttestGO is the AI compliance infrastructure for onchain finance: GO Pass, compliant RWA, DeFi & AI inbox via Attestcoin Protocol.",
 };
 
 export default function RootLayout({

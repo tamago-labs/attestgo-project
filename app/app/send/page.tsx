@@ -5,12 +5,13 @@ export default function SendPage() {
     <div className="w-full h-[calc(100vh-7rem)] flex flex-col">
       <div className="rounded-xl border border-border bg-panel overflow-hidden grid md:grid-cols-[260px_1fr] flex-1 min-h-0">
         {/* sidebar */}
-        <div className="border-b md:border-b-0 md:border-r border-border p-4 bg-panel">
-          <div className="flex items-center gap-2 mb-3">
+        <div className="border-b md:border-b-0 md:border-r border-border flex flex-col min-h-0 bg-panel">
+          <div className="px-5 py-4 border-b border-border flex items-center gap-2 bg-panel">
             <span className="w-1 h-4 bg-amber rounded" />
-            <span className="font-mono text-xs font-medium text-white">Send</span>
+            <h3 className="font-medium text-white text-sm">Send</h3>
           </div>
-          <p className="text-muted text-sm mb-1">Total balance</p>
+          <div className="p-4">
+            <p className="text-muted text-sm mb-1">Total balance</p>
           <p className="text-2xl font-semibold tracking-tight text-white mb-4">$24,700.00</p>
 
           <p className="text-white/30 text-xs uppercase tracking-wide mb-2">Allocation</p>
@@ -46,6 +47,7 @@ export default function SendPage() {
           <div className="mt-4 pt-4 border-t border-border">
             <p className="text-white/30 text-xs mb-1">Identity</p>
             <p className="text-sm text-white">Verified · Tier 10</p>
+          </div>
           </div>
         </div>
 

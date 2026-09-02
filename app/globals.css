@@ -49,3 +49,62 @@ body {
   mask-image: radial-gradient(ellipse 90% 85% at 50% 15%, black 25%, transparent 95%);
   -webkit-mask-image: radial-gradient(ellipse 90% 85% at 50% 15%, black 25%, transparent 95%);
 }
+
+.marquee-track {
+  animation: marquee 30s linear infinite;
+}
+
+.marquee-wrap:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+}
+
+.connector-dot {
+  position: absolute;
+  top: 0;
+  left: 0%;
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  border-radius: 9999px;
+  transform: translateX(-50%);
+  animation: connector-dot 2.6s linear infinite;
+}
+
+@keyframes connector-dot {
+  0% {
+    left: 0%;
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    left: 100%;
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .connector-dot {
+    animation: none;
+    opacity: 0;
+  }
+}

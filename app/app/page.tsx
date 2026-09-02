@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { ArrowUpRight } from "lucide-react";
+import { useWallet } from "@/components/app/WalletContext";
 
 type Msg = {
   title: string;
@@ -59,6 +61,7 @@ const msgs: Msg[] = [
 ];
 
 export default function InboxPage() {
+  const { isConnected } = useWallet();
   const [selected, setSelected] = useState(0);
   const active = msgs[selected];
 
@@ -72,40 +75,84 @@ export default function InboxPage() {
               <span className="w-1 h-4 bg-amber rounded" />
               <h3 className="font-medium text-white text-sm">Inbox</h3>
             </div>
-            <span className="text-white/30 text-xs font-mono">3 new</span>
+            <span className="text-white/30 text-xs font-mono">{isConnected ? "3 new" : "—"}</span>
           </div>
-          <div className="divide-y divide-border overflow-y-auto min-h-0">
-            {msgs.map((m, i) => (
-              <button
-                key={m.title}
-                onClick={() => setSelected(i)}
-                className={`w-full text-left flex items-start gap-3 px-5 py-4 hover:bg-white/[0.03] transition-colors ${i === selected ? "bg-white/[0.04]" : ""} ${!m.unread ? "opacity-60" : ""}`}
-              >
-                <span className={`w-2 h-2 rounded-full mt-2 shrink-0 ${m.unread ? "bg-amber-400" : "bg-border"}`} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="font-medium text-sm text-white truncate">{m.title}</p>
-                    <span className="text-white/30 text-xs font-mono shrink-0 ml-2">{m.time}</span>
+          <div className="divide-y divide-border overflow-y-auto min-h-0 flex-1">
+            {isConnected ? (
+              msgs.map((m, i) => (
+                <button
+                  key={m.title}
+                  onClick={() => setSelected(i)}
+                  className={`w-full text-left flex items-start gap-3 px-5 py-4 hover:bg-white/[0.03] transition-colors ${i === selected ? "bg-white/[0.04]" : ""} ${!m.unread ? "opacity-60" : ""}`}
+                >
+                  <span className={`w-2 h-2 rounded-full mt-2 shrink-0 ${m.unread ? "bg-amber-400" : "bg-border"}`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-medium text-sm text-white truncate">{m.title}</p>
+                      <span className="text-white/30 text-xs font-mono shrink-0 ml-2">{m.time}</span>
+                    </div>
+                    <p className="text-muted text-sm mt-0.5 truncate">{m.preview}</p>
                   </div>
-                  <p className="text-muted text-sm mt-0.5 truncate">{m.preview}</p>
-                </div>
-              </button>
-            ))}
+                </button>
+              ))
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                <p className="text-sm text-white font-medium">Welcome to your inbox</p>
+                <p className="text-xs text-white/30 mt-1">All your onchain actions, composed into your inbox</p>
+                <span className="mt-3 inline-flex items-center gap-1 text-sm text-amber">
+                  Connect wallet to continue <ArrowUpRight size={12} />
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
         {/* right — preview l3 */}
-        <div className="p-8 bg-canvas/30 overflow-y-auto min-h-0">
-          <p className="text-white/30 text-xs font-mono mb-2">TODAY · 09:41</p>
-          <h3 className="text-xl font-semibold text-white mb-4">{active.title}</h3>
-          <p className="text-muted text-sm leading-relaxed max-w-md">{active.body}</p>
-          <div className="mt-6 flex flex-wrap gap-2">
-            {active.tags.map((t) => (
-              <span key={t.label} className={`px-2.5 py-1 rounded-full text-xs font-mono border ${t.cls}`}>
-                {t.label}
-              </span>
-            ))}
-          </div>
+        <div className="p-8 bg-canvas/30 overflow-y-auto min-h-0 flex flex-col">
+          {isConnected ? (
+            <>
+              <p className="text-white/30 text-xs font-mono mb-2">TODAY · 09:41</p>
+              <h3 className="text-xl font-semibold text-white mb-4">{active.title}</h3>
+              <p className="text-muted text-sm leading-relaxed max-w-md">{active.body}</p>
+              <div className="mt-6 flex flex-wrap gap-2">
+                {active.tags.map((t) => (
+                  <span key={t.label} className={`px-2.5 py-1 rounded-full text-xs font-mono border ${t.cls}`}>
+                    {t.label}
+                  </span>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="relative overflow-hidden rounded-xl border border-border bg-panel/70 px-6 py-8 text-center max-w-md w-full">
+                <div className="mesh-glow absolute -top-20 left-1/2 -translate-x-1/2 w-[500px] h-[300px] max-w-full pointer-events-none opacity-60" />
+                <div className="relative">
+                  <div className="flex items-center justify-center gap-1.5 mb-3">
+                    <span className="font-display font-semibold text-base tracking-tight text-white">attest</span>
+                    <span
+                      className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold tracking-widest"
+                      style={{ background: "linear-gradient(135deg,#FDB750,#8B7CF0)", color: "#0A0D13" }}
+                    >
+                      GO
+                    </span>
+                  </div>
+                  <h3 className="font-display font-semibold text-xl sm:text-2xl leading-tight tracking-tight text-white">
+                    The First AI Command Center
+                    <br />
+                    for <span className="glow-text">Onchain Finance</span>
+                  </h3>
+                  <p className="mt-3 text-sm text-muted max-w-xs mx-auto leading-relaxed">AI simplifies every compliance workflow</p>
+                  <div className="mt-5 flex items-center justify-center gap-2 text-xs font-mono text-white/60 flex-wrap">
+                    <span>Mint GO Pass</span>
+                    <span className="text-white/20">·</span>
+                    <span>Acquire GO Assets</span>
+                    <span className="text-white/20">·</span>
+                    <span>Use in DeFi</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
