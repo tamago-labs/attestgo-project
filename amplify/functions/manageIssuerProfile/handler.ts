@@ -13,6 +13,13 @@ function json(statusCode: number, body: unknown) {
 }
 
 export const handler = async (event: any) => {
+  const headers = Object.fromEntries(Object.entries((event.headers || event.request?.headers || {}) as any).map(([k, v]) => [k.toLowerCase(), String(v || "")]));
+  const provided = headers["x-platform-api-key"] || headers["x-api-key"] || String(event.arguments?.platformKey || event.arguments?.platformApiKey || "");
+  const expected = (env as any).PLATFORM_API_KEY as string;
+  if (expected && provided !== expected) {
+    const hasKey = !!provided;
+    if (hasKey) return json(401, { error: "unauthorized: invalid platform api key" });
+  }
   const args = event.arguments ?? (event.body ? JSON.parse(event.body) : {});
   const action = String(args.action || (args.issuerProfileId ? "update" : "create")).toLowerCase();
   if (action === "create") {
