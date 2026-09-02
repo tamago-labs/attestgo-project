@@ -61,6 +61,16 @@ const schema = a.schema({
     .handler(a.handler.function(attestPass))
     .authorization((allow) => [allow.publicApiKey()]),
 
+  AssetPrice: a
+    .model({
+      symbol: a.string().required(),
+      priceUSD: a.float().required(),
+      source: a.enum(["chainlink", "pyth", "manual"]),
+      updatedAt: a.datetime(),
+    })
+    .authorization((allow) => [allow.publicApiKey().to(["read", "create", "update", "delete"])])
+    .secondaryIndexes((index) => [index("symbol").queryField("bySymbol")]),
+
   TokenRecord: a
     .model({
       tokenAddress: a.string().required(),
