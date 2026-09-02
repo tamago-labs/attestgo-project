@@ -75,6 +75,7 @@ const schema = a.schema({
       txHash: a.string().required(),
       blockNumber: a.integer().required(),
       subscribers: a.hasMany("UserTokenRegistry", "tokenRecordId"),
+      rwaProfile: a.hasOne("RWATokenProfile", "tokenRecordId"),
     })
     .authorization((allow) => [allow.publicApiKey().to(["read"])])
     .secondaryIndexes((index) => [
@@ -102,6 +103,69 @@ const schema = a.schema({
       index("tokenAddress").queryField("byTokenAddress"),
       index("tokenRecordId").queryField("byTokenRecord"),
     ]),
+
+  RWAIssuerProfile: a
+    .model({
+      issuerName: a.string().required(),
+      handle: a.string().required(),
+      logoURI: a.string(),
+      website: a.string(),
+      description: a.string(),
+      ownerWallet: a.string().required(),
+      status: a.enum(["pending", "verified", "rejected"]),
+      verifiedAt: a.datetime(),
+      tokens: a.hasMany("RWATokenProfile", "issuerProfileId"),
+      announcements: a.hasMany("IssuerAnnouncement", "issuerProfileId"),
+    })
+    .authorization((allow) => [allow.publicApiKey().to(["read", "create", "update", "delete"])])
+    .secondaryIndexes((index) => [
+      index("handle").queryField("byHandle"),
+      index("ownerWallet").queryField("byOwnerWallet"),
+      index("status").queryField("byStatus"),
+    ]),
+
+  RWATokenProfile: a
+    .model({
+      issuerProfileId: a.id().required(),
+      issuerProfile: a.belongsTo("RWAIssuerProfile", "issuerProfileId"),
+      tokenRecordId: a.id().required(),
+      tokenRecord: a.belongsTo("TokenRecord", "tokenRecordId"),
+      apy: a.string(),
+      tvl: a.string(),
+      desc: a.string(),
+      productUrl: a.string(),
+      status: a.enum(["draft", "listed"]),
+    })
+    .authorization((allow) => [allow.publicApiKey().to(["read", "create", "update", "delete"])])
+    .secondaryIndexes((index) => [
+      index("issuerProfileId").queryField("listByIssuerProfile"),
+      index("tokenRecordId").queryField("byTokenRecordId"),
+      index("status").queryField("byTokenStatus"),
+    ]),
+
+  IssuerAnnouncement: a
+    .model({
+      issuerProfileId: a.id().required(),
+      issuerProfile: a.belongsTo("RWAIssuerProfile", "issuerProfileId"),
+      tokenProfileId: a.id(),
+      tokenProfile: a.belongsTo("RWATokenProfile", "tokenProfileId"),
+      text: a.string().required(),
+      txHash: a.string(),
+      likesCount: a.integer().required(),
+      replies: a.hasMany("AnnouncementReply", "announcementId"),
+    })
+    .authorization((allow) => [allow.publicApiKey().to(["read", "create", "update", "delete"])])
+    .secondaryIndexes((index) => [index("issuerProfileId").queryField("listByIssuerAnnouncement")]),
+
+  AnnouncementReply: a
+    .model({
+      announcementId: a.id().required(),
+      announcement: a.belongsTo("IssuerAnnouncement", "announcementId"),
+      authorWallet: a.string().required(),
+      text: a.string().required(),
+    })
+    .authorization((allow) => [allow.publicApiKey().to(["read", "create", "delete"])])
+    .secondaryIndexes((index) => [index("announcementId").queryField("listByAnnouncement")]),
 }).authorization((allow) => [allow.resource(mintPass), allow.resource(attestPass), allow.resource(createGToken)]);
 
 export type Schema = ClientSchema<typeof schema>;
