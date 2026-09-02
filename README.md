@@ -1,35 +1,49 @@
 # AttestGO
 
-**AI Makes Compliance Simple for Onchain Finance** — `IDENTITY × RWA × COMPLIANCE`
+> We build real compliance infra for real people, not AI slop for judges. 
 
-AttestGO connects verified identity, compliant assets, payments and DeFi, using the
-[Attestcoin Protocol](https://docs.attestcoin.org/) to keep a single, verifiable source of truth
-across chains — with AI turning every action into a human-readable inbox.
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![API Docs](https://img.shields.io/badge/docs-attestgo-blue)](https://docs.attestcoin.org/)
+[![Discord](https://img.shields.io/badge/discord-join-5865F2)](https://discord.gg/creditcoin)
 
-## What you can build
+Compliance layer for onchain finance — identity, RWA and cross-chain lending with AI inbox, powered by the [Attestcoin Protocol](https://docs.attestcoin.org/).
 
-**One GO Pass, Every Chain** — Mint a universal pass once and reuse it across apps and compliant
-payment flows. Attested on Creditcoin via an Attestcoin Smart Contract, verifiable on any chain.
-Privacy-preserving verification with minimal data exposure. KYC by Sumsub from day one.
+## Overview
 
-**GO Assets: RWA + Self-Enforcing Rules** — Issuers get the API to create, govern and distribute
-digital representations of real-world value with identity-aware controls. Define eligibility once,
-enforced on every move. Whitelist or blacklist countries without redeploying. Wrap any existing
-token 1:1 with compliance added. Pause or update rules without touching holders.
+**What is it?** AttestGO connects verified identity (GO Pass), compliant RWA (GO Assets), payments and institutional DeFi through a single verifiable source of truth across chains. One attested pass and one set of rules work everywhere — enforced on every transfer, not bolted on.
 
-**Institutional-Ready DeFi** — One interface for payments and DeFi with RWA, checked via GO Pass
-and GO Asset rules on every transfer. Lend and borrow on Creditcoin while collateral stays locked
-on its source chain. Travel-rule data generated for every transfer.
+**What problem does it solve?** RWA and DeFi today either ignore compliance (unusable for institutions) or re-implement it per chain/app (fragmented, error-prone). Moving collateral cross-chain normally means wrapping/bridging and losing legal enforceability. AttestGO makes eligibility, country controls, travel-rule data and cross-chain state verifiable and self-enforcing.
 
-**AI Composed Inbox** — Salary, invoice, receipt: every send creates a structured document, hashed
-for proof, then rendered by AI into a human email. Recipients see a familiar inbox, not raw hashes
-or explorer links. IVMS101 data standard, <400ms proof attach, hash-only on-chain footprint.
+**How it works.** An [Attestcoin Smart Contract (ASC)](https://docs.attestcoin.org/attestcoin-protocol/attestcoin-readability) on Creditcoin gets **readability** — the ability to trustlessly read and act on state from any source chain — via a decentralized attestor network. AttestGO uses this for identity (GO Pass minted on Sepolia, verified on Creditcoin) and for lending (RWA locked on source chain, position credited on a Creditcoin isolated lending market without the token ever leaving source). AI composes every send into a structured document (IVMS101), hashes for proof and renders a familiar email — inbox, not explorer.
+
+## Key Features
+
+- **GO Pass — universal verified identity.** Soulbound KYC NFT minted once on Sepolia (chainKey 1), verified on Creditcoin via `verifySingle` + on-chain `PassMinted` decode. Mirrors on any EVM for ~5k-gas local checks. Privacy-preserving (minimal disclosure), Sumsub from day one.
+- **GO Assets — RWA with self-enforcing rules.** API to create, govern and distribute tokenized real-world value. Per-rule country bitmap (whitelist/blacklist), pause, 1:1 wrapping of any existing token, eligibility checked on every `transfer`. Update rules without touching holders or redeploying.
+- **Compliant payments & institutional DeFi.** Every transfer checks `GOPass` + `GToken` rules. Cross-chain lending: lock RWA in `SourceVault` on Sepolia, `CoreVault` verifies via `0x0FD2` and credits `Morpho` collateral on Creditcoin; borrow USDC against it. Travel-rule `IVMS101` data attached per transfer, hash-only on-chain.
+- **AI-composed inbox.** Salary/invoice/receipt — every send creates a structured document, hashed for proof, rendered by AI as email. ` <400ms` proof attach, recipients see an inbox, not hashes.
+- **Cross-chain verification & privacy.** Attestcoin `0x0FD2` synchronous proofs, replay protection, worker-minimized trust (only `CC→source` unlock), country/identity bitmaps keep data minimal.
+
+## Architecture / How it Works
+
+Source chains hold RWA and passes; Creditcoin is the verification hub and lending venue. Attestor network finalizes source blocks → ProofBuilder proves the source tx → Creditcoin `0x0FD2` verifies → contract decodes receipt/events and acts. ETH→CC is permissionless/trustless; CC→ETH settlement is via a trusted worker.
+
+![Architecture](https://docs.attestcoin.org/_next/image?url=%2Fimg%2Fattestcoin-readability.png&w=1200&q=75)
+
+> Detailed flow and trust model below in **Built on Creditcoin + Attestcoin Protocol**. Full lending design: [`contracts/CROSS_CHAIN_LENDING_PLAN.md`](contracts/CROSS_CHAIN_LENDING_PLAN.md).
+
+## Use Cases
+
+- **Issuing compliant RWA tokens.** Issuer calls `GTokenFactory` API, sets country/eligibility rules once, distributes `GToken` — rules enforced on every move, including cross-chain lending collateral.
+- **Identity-gated lending.** Lock `GToken` RWA on Sepolia → borrow USDC on Creditcoin Morpho market (`lltv 62%`, `PriceOracle`, `JumpRateIrm`). Collateral never wraps; liquidation credits claims, worker settles real asset.
+- **Cross-chain compliant payments with travel-rule.** Send with `GOPass` eligibility + `GToken` rules + auto-generated `IVMS101` payload — verifiable on any chain.
+- **Payroll / invoicing with AI documents.** Employer `send` creates hashed invoice + AI email; recipient inbox shows structured salary/invoice with on-chain proof link.
+- **Institutional DeFi & custody.** Whitelist jurisdictions per rule, pause markets, wrap existing tokens 1:1 with compliance — without migrating holders.
 
 ## Built on Creditcoin + Attestcoin Protocol
 
 The [Attestcoin Protocol](https://docs.attestcoin.org/attestcoin-protocol/attestcoin-readability)
-gives Creditcoin contracts **readability**: the ability to trustlessly read state from any source
-chain in two steps:
+gives an [Attestcoin Smart Contract (ASC)](https://docs.attestcoin.org/attestcoin-protocol/attestcoin-readability) on Creditcoin **readability** — the ability to trustlessly read and act on state from any source chain — in two steps:
 
 1. **Attestation** — a decentralized attestor network tracks finalized source-chain blocks and
    stores consensus attestations on Creditcoin.
@@ -98,20 +112,33 @@ generation. Every cross-chain flow has exactly one trust boundary: the CC→ETH 
 | [`scripts/lending/3_worker_unlock.ts`](scripts/lending/3_worker_unlock.ts) | Settle `UnlockRequested` on Sepolia (borrower exits + liquidator payouts) | trusted worker |
 | [`scripts/cross-chain-bridge/`](scripts/cross-chain-bridge/) | Payment-stream bridge demos + workers (previous iterations) | mixed |
 
-## Quickstart
+## Getting Started
+
+### Prerequisites
+
+- Node 20+, `npm`, Foundry (`forge` 0.8.19), `npx tsx`
+- RPC URLs: `SEPOLIA_RPC_URL`, `CREDITCOIN_RPC_URL`, `PROOF_BUILDER_URL`
+
+### Installation
+
+```shell
+npm install
+cd contracts && forge build
+```
+
+### Quick start
 
 Web app (Next.js App Router + AWS Amplify):
 
 ```shell
-npm install
 npm run dev
+# http://localhost:3000
 ```
 
-Contracts (Foundry):
+Contracts:
 
 ```shell
 cd contracts
-forge build
 forge test
 ```
 
@@ -132,19 +159,52 @@ LENDING_SIDE=credit USDC_CC=0x.. GTOKEN_CC=0x.. GTOKEN_SOURCE=0x.. ORACLE_ADDR=0
   forge script contracts/script/5_DeployLending.s.sol --rpc-url $CREDITCOIN_RPC_URL --broadcast --legacy
 ```
 
-Key env vars: `PRIVATE_KEY`, `SEPOLIA_RPC_URL`, `CREDITCOIN_RPC_URL`, `PROOF_BUILDER_URL`,
-contract addresses per flow (`GOPASS_ADDR`, `REGISTRY_ADDR`, `CORE_VAULT_ADDR`, `SOURCE_VAULT_ADDR`, ...).
-See [`scripts/.env.example`](scripts/.env.example) and the script headers for the full list.
+### Environment variables
 
-## Repository layout
+`PRIVATE_KEY`, `SEPOLIA_RPC_URL`, `CREDITCOIN_RPC_URL`, `PROOF_BUILDER_URL`, plus per-flow addresses (`GOPASS_ADDR`, `REGISTRY_ADDR`, `CORE_VAULT_ADDR`, `SOURCE_VAULT_ADDR`, …). See [`scripts/.env.example`](scripts/.env.example) and each script header.
+
+## API / SDK Reference
+
+Short overview — full REST ledger in the app:
+
+- `POST /tokens` — issue compliant `GToken` (native/wrapped), operator pays gas — [`app/docs`](app/docs)
+- `GET /tokens?issuer=` — list by issuer
+- Issuer/market/announcement APIs for RWA — see docs panel.
+
+SDK: `ethers` v6 + `@gluwa/usc-sdk` for `0x0FD2` proofs; `amplify/data` for app backend.
+
+## Project Structure
 
 ```
-app/                  Next.js App Router (landing page, identity app, AI inbox)
-components/           Landing page + app UI
+app/                  Next.js App Router (landing, identity app, AI inbox)
+components/           Landing + app UI (Hero, Sidebar, Discover, DocsNav)
 amplify/              AWS Amplify Gen2 backend (auth, data, functions)
 contracts/            Foundry: smart contracts + tests + deploy scripts
 scripts/              Operational TypeScript: gopass / lending / cross-chain-bridge
 ```
+
+## Development
+
+```shell
+npm run dev          # app
+cd contracts
+forge build
+forge test -v        # ~40 tests including morpho + vaults
+```
+
+Contributing: see [CONTRIBUTING.md](CONTRIBUTING.md). Security disclosures: [CONTRIBUTING.md#security-issue-notifications](CONTRIBUTING.md#security-issue-notifications).
+
+## Roadmap
+
+- **Now:** GO Pass (Sepolia→CC→mirrors), GToken factory, SourceVault/CoreVault + Morpho remote collateral, AI inbox.
+- **Next:** Per-market KYC gating (`GOPassMirror.isEligible` in `borrow`), PriceOracle staleness fix, unlock timelock for RWA T+ settlement.
+- **Later:** Mainnet source chains, multi-worker quorum, adaptive IRM, payroll/invoicing templates.
+
+## Links
+
+- Website: [attestgo.com](https://attestgo.com) · Docs: [docs.attestcoin.org](https://docs.attestcoin.org/) · Attestcoin readability: [attestcoin-readability](https://docs.attestcoin.org/attestcoin-protocol/attestcoin-readability)
+- Demo: `/app` (Inbox / Discover / Identity / Send / Earn)
+- Discord / Twitter: add links here
 
 ## Deploying to AWS
 
