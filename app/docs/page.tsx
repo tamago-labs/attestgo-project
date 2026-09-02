@@ -137,6 +137,8 @@ curl "${BASE}/tokens?issuer=0x3D63Ce608deB81f9436198A93BCC2e8f3D79F56E&limit=20"
 
       <section id="endpoints" className="scroll-mt-24 space-y-6">
         <h2 className="font-display text-xl font-semibold text-white">Endpoints</h2>
+        <h3 className="font-display text-lg font-semibold text-white pt-2">Token Issuance</h3>
+        <p className="text-muted text-sm leading-6">Create compliant GToken and query by issuer — platform pays gas, you own the token.</p>
 
         <div className="rounded-xl border border-border bg-panel overflow-hidden">
           <div className="px-4 py-3 border-b border-border flex items-center justify-between">
@@ -145,12 +147,55 @@ curl "${BASE}/tokens?issuer=0x3D63Ce608deB81f9436198A93BCC2e8f3D79F56E&limit=20"
           </div>
           <div className="p-4 space-y-3 text-sm">
             <div className="font-mono text-xs text-muted break-all">{BASE}/tokens</div>
-            <div className="text-muted">
-              Body <span className="text-white">issuer</span> (required, address → becomes <code className="text-white/80">GToken.owner()</code>),{" "}
-              <span className="text-white">name/symbol</span>, <span className="text-white">minTier</span> 0..255 (default 10),{" "}
-              <span className="text-white">countries</span> <code className="text-white/80">[&quot;us&quot;,&quot;sg&quot;]</code> (allowed{" "}
-              <code className="text-white/80">us sg jp hk de cn gb fr ae ch</code> — backend converts to bitmap), <span className="text-white">iconURI</span>,{" "}
-              <span className="text-white">underlying</span> (0x0 native else wrapped ERC20).
+            <div className="overflow-x-auto rounded-lg border border-border">
+              <table className="w-full text-xs">
+                <thead className="bg-canvas/50 text-white/40">
+                  <tr>
+                    <th className="text-left px-3 py-2 font-normal">Param</th>
+                    <th className="text-left px-3 py-2 font-normal">Type</th>
+                    <th className="text-left px-3 py-2 font-normal">Required</th>
+                    <th className="text-left px-3 py-2 font-normal">Description</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border text-muted">
+                  <tr>
+                    <td className="px-3 py-2 font-mono text-white">issuer</td>
+                    <td className="px-3 py-2">address</td>
+                    <td className="px-3 py-2 text-white">yes</td>
+                    <td className="px-3 py-2">becomes <code className="text-white/80">GToken.owner()</code></td>
+                  </tr>
+                  <tr>
+                    <td className="px-3 py-2 font-mono text-white">name / symbol</td>
+                    <td className="px-3 py-2">string</td>
+                    <td className="px-3 py-2 text-white">yes</td>
+                    <td className="px-3 py-2">token name & symbol</td>
+                  </tr>
+                  <tr>
+                    <td className="px-3 py-2 font-mono text-white">minTier</td>
+                    <td className="px-3 py-2">0–255</td>
+                    <td className="px-3 py-2">no (10)</td>
+                    <td className="px-3 py-2">min GO Pass tier required</td>
+                  </tr>
+                  <tr>
+                    <td className="px-3 py-2 font-mono text-white">countries</td>
+                    <td className="px-3 py-2">["us","sg"]</td>
+                    <td className="px-3 py-2">no (["us"])</td>
+                    <td className="px-3 py-2">allowed: us sg jp hk de cn gb fr ae ch → bitmap</td>
+                  </tr>
+                  <tr>
+                    <td className="px-3 py-2 font-mono text-white">iconURI</td>
+                    <td className="px-3 py-2">string</td>
+                    <td className="px-3 py-2">no</td>
+                    <td className="px-3 py-2">token icon URL</td>
+                  </tr>
+                  <tr>
+                    <td className="px-3 py-2 font-mono text-white">underlying</td>
+                    <td className="px-3 py-2">address</td>
+                    <td className="px-3 py-2">no (0x0)</td>
+                    <td className="px-3 py-2">0x0 = native, else wrapped ERC20</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
             <CodeBlock
               lang="json"
@@ -189,23 +234,52 @@ curl "${BASE}/tokens?issuer=0x3D63Ce608deB81f9436198A93BCC2e8f3D79F56E&limit=20"
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-panel p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-white">GET /tokens</span>
+        <div className="rounded-xl border border-border bg-panel overflow-hidden">
+          <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+            <span className="text-sm font-semibold text-white">GET /tokens — list</span>
             <span className="text-xs font-mono px-2 py-1 rounded bg-white/10 text-muted">public</span>
           </div>
-          <p className="text-sm text-muted">
-            REST: <code className="text-white/80">GET /tokens?issuer=0x3d63...&limit=50&nextToken=...</code> →{" "}
-            <code className="text-white/80">{`{items: [{tokenAddress, symbol, countries:["us"], ruleBitmap:"1", ...}], nextToken, count}`}</code>{" "}
-            (public, no <code className="text-white/80">x-platform-api-key</code>). Also{" "}
-            <code className="text-white/80">GET /tokens</code> lists all (paginated). AppSync alternative:{" "}
-            <code className="text-white/80">listByIssuer / listByChain</code>.
-          </p>
-          <CodeBlock
-            lang="bash"
-            code={`curl "${BASE}/tokens?issuer=0x3D63Ce608deB81f9436198A93BCC2e8f3D79F56E"
-# {"items":[{"tokenAddress":"0xbbf9...","symbol":"TBILL-2","countries":["us"],"ruleBitmap":"1","txHash":"0x82da...","blockNumber":0}],"nextToken":null,"count":1}`}
-          />
+          <div className="p-4 space-y-3 text-sm">
+            <div className="font-mono text-xs text-muted break-all">{BASE}/tokens?issuer=0x...&limit=50&nextToken=...</div>
+            <div className="overflow-x-auto rounded-lg border border-border">
+              <table className="w-full text-xs">
+                <thead className="bg-canvas/50 text-white/40">
+                  <tr>
+                    <th className="text-left px-3 py-2 font-normal">Query</th>
+                    <th className="text-left px-3 py-2 font-normal">Type</th>
+                    <th className="text-left px-3 py-2 font-normal">Required</th>
+                    <th className="text-left px-3 py-2 font-normal">Description</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border text-muted">
+                  <tr>
+                    <td className="px-3 py-2 font-mono text-white">issuer</td>
+                    <td className="px-3 py-2">address</td>
+                    <td className="px-3 py-2">no</td>
+                    <td className="px-3 py-2">filter by issuer (lowercase)</td>
+                  </tr>
+                  <tr>
+                    <td className="px-3 py-2 font-mono text-white">limit</td>
+                    <td className="px-3 py-2">number</td>
+                    <td className="px-3 py-2">no (50)</td>
+                    <td className="px-3 py-2">1–100 paginated</td>
+                  </tr>
+                  <tr>
+                    <td className="px-3 py-2 font-mono text-white">nextToken</td>
+                    <td className="px-3 py-2">string</td>
+                    <td className="px-3 py-2">no</td>
+                    <td className="px-3 py-2">pagination cursor</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="text-xs text-muted">Response <code className="text-white/80">{`{items: [{tokenAddress, symbol, countries:["us"], ruleBitmap:"1", txHash, blockNumber}], nextToken, count}`}</code> — public, no key. Also <code className="text-white/80">GET /tokens</code> without issuer lists all.</div>
+            <CodeBlock lang="bash" title="curl — list by issuer" code={`curl "${BASE}/tokens?issuer=0x3D63Ce608deB81f9436198A93BCC2e8f3D79F56E"
+# {"items":[{"tokenAddress":"0xbbf9...","symbol":"TBILL-2","countries":["us"],"ruleBitmap":"1","txHash":"0x82da...","blockNumber":0}],"nextToken":null,"count":1}
+
+curl "${BASE}/tokens?issuer=0x3D63Ce608deB81f9436198A93BCC2e8f3D79F56E&limit=20&nextToken=abc"
+# paginated`} />
+          </div>
         </div>
       </section>
 
