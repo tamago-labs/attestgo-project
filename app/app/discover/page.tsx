@@ -211,7 +211,7 @@ export default function DiscoverPage() {
   const filteredFeed = FEED.filter((f) => {
     if (!search) {
       if (filter === "all") return true;
-      if (!f.offerId) return filter === "all";
+      if (!f.offerId) return false;
       const o = OFFERS.find((x) => x.id === f.offerId);
       return o?.cat === filter;
     }
