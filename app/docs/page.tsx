@@ -209,6 +209,92 @@ curl "${BASE}/tokens?issuer=0x3D63Ce608deB81f9436198A93BCC2e8f3D79F56E&limit=20"
         </div>
       </section>
 
+      <section id="issuers" className="scroll-mt-24 space-y-6">
+        <h2 className="font-display text-xl font-semibold text-white">Issuers — verified once</h2>
+        <p className="text-muted text-sm leading-6">Create an issuer profile — handle is unique (<code className="text-white/80">3-20 a-z0-9_</code>). You submit as <code className="text-white/80">pending</code>, admin verifies via console to <code className="text-white/80">verified</code>. One verification unlocks many token listings.</p>
+        <div className="rounded-xl border border-border bg-panel overflow-hidden">
+          <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+            <span className="text-sm font-semibold text-white">POST /issuers — create</span>
+            <span className="text-xs font-mono px-2 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/20">x-platform-api-key</span>
+          </div>
+          <div className="p-4 space-y-3 text-sm">
+            <CodeBlock lang="bash" title="curl — create issuer (pending)" code={`curl -X POST ${BASE}/issuers \\
+  -H "x-platform-api-key: 1122334455667788" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "issuerName": "SBI Asset Management",
+    "handle": "sbi_am",
+    "website": "https://www.sbiam.co.jp",
+    "ownerWallet": "0xYourWalletAddress",
+    "description": "Nikkei 225 RWA issuer"
+  }'
+# 201 { id, handle: "sbi_am", status: "pending" }
+# admin verifies in console: RWAIssuerProfile status pending → verified`} />
+            <CodeBlock lang="bash" title="curl — get by handle / update" code={`curl "${BASE}/issuers?handle=sbi_am"
+# { handle: "sbi_am", issuerName: "SBI Asset Management", status: "verified", ownerWallet: "0x..." }
+
+curl -X PATCH ${BASE}/issuers/ISSUER_ID \\
+  -H "x-platform-api-key: 1122334455667788" \\
+  -d '{"website":"https://new.example","handle":"sbi_am"}'
+# handle unique → 409 handle already taken if taken; 403 not owner`} />
+          </div>
+        </div>
+      </section>
+
+      <section id="listings" className="scroll-mt-24 space-y-6">
+        <h2 className="font-display text-xl font-semibold text-white">Listings — 1:1 TokenRecord</h2>
+        <p className="text-muted text-sm leading-6">Link your already-minted <code className="text-white/80">TokenRecord</code> (<code className="text-white/80">POST /tokens</code>) to a display listing — add <code className="text-white/80">apy tvl desc productUrl</code>. Extra fields only, 1:1 mapping via <code className="text-white/80">tokenAddress+chainId</code>.</p>
+        <div className="rounded-xl border border-border bg-panel overflow-hidden">
+          <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+            <span className="text-sm font-semibold text-white">POST /listings — create</span>
+            <span className="text-xs font-mono px-2 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/20">verified issuer only</span>
+          </div>
+          <div className="p-4 space-y-3 text-sm">
+            <CodeBlock lang="bash" title="curl — link token to issuer" code={`curl -X POST ${BASE}/listings \\
+  -H "x-platform-api-key: 1122334455667788" \\
+  -d '{
+    "issuerProfileId": "ISSUER_ID",
+    "tokenAddress": "0xYourGTokenAddress",
+    "chainId": 11155111,
+    "apy": "12.8%",
+    "tvl": "$6.4M",
+    "desc": "Nikkei 225 RWA — daily NAV attested",
+    "productUrl": "https://issuer.example/nikkei-225-rwa"
+  }'
+# 201 { tokenProfileId, status: "listed", apy: "12.8%" }
+# 409 token already has profile / 403 issuer not verified`} />
+            <CodeBlock lang="bash" title="curl — update / delete listing" code={`curl -X PATCH ${BASE}/listings/TOKEN_PROFILE_ID \\
+  -H "x-platform-api-key: 1122334455667788" \\
+  -d '{"apy":"13.1%","tvl":"$7M","status":"listed"}'
+
+curl -X DELETE ${BASE}/listings/TOKEN_PROFILE_ID \\
+  -H "x-platform-api-key: 1122334455667788"
+# TokenRecord stays on-chain, only display listing removed`} />
+          </div>
+        </div>
+      </section>
+
+      <section id="feed" className="scroll-mt-24 space-y-6">
+        <h2 className="font-display text-xl font-semibold text-white">Feed — issuer announcements</h2>
+        <p className="text-muted text-sm leading-6">Verified issuers post updates — optional link to a listing. Anyone can reply.</p>
+        <div className="rounded-xl border border-border bg-panel p-4 space-y-3 text-sm">
+          <CodeBlock lang="bash" title="curl — post announcement" code={`curl -X POST ${BASE}/feed \\
+  -H "x-platform-api-key: 1122334455667788" \\
+  -d '{
+    "issuerProfileId": "ISSUER_ID",
+    "tokenProfileId": "TOKEN_PROFILE_ID",
+    "text": "Nikkei 225 RWA — daily NAV attested on Creditcoin. GO-NIKKEI 12.8% APY open for JP Tier 10."
+  }'
+# 201 { id, likesCount: 0 }
+
+curl "${BASE}/feed?handle=sbi_am"
+# public, lists announcements by issuer`} />
+          <CodeBlock lang="bash" title="curl — reply (public, no platform key)" code={`curl -X POST ${BASE}/feed/ANNOUNCEMENT_ID/replies \\
+  -H "Content-Type: application/json" \\
+  -d '{"authorWallet":"0x...","text":"Added to registry — smooth flow!"}' `} />
+        </div>
+      </section>
+
       <section id="networks" className="scroll-mt-24 space-y-4">
         <h2 className="font-display text-xl font-semibold text-white">Networks & Contracts</h2>
         <div className="overflow-x-auto rounded-xl border border-border">
