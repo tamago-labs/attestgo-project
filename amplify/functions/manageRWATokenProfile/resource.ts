@@ -1,7 +1,7 @@
 import { defineFunction, secret } from "@aws-amplify/backend";
 
-export const postAnnouncement = defineFunction({
-  name: "postAnnouncement",
+export const manageRWATokenProfile = defineFunction({
+  name: "manageRWATokenProfile",
   entry: "./handler.ts",
   runtime: 22,
   timeoutSeconds: 30,

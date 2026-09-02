@@ -4,11 +4,8 @@ import { data } from './data/resource.js';
 import { mintPass } from './functions/mintPass/resource.js';
 import { attestPass } from './functions/attestPass/resource.js';
 import { createGToken } from './functions/createGToken/resource.js';
-import { createIssuerProfile } from './functions/createIssuerProfile/resource.js';
-import { updateIssuerProfile } from './functions/updateIssuerProfile/resource.js';
-import { createRWATokenProfile } from './functions/createRWATokenProfile/resource.js';
-import { updateRWATokenProfile } from './functions/updateRWATokenProfile/resource.js';
-import { deleteRWATokenProfile } from './functions/deleteRWATokenProfile/resource.js';
+import { manageIssuerProfile } from './functions/manageIssuerProfile/resource.js';
+import { manageRWATokenProfile } from './functions/manageRWATokenProfile/resource.js';
 import { postAnnouncement } from './functions/postAnnouncement/resource.js';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 
@@ -18,11 +15,8 @@ const backend = defineBackend({
   mintPass,
   attestPass,
   createGToken,
-  createIssuerProfile,
-  updateIssuerProfile,
-  createRWATokenProfile,
-  updateRWATokenProfile,
-  deleteRWATokenProfile,
+  manageIssuerProfile,
+  manageRWATokenProfile,
   postAnnouncement,
 });
 
