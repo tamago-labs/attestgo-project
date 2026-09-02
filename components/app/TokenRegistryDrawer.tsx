@@ -21,10 +21,41 @@ function getClient() {
   return _client;
 }
 
-type FactoryRow = { id: string; tokenAddress: string; chainId: number; symbol: string; name: string; decimals: number };
+type FactoryRow = { id: string; tokenAddress: string; chainId: number; symbol: string; name: string; decimals: number; isWrapped: boolean; underlying?: string | null; ruleMinTier: number; ruleBitmap: string; countries?: string[] };
 
 function shortAddr(a: string) {
   return a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "—";
+}
+
+const CHAIN_NAMES: Record<number, string> = { 11155111: "Sepolia", 102031: "Creditcoin", 1: "Mainnet", 137: "Polygon" };
+function chainName(id: number): string {
+  return CHAIN_NAMES[id] || String(id);
+}
+
+const COUNTRIES = ["us", "sg", "jp", "hk", "de", "cn", "gb", "fr", "ae", "ch"] as const;
+function bitmapToCountries(bitmap: string | string[] | bigint): string {
+  if (Array.isArray(bitmap)) return bitmap.map((c) => String(c).toUpperCase()).join(", ") || "All";
+  if (typeof bitmap === "bigint") {
+    const out: string[] = [];
+    COUNTRIES.forEach((c, i) => {
+      if ((bitmap & (1n << BigInt(i))) !== 0n) out.push(c.toUpperCase());
+    });
+    return out.length ? out.join(", ") : "All";
+  }
+  const s = String(bitmap || "");
+  if (!s || s === "0") return "All";
+  // BigInt decode to support >32 bits
+  try {
+    const n = BigInt(s);
+    if (n === 0n) return "All";
+    const out: string[] = [];
+    COUNTRIES.forEach((c, i) => {
+      if ((n & (1n << BigInt(i))) !== 0n) out.push(c.toUpperCase());
+    });
+    return out.length ? out.join(", ") : s;
+  } catch {
+    return s.toUpperCase();
+  }
 }
 
 export default function TokenRegistryDrawer({
@@ -197,18 +228,15 @@ export default function TokenRegistryDrawer({
                     <Loader2 size={14} className="animate-spin" /> Loading
                   </div>
                 ) : myTokens.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-white/15 bg-panel/40 p-3 text-center text-xs text-muted">No tokens yet — add from factory or custom.</div>
+                  <div className="rounded-lg border border-dashed border-white/15 bg-panel/40 p-3 text-center text-xs text-muted">No tokens yet — add from the list or custom.</div>
                 ) : (
                   myTokens.map((e) => (
                     <div key={e.id} className="rounded-lg border border-border bg-panel px-3 py-2 flex items-center gap-2">
-                      <span className="h-7 w-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-bold text-white shrink-0">
-                        {e.symbol.slice(0, 2).toUpperCase()}
-                      </span>
                       <div className="flex-1 min-w-0">
                         <div className="text-xs font-medium text-white truncate flex items-center gap-1">
                           {e.symbol} {e.isCustom && <span className="px-1 py-0 rounded bg-amber/15 border border-amber/20 text-[10px] text-amber">custom</span>}
                         </div>
-                        <div className="text-[11px] font-mono text-muted truncate">{shortAddr(e.tokenAddress)} · {e.chainId}</div>
+                        <div className="text-[11px] font-mono text-muted truncate">{shortAddr(e.tokenAddress)} · {chainName(e.chainId)}</div>
                         {e.name && <div className="text-[11px] text-white/40 truncate">{e.name}</div>}
                       </div>
                       <button onClick={() => handleRemove(e.id)} className="w-7 h-7 rounded-lg border border-red-500/20 bg-red-500/10 flex items-center justify-center hover:bg-red-500/20">
@@ -257,21 +285,27 @@ export default function TokenRegistryDrawer({
                       const already = myTokens.some((e) => e.tokenAddress.toLowerCase() === r.tokenAddress.toLowerCase() && e.chainId === r.chainId);
                       return (
                         <div key={r.id} className="rounded-lg border border-border bg-panel px-3 py-3 flex items-center gap-3">
-                          <span className="h-8 w-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-bold text-white shrink-0">
-                            {r.symbol.slice(0, 2).toUpperCase()}
-                          </span>
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-medium text-white truncate">{r.symbol}</div>
                             <div className="text-xs text-muted truncate">{r.name}</div>
-                            <div className="text-[11px] font-mono text-white/30 truncate">{shortAddr(r.tokenAddress)} · {r.chainId}</div>
+                            <div className="text-[11px] font-mono text-white/30 truncate">{shortAddr(r.tokenAddress)} · {chainName(r.chainId)}</div>
                           </div>
-                          <button
-                            onClick={() => handleAddFactory(r)}
-                            disabled={adding || already || !ownerId}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-white text-canvas hover:bg-white/90 disabled:opacity-40"
-                          >
-                            <Plus size={12} /> {already ? "Added" : "Add"}
-                          </button>
+                          <div className="flex flex-col items-end gap-1.5 shrink-0">
+                            <button
+                              onClick={() => handleAddFactory(r)}
+                              disabled={adding || already || !ownerId}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-white text-canvas hover:bg-white/90 disabled:opacity-40"
+                            >
+                              <Plus size={12} /> {already ? "Added" : "Add"}
+                            </button>
+                            <div className="flex flex-wrap gap-1 justify-end">
+                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono border ${r.isWrapped ? "bg-violet-500/10 border-violet-500/20 text-violet-300" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-300"}`}>
+                                {r.isWrapped ? `Wrapped · ${shortAddr(r.underlying || "")}` : "Native"}
+                              </span>
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-white/5 border border-white/10 text-white/60">Tier ≥{r.ruleMinTier}</span>
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-white/5 border border-white/10 text-white/60">{bitmapToCountries((r as unknown as { countries?: string[] }).countries || r.ruleBitmap)}</span>
+                            </div>
+                          </div>
                         </div>
                       );
                     })
