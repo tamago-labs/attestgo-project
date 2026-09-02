@@ -147,4 +147,29 @@ library EventsLib {
     /// @param interest The amount of interest accrued.
     /// @param feeShares The amount of shares minted as fee.
     event AccrueInterest(Id indexed id, uint256 prevBorrowRate, uint256 interest, uint256 feeShares);
+
+    /// @notice Emitted when remote collateral (locked on the source chain, proven via Attestcoin) is credited.
+    /// @param id The market id.
+    /// @param lockId The lock id on the source chain.
+    /// @param onBehalf The borrower whose position is credited.
+    /// @param assets The collateral amount credited.
+    event SupplyRemoteCollateral(Id indexed id, bytes32 indexed lockId, address indexed onBehalf, uint256 assets);
+
+    /// @notice Emitted when remote collateral is debited (unlock requested).
+    /// @param id The market id.
+    /// @param onBehalf The borrower whose position is debited.
+    /// @param assets The collateral amount debited.
+    event WithdrawRemoteCollateral(Id indexed id, address indexed onBehalf, uint256 assets);
+
+    /// @notice Emitted when remote collateral is seized in a liquidation (no token transfer; claim routed
+    ///         to the remote collateral manager).
+    /// @param id The market id.
+    /// @param borrower The liquidated borrower.
+    /// @param liquidator The liquidator.
+    /// @param seizedAssets The seized collateral amount.
+    event RemoteCollateralSeized(Id indexed id, address indexed borrower, address indexed liquidator, uint256 seizedAssets);
+
+    /// @notice Emitted when the remote collateral manager is set.
+    /// @param newRemoteCollateralManager The new manager (CoreVault on Creditcoin).
+    event SetRemoteCollateralManager(address indexed newRemoteCollateralManager);
 }

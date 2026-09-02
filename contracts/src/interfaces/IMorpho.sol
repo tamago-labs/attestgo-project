@@ -52,6 +52,7 @@ interface IMorphoBase {
     function enableIrm(address irm) external;
     function enableLltv(uint256 lltv) external;
     function createMarket(MarketParams memory marketParams) external;
+    function idToMarketParams(Id id) external view returns (MarketParams memory);
     function supply(MarketParams memory marketParams, uint256 assets, uint256 shares, address onBehalf, bytes calldata data) external returns (uint256, uint256);
     function supplyCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, bytes calldata data) external;
     function borrow(MarketParams memory marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) external returns (uint256, uint256);
@@ -59,6 +60,9 @@ interface IMorphoBase {
     function withdrawCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, address receiver) external;
     function repay(MarketParams memory marketParams, uint256 assets, uint256 shares, address onBehalf, bytes calldata data) external returns (uint256, uint256);
     function liquidate(MarketParams memory marketParams, address borrower, uint256 seizedAssets, uint256 repaidShares, bytes calldata data) external returns (uint256, uint256);
+    function supplyRemoteCollateral(MarketParams memory marketParams, bytes32 lockId, uint256 assets, address onBehalf) external;
+    function withdrawRemoteCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf) external;
+    function setRemoteCollateralManager(address newRemoteCollateralManager) external;
     function setFeeRecipient(address newFeeRecipient) external;
     function setOwner(address newOwner) external;
     function accrueInterest(MarketParams memory marketParams) external;
