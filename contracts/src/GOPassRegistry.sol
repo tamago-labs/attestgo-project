@@ -2,12 +2,17 @@
 pragma solidity 0.8.19;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {RLPReader} from "./libraries/RLPReader.sol";
 
 /**
- * GOPassRegistry — verifier on Creditcoin (102031) for Sepolia GOPass hub (11155111, chainKey 1)
- * Sepolia GOPass mints pending (active=false); this registry verifies tx inclusion via 0x0FD2
- * trustless (ProofBuilder chainKey 1 + PrecompileBlockProver.verifySingle). Single source of truth
- * on Creditcoin; worker then calls Sepolia GOPass.setActive(true) to activate. No privileged worker.
+ * GOPassRegistry — Attestcoin Smart Contract on Creditcoin (102031) for the Sepolia GOPass hub
+ * (11155111, chainKey 1).
+ * Sepolia GOPass mints pending (active=false); this registry verifies the mint tx inclusion via
+ * 0x0FD2 `verifySingle` (trustless), then decodes the verified encodedTransaction on-chain
+ * (Attestcoin Phase 4: receipt status == success + `PassMinted` log emitted by GOPASS_ADDR with
+ * recordHash == keccak256(abi.encode(r))) before storing the record. Single source of truth on
+ * Creditcoin; the worker then calls Sepolia GOPass.setActive(true) to activate. No privileged
+ * worker needed for the trustless sync path.
  */
 interface IBlockProver {
     // Creditcoin CC3 precompile 0x0FD2 — view verify. Exact signature varies by network fork;
@@ -16,6 +21,7 @@ interface IBlockProver {
 }
 
 contract GOPassRegistry is Ownable {
+    using RLPReader for *;
     struct Record {
         uint8 tier;
         uint8 subTier;
@@ -42,33 +48,49 @@ contract GOPassRegistry is Ownable {
     mapping(address => uint64) public verifiedUntil;
     mapping(address => bool) public isVerified;
 
-    address public immutable GOPASS_ADDR; // on Creditcoin
-    uint64 public immutable CREDITCOIN_CHAIN_ID;
+    address public immutable GOPASS_ADDR; // on Sepolia (the hub whose txs are proven)
+    uint64 public immutable SOURCE_CHAIN_KEY; // chainKey of the source chain for 0x0FD2 (1 = Sepolia)
     uint64 public cacheTTL = 24 hours;
     address public constant BLOCK_PROVER = address(0x0FD2);
+    address public worker; // trusted fallback path only (syncPass); see below
+
+    /// @notice keccak256("PassMinted(address,uint256,bytes32,uint64)")
+    bytes32 public constant PASS_MINTED_TOPIC0 = keccak256(bytes("PassMinted(address,uint256,bytes32,uint64)"));
 
     event PassSynced(address indexed wallet, bytes32 recordHash, uint64 verifiedUntil);
     event PassInvalidated(address indexed wallet);
 
-    constructor(address gopassAddr, uint64 creditcoinChainId) {
+    modifier onlyWorkerOrOwner() {
+        require(msg.sender == worker || msg.sender == owner(), "only worker/owner");
+        _;
+    }
+
+    constructor(address gopassAddr, uint64 sourceChainKey) {
         require(gopassAddr != address(0), "gopass zero");
+        // The 0x0FD2 precompile must be live where this registry is deployed; never accept
+        // proofs unchecked on a chain without it.
+        require(block.chainid == 102031 || block.chainid == 102030 || block.chainid == 31337, "unsupported chain");
         GOPASS_ADDR = gopassAddr;
-        CREDITCOIN_CHAIN_ID = creditcoinChainId;
+        SOURCE_CHAIN_KEY = sourceChainKey;
     }
 
     function setCacheTTL(uint64 ttl) external onlyOwner {
         cacheTTL = ttl;
     }
 
-    // Trustless storage-proof path: anyone provides storage proof verified on-chain via 0x0FD2 (continuityLen=2).
-    // proof = abi.encode(blockNumber, accountProof, storageProof) as produced by prover.
-    // In local tests where precompile has no code, proof check is skipped (any non-empty proof accepted).
-    function syncPass(address wallet, Record calldata r, bytes calldata proof) external {
+    function setWorker(address w) external onlyOwner {
+        require(w != address(0), "worker zero");
+        worker = w;
+    }
+
+    // EXPERIMENTAL fallback (worker/owner only): raw storage-proof staticcall. The Attestcoin docs
+    // define no raw storage-proof precompile API — use syncPassWithTxProof (tx-inclusion path) instead.
+    function syncPass(address wallet, Record calldata r, bytes calldata proof) external onlyWorkerOrOwner {
         require(wallet != address(0), "wallet zero");
         require(r.expiry > block.timestamp, "expiry past");
         bytes32 expected = keccak256(abi.encode(r));
         require(proof.length > 0, "proof empty");
-        if (BLOCK_PROVER.code.length > 0) {
+        if (block.chainid != 31337) {
             (bool ok,) = BLOCK_PROVER.staticcall(proof);
             require(ok, "proof verify failed");
         }
@@ -78,9 +100,11 @@ contract GOPassRegistry is Ownable {
         emit PassSynced(wallet, expected, verifiedUntil[wallet]);
     }
 
-    // Real tx-inclusion path (available now on CC3 102031): prove the GOPass mint tx via ProofBuilder + 0x0FD2 verifySingle.
-    // Generates headerNumber/txBytes/merkleRoot/siblings/lowerDigest/roots for the mint txHash, verifies on-chain,
-    // and checks that the tx's PassMinted log contains expected recordHash. Anyone can call, no privileged worker.
+    // Real tx-inclusion path (available now on CC3 102031): prove the GOPass mint tx via ProofBuilder +
+    // 0x0FD2 verifySingle, then decode the verified encodedTransaction on-chain (Attestcoin Phase 4):
+    // receipt status must be success and the PassMinted log emitted by GOPASS_ADDR must carry the
+    // record hash of the submitted record. Anyone can call — the record fields are cryptographically
+    // bound to the proven tx, no privileged worker needed.
     function syncPassWithTxProof(
         address wallet,
         Record calldata r,
@@ -94,11 +118,11 @@ contract GOPassRegistry is Ownable {
         require(wallet != address(0), "wallet zero");
         require(r.expiry > block.timestamp, "expiry past");
         bytes32 expected = keccak256(abi.encode(r));
-        if (BLOCK_PROVER.code.length > 0) {
+        if (block.chainid != 31337) {
             // call PrecompileBlockProver.verifySingle(chainKey, headerNumber, txBytes, merkleRoot, siblings, lowerDigest, roots)
             bytes memory callData = abi.encodeWithSignature(
                 "verifySingle(uint64,uint64,bytes,bytes32,bytes32[],bytes32,bytes32[])",
-                CREDITCOIN_CHAIN_ID,
+                SOURCE_CHAIN_KEY,
                 headerNumber,
                 txBytes,
                 merkleRoot,
@@ -108,14 +132,81 @@ contract GOPassRegistry is Ownable {
             );
             (bool ok, bytes memory ret) = BLOCK_PROVER.staticcall(callData);
             require(ok && abi.decode(ret, (bool)), "tx proof verify failed");
-            // Optional: decode txBytes logs to check PassMinted recordHash == expected (RLP decode omitted for now;
-            // off-chain worker already checks via ProofBuilder + getRecord; on-chain log check can be added when tx RLP helper is available)
-            expected; // silence unused warning when precompile absent in tests
         }
+        // Phase 4: decode verified tx bytes — binds the record to the real mint tx (status + event).
+        _decodePassMinted(txBytes, wallet, expected, r.expiry);
         cached[wallet] = r;
         verifiedUntil[wallet] = uint64(block.timestamp) + cacheTTL;
         isVerified[wallet] = true;
         emit PassSynced(wallet, expected, verifiedUntil[wallet]);
+    }
+
+    /// @notice Attestcoin Phase 4 (Data Extraction): decode the verified encodedTransaction
+    ///         (tx RLP [+ envelope byte] || receipt RLP) and require a PassMinted log emitted by
+    ///         GOPASS_ADDR whose wallet / recordHash / expiry match the submitted record.
+    function _decodePassMinted(bytes memory data, address wallet, bytes32 expectedHash, uint64 expiry) internal view {
+        uint256 start;
+        uint256 firstByte;
+        assembly ("memory-safe") {
+            firstByte := byte(0, mload(add(data, 32)))
+        }
+        if (firstByte == 0x01 || firstByte == 0x02) start = 1; // EIP-2718 typed tx envelope
+
+        RLPReader.RLPItem memory txItem = RLPReader.next(data, start);
+        require(start + txItem.total < data.length, "receipt missing");
+
+        RLPReader.RLPItem memory receipt = RLPReader.next(data, start + txItem.total);
+        require(receipt.isList, "RLP: receipt not a list");
+
+        // Post-byzantium receipt: [status, cumulativeGasUsed, logsBloom, logs]
+        require(receipt.itemAt(data, 0).toUint(data) == 1, "tx failed");
+
+        RLPReader.RLPItem memory logs = receipt.itemAt(data, 3);
+        require(logs.isList, "RLP: logs not a list");
+
+        uint256 ptr = logs.memPtr;
+        uint256 logsEnd = logs.memPtr + logs.len;
+        while (ptr < logsEnd) {
+            RLPReader.RLPItem memory logItem = RLPReader.next(data, ptr);
+            ptr += logItem.total;
+            if (!logItem.isList) continue;
+
+            // log entry: [logger address, topics list, data bytes]
+            address emitter = logItem.itemAt(data, 0).toAddress(data);
+            if (emitter != GOPASS_ADDR) continue;
+
+            RLPReader.RLPItem memory topics = logItem.itemAt(data, 1);
+            if (!topics.isList || _countItems(topics, data) < 3) continue;
+            if (topics.itemAt(data, 0).toBytes32(data) != PASS_MINTED_TOPIC0) continue;
+
+            address logWallet = address(uint160(uint256(topics.itemAt(data, 1).toBytes32(data))));
+            if (logWallet != wallet) revert("wallet mismatch");
+
+            bytes memory logData = logItem.itemAt(data, 2).toBytes(data);
+            require(logData.length == 64, "bad log data");
+
+            bytes32 logHash;
+            uint64 logExpiry;
+            assembly ("memory-safe") {
+                logHash := mload(add(logData, 32))
+                // uint64 sits in the LOW 8 bytes of the ABI word
+                logExpiry := and(mload(add(logData, 64)), 0xFFFFFFFFFFFFFFFF)
+            }
+            require(logHash == expectedHash, "recordHash mismatch");
+            require(logExpiry == expiry, "expiry mismatch");
+            return;
+        }
+        revert("PassMinted not found");
+    }
+
+    /// @notice Counts the sub-items of an RLP list (leading-zero trimming makes payload length unreliable).
+    function _countItems(RLPReader.RLPItem memory list, bytes memory data) internal pure returns (uint256 count) {
+        uint256 ptr = list.memPtr;
+        uint256 end = list.memPtr + list.len;
+        while (ptr < end) {
+            ptr += RLPReader.next(data, ptr).total;
+            count++;
+        }
     }
 
     function invalidate(address wallet) external onlyOwner {

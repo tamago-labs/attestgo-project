@@ -2,14 +2,18 @@
 pragma solidity 0.8.19;
 
 import {Test} from "forge-std/Test.sol";
+import {Vm} from "forge-std/Vm.sol";
 import {GOPass} from "../src/GOPass.sol";
 import {GOPassRegistry} from "../src/GOPassRegistry.sol";
 import {GToken} from "../src/GToken.sol";
+import {RlpProof} from "./helpers/RlpProof.sol";
 
 contract GOPassTest is Test {
     GOPass hub;
     GOPassRegistry registry;
     GToken gtoken;
+
+    bytes32 constant PASS_MINTED_TOPIC0 = keccak256(bytes("PassMinted(address,uint256,bytes32,uint64)"));
 
     address owner = address(0xA11CE);
     address alice = address(0x2c1A);
@@ -105,11 +109,95 @@ contract GOPassTest is Test {
     function test_registry_sync() public {
         uint64 exp = uint64(block.timestamp + 1 days);
         GOPassRegistry.Record memory r = _regRec(10, 1, exp, false, keccak256("c1"));
-        registry.syncPass(alice, r, hex"01");
+        registry.syncPass(alice, r, hex"01"); // worker/owner fallback path
         GOPassRegistry.Rule memory rule = GOPassRegistry.Rule(bytes2(0), bytes2(0), 10, 0, false, 1);
         assertTrue(registry.isEligible(alice, rule));
         rule.min_tier = 11;
         assertFalse(registry.isEligible(alice, rule));
+    }
+
+    function test_registry_sync_not_worker_reverts() public {
+        uint64 exp = uint64(block.timestamp + 1 days);
+        GOPassRegistry.Record memory r = _regRec(10, 1, exp, false, keccak256("c1"));
+        vm.prank(stranger);
+        vm.expectRevert(bytes("only worker/owner"));
+        registry.syncPass(alice, r, hex"01");
+    }
+
+    /// @notice Mints on the hub (recording the real event) and builds the tx proof for the registry.
+    function _mintAndProof(uint8 tier, address to, uint64 exp, uint8 status)
+        internal
+        returns (GOPassRegistry.Record memory r, bytes memory txBytes)
+    {
+        r = _regRec(tier, 1, exp, false, keccak256("c1"));
+        vm.recordLogs();
+        vm.prank(owner);
+        hub.mint(to, _rec(tier, 1, exp, false, keccak256("c1")));
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        bytes32[] memory topics;
+        bytes memory logData;
+        for (uint256 i = 0; i < logs.length; i++) {
+            if (logs[i].emitter == address(hub) && logs[i].topics[0] == PASS_MINTED_TOPIC0) {
+                topics = logs[i].topics;
+                logData = logs[i].data;
+            }
+        }
+        require(topics.length == 3, "PassMinted not recorded");
+        txBytes = RlpProof.buildEncodedTransaction(address(hub), topics, logData, status);
+    }
+
+    function _one(bytes32 v) internal pure returns (bytes32[] memory a) {
+        a = new bytes32[](1);
+        a[0] = v;
+    }
+
+    function test_registry_sync_with_tx_proof() public {
+        uint64 exp = uint64(block.timestamp + 1 days);
+        (GOPassRegistry.Record memory r, bytes memory txBytes) = _mintAndProof(10, alice, exp, 1);
+        registry.syncPassWithTxProof(alice, r, 100, txBytes, bytes32(uint256(1)), _one(bytes32(0)), bytes32(uint256(2)), _one(bytes32(0)));
+        GOPassRegistry.Rule memory rule = GOPassRegistry.Rule(bytes2(0), bytes2(0), 10, 0, false, 1);
+        assertTrue(registry.isEligible(alice, rule));
+        assertEq(registry.verifiedUntil(alice), uint64(block.timestamp) + 24 hours);
+    }
+
+    function test_registry_tx_proof_permissionless() public {
+        uint64 exp = uint64(block.timestamp + 1 days);
+        (GOPassRegistry.Record memory r, bytes memory txBytes) = _mintAndProof(10, alice, exp, 1);
+        vm.prank(stranger); // anyone can submit — record is cryptographically bound to the tx
+        registry.syncPassWithTxProof(alice, r, 100, txBytes, bytes32(uint256(1)), _one(bytes32(0)), bytes32(uint256(2)), _one(bytes32(0)));
+        assertTrue(registry.isVerified(alice));
+    }
+
+    function test_registry_tx_proof_tampered_record_reverts() public {
+        uint64 exp = uint64(block.timestamp + 1 days);
+        (GOPassRegistry.Record memory r, bytes memory txBytes) = _mintAndProof(10, alice, exp, 1);
+        r.tier = 99; // fabricated record: hash no longer matches the proven PassMinted log
+        vm.expectRevert(bytes("recordHash mismatch"));
+        registry.syncPassWithTxProof(alice, r, 100, txBytes, bytes32(uint256(1)), _one(bytes32(0)), bytes32(uint256(2)), _one(bytes32(0)));
+    }
+
+    function test_registry_tx_proof_wrong_wallet_reverts() public {
+        uint64 exp = uint64(block.timestamp + 1 days);
+        (GOPassRegistry.Record memory r, bytes memory txBytes) = _mintAndProof(10, alice, exp, 1);
+        vm.expectRevert(bytes("wallet mismatch"));
+        registry.syncPassWithTxProof(bob, r, 100, txBytes, bytes32(uint256(1)), _one(bytes32(0)), bytes32(uint256(2)), _one(bytes32(0)));
+    }
+
+    function test_registry_tx_proof_failed_tx_reverts() public {
+        uint64 exp = uint64(block.timestamp + 1 days);
+        (GOPassRegistry.Record memory r, bytes memory txBytes) = _mintAndProof(10, alice, exp, 0); // receipt status = 0
+        vm.expectRevert(bytes("tx failed"));
+        registry.syncPassWithTxProof(alice, r, 100, txBytes, bytes32(uint256(1)), _one(bytes32(0)), bytes32(uint256(2)), _one(bytes32(0)));
+    }
+
+    function test_registry_tx_proof_reverted_record_reverts() public {
+        // any tampering (expiry included) breaks the record hash — caught by the hash check first;
+        // the explicit expiry check is belt-and-braces
+        uint64 exp = uint64(block.timestamp + 1 days);
+        (GOPassRegistry.Record memory r, bytes memory txBytes) = _mintAndProof(10, alice, exp, 1);
+        r.expiry = uint64(exp + 1);
+        vm.expectRevert(bytes("recordHash mismatch"));
+        registry.syncPassWithTxProof(alice, r, 100, txBytes, bytes32(uint256(1)), _one(bytes32(0)), bytes32(uint256(2)), _one(bytes32(0)));
     }
 
     function test_gtoken_gated_by_active() public {
