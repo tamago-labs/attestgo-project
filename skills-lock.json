@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "amplify-workflow": {
+      "source": "awslabs/agent-plugins",
+      "sourceType": "github",
+      "skillPath": "plugins/aws-amplify/skills/amplify-workflow/SKILL.md",
+      "computedHash": "e9dc532e40eeb51711f69430223e7557565a8fc68ff84b0caa211af57cad4f1c"
+    }
+  }
+}
