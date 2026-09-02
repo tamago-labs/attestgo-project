@@ -37,20 +37,23 @@ function bitmapToCountries(bitmap: string | string[] | bigint): string {
   if (Array.isArray(bitmap)) return bitmap.map((c) => String(c).toUpperCase()).join(", ") || "All";
   if (typeof bitmap === "bigint") {
     const out: string[] = [];
+    const one = BigInt(1);
+    const zero = BigInt(0);
     COUNTRIES.forEach((c, i) => {
-      if ((bitmap & (1n << BigInt(i))) !== 0n) out.push(c.toUpperCase());
+      if ((bitmap & (one << BigInt(i))) !== zero) out.push(c.toUpperCase());
     });
     return out.length ? out.join(", ") : "All";
   }
   const s = String(bitmap || "");
   if (!s || s === "0") return "All";
-  // BigInt decode to support >32 bits
   try {
     const n = BigInt(s);
-    if (n === 0n) return "All";
+    const zero = BigInt(0);
+    const one = BigInt(1);
+    if (n === zero) return "All";
     const out: string[] = [];
     COUNTRIES.forEach((c, i) => {
-      if ((n & (1n << BigInt(i))) !== 0n) out.push(c.toUpperCase());
+      if ((n & (one << BigInt(i))) !== zero) out.push(c.toUpperCase());
     });
     return out.length ? out.join(", ") : s;
   } catch {
