@@ -210,14 +210,17 @@ curl "${BASE}/tokens?issuer=0x3D63Ce608deB81f9436198A93BCC2e8f3D79F56E&limit=20"
       </section>
 
       <section id="issuers" className="scroll-mt-24 space-y-6">
-        <h2 className="font-display text-xl font-semibold text-white">Issuers — verified once</h2>
-        <p className="text-muted text-sm leading-6">Create an issuer profile — handle is unique (<code className="text-white/80">3-20 a-z0-9_</code>). You submit as <code className="text-white/80">pending</code>, admin verifies via console to <code className="text-white/80">verified</code>. One verification unlocks many token listings.</p>
+        <h2 className="font-display text-xl font-semibold text-white">Issuer Profile Management</h2>
+        <p className="text-muted text-sm leading-6">Register your organization — handle is unique (<code className="text-white/80">3-20 a-z0-9_</code>). You submit as <code className="text-white/80">pending</code>, admin verifies in console to <code className="text-white/80">verified</code>. One verification unlocks many listings and announcements.</p>
+
         <div className="rounded-xl border border-border bg-panel overflow-hidden">
           <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-            <span className="text-sm font-semibold text-white">POST /issuers — create</span>
+            <span className="text-sm font-semibold text-white">POST /issuers — create issuer</span>
             <span className="text-xs font-mono px-2 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/20">x-platform-api-key</span>
           </div>
           <div className="p-4 space-y-3 text-sm">
+            <div className="font-mono text-xs text-muted break-all">{BASE}/issuers</div>
+            <div className="text-muted">Create profile <span className="text-white">issuerName handle ownerWallet</span> required, <span className="text-white">website description logoURI</span> optional. Returns <code className="text-white/80">pending</code> until verified.</div>
             <CodeBlock lang="bash" title="curl — create issuer (pending)" code={`curl -X POST ${BASE}/issuers \\
   -H "x-platform-api-key: 1122334455667788" \\
   -H "Content-Type: application/json" \\
@@ -228,28 +231,37 @@ curl "${BASE}/tokens?issuer=0x3D63Ce608deB81f9436198A93BCC2e8f3D79F56E&limit=20"
     "ownerWallet": "0xYourWalletAddress",
     "description": "Nikkei 225 RWA issuer"
   }'
-# 201 { id, handle: "sbi_am", status: "pending" }
-# admin verifies in console: RWAIssuerProfile status pending → verified`} />
-            <CodeBlock lang="bash" title="curl — get by handle / update" code={`curl "${BASE}/issuers?handle=sbi_am"
-# { handle: "sbi_am", issuerName: "SBI Asset Management", status: "verified", ownerWallet: "0x..." }
+# 201 { id, handle: "sbi_am", status: "pending" }`} />
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border bg-panel p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-white">GET /issuers — query</span>
+            <span className="text-xs font-mono px-2 py-1 rounded bg-white/10 text-muted">public</span>
+          </div>
+          <p className="text-sm text-muted">By handle <code className="text-white/80">GET /issuers?handle=sbi_am</code> or by owner <code className="text-white/80">?ownerWallet=0x...</code> → <code className="text-white/80">{`{handle, issuerName, status, ownerWallet}`}</code>. Also <code className="text-white/80">PATCH /issuers/:id</code> to update website/description/handle (409 if taken, 403 not owner).</p>
+          <CodeBlock lang="bash" code={`curl "${BASE}/issuers?handle=sbi_am"
+# { handle: "sbi_am", issuerName: "SBI Asset Management", status: "verified" }
 
 curl -X PATCH ${BASE}/issuers/ISSUER_ID \\
   -H "x-platform-api-key: 1122334455667788" \\
-  -d '{"website":"https://new.example","handle":"sbi_am"}'
-# handle unique → 409 handle already taken if taken; 403 not owner`} />
-          </div>
+  -d '{"website":"https://new.example"}'`} />
         </div>
       </section>
 
       <section id="listings" className="scroll-mt-24 space-y-6">
-        <h2 className="font-display text-xl font-semibold text-white">Listings — 1:1 TokenRecord</h2>
-        <p className="text-muted text-sm leading-6">Link your already-minted <code className="text-white/80">TokenRecord</code> (<code className="text-white/80">POST /tokens</code>) to a display listing — add <code className="text-white/80">apy tvl desc productUrl</code>. Extra fields only, 1:1 mapping via <code className="text-white/80">tokenAddress+chainId</code>.</p>
+        <h2 className="font-display text-xl font-semibold text-white">RWA Token Listings</h2>
+        <p className="text-muted text-sm leading-6">Add display metadata to your on-chain <code className="text-white/80">TokenRecord</code> (<code className="text-white/80">POST /tokens</code>) — extra fields <code className="text-white/80">apy tvl desc productUrl</code> for Discover. Strict 1:1 mapping by <code className="text-white/80">tokenAddress+chainId</code>.</p>
+
         <div className="rounded-xl border border-border bg-panel overflow-hidden">
           <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-            <span className="text-sm font-semibold text-white">POST /listings — create</span>
+            <span className="text-sm font-semibold text-white">POST /listings — link token</span>
             <span className="text-xs font-mono px-2 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/20">verified issuer only</span>
           </div>
           <div className="p-4 space-y-3 text-sm">
+            <div className="font-mono text-xs text-muted break-all">{BASE}/listings</div>
+            <div className="text-muted">Body <span className="text-white">issuerProfileId tokenAddress chainId</span> required + display <span className="text-white">apy tvl desc productUrl</span>. 409 if token already has listing, 403 if issuer not verified.</div>
             <CodeBlock lang="bash" title="curl — link token to issuer" code={`curl -X POST ${BASE}/listings \\
   -H "x-platform-api-key: 1122334455667788" \\
   -d '{
@@ -261,37 +273,60 @@ curl -X PATCH ${BASE}/issuers/ISSUER_ID \\
     "desc": "Nikkei 225 RWA — daily NAV attested",
     "productUrl": "https://issuer.example/nikkei-225-rwa"
   }'
-# 201 { tokenProfileId, status: "listed", apy: "12.8%" }
-# 409 token already has profile / 403 issuer not verified`} />
-            <CodeBlock lang="bash" title="curl — update / delete listing" code={`curl -X PATCH ${BASE}/listings/TOKEN_PROFILE_ID \\
+# 201 { tokenProfileId, status: "listed" }`} />
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border bg-panel p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-white">PATCH /listings — update · DELETE /listings — remove</span>
+            <span className="text-xs font-mono px-2 py-1 rounded bg-white/10 text-muted">owner only</span>
+          </div>
+          <p className="text-sm text-muted">Update <code className="text-white/80">apy/tvl/desc/productUrl/status listed|draft</code> or delete — <code className="text-white/80">TokenRecord</code> stays on-chain, only display listing removed.</p>
+          <CodeBlock lang="bash" code={`curl -X PATCH ${BASE}/listings/TOKEN_PROFILE_ID \\
   -H "x-platform-api-key: 1122334455667788" \\
   -d '{"apy":"13.1%","tvl":"$7M","status":"listed"}'
 
 curl -X DELETE ${BASE}/listings/TOKEN_PROFILE_ID \\
-  -H "x-platform-api-key: 1122334455667788"
-# TokenRecord stays on-chain, only display listing removed`} />
-          </div>
+  -H "x-platform-api-key: 1122334455667788"`} />
         </div>
       </section>
 
       <section id="feed" className="scroll-mt-24 space-y-6">
-        <h2 className="font-display text-xl font-semibold text-white">Feed — issuer announcements</h2>
-        <p className="text-muted text-sm leading-6">Verified issuers post updates — optional link to a listing. Anyone can reply.</p>
-        <div className="rounded-xl border border-border bg-panel p-4 space-y-3 text-sm">
-          <CodeBlock lang="bash" title="curl — post announcement" code={`curl -X POST ${BASE}/feed \\
+        <h2 className="font-display text-xl font-semibold text-white">Issuer Announcements</h2>
+        <p className="text-muted text-sm leading-6">Verified issuers publish updates to the Discover feed — optionally linked to a listing. Anyone can reply publicly.</p>
+
+        <div className="rounded-xl border border-border bg-panel overflow-hidden">
+          <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+            <span className="text-sm font-semibold text-white">POST /feed — publish</span>
+            <span className="text-xs font-mono px-2 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/20">verified issuer only</span>
+          </div>
+          <div className="p-4 space-y-3 text-sm">
+            <div className="font-mono text-xs text-muted break-all">{BASE}/feed</div>
+            <div className="text-muted">Body <span className="text-white">issuerProfileId text</span> required, <span className="text-white">tokenProfileId txHash</span> optional (≤500 chars).</div>
+            <CodeBlock lang="bash" title="curl — publish" code={`curl -X POST ${BASE}/feed \\
   -H "x-platform-api-key: 1122334455667788" \\
   -d '{
     "issuerProfileId": "ISSUER_ID",
     "tokenProfileId": "TOKEN_PROFILE_ID",
     "text": "Nikkei 225 RWA — daily NAV attested on Creditcoin. GO-NIKKEI 12.8% APY open for JP Tier 10."
   }'
-# 201 { id, likesCount: 0 }
+# 201 { id, likesCount: 0 }`} />
+          </div>
+        </div>
 
-curl "${BASE}/feed?handle=sbi_am"
-# public, lists announcements by issuer`} />
-          <CodeBlock lang="bash" title="curl — reply (public, no platform key)" code={`curl -X POST ${BASE}/feed/ANNOUNCEMENT_ID/replies \\
+        <div className="rounded-xl border border-border bg-panel p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-white">GET /feed — list · POST /feed/:id/replies</span>
+            <span className="text-xs font-mono px-2 py-1 rounded bg-white/10 text-muted">public</span>
+          </div>
+          <p className="text-sm text-muted"><code className="text-white/80">GET /feed?handle=sbi_am</code> public — lists announcements by issuer. Replies: <code className="text-white/80">POST /feed/:id/replies {"{authorWallet, text}"}</code> public, no platform key.</p>
+          <CodeBlock lang="bash" code={`curl "${BASE}/feed?handle=sbi_am"
+# { items:[{ text:"Nikkei...", likesCount:0 }], count:1 }
+
+curl -X POST ${BASE}/feed/ANNOUNCEMENT_ID/replies \\
   -H "Content-Type: application/json" \\
-  -d '{"authorWallet":"0x...","text":"Added to registry — smooth flow!"}' `} />
+  -d '{"authorWallet":"0x...","text":"Added to registry — smooth flow!"}'`} />
         </div>
       </section>
 
