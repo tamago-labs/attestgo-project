@@ -141,6 +141,7 @@ const schema = a.schema({
       desc: a.string(),
       productUrl: a.string(),
       status: a.enum(["draft", "listed"]),
+      announcements: a.hasMany("IssuerAnnouncement", "tokenProfileId"),
     })
     .authorization((allow) => [allow.publicApiKey().to(["read", "create", "update", "delete"])])
     .secondaryIndexes((index) => [
