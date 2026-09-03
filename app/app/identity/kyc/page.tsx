@@ -179,8 +179,8 @@ export default function KycPage() {
             {error && <div className="text-xs text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</div>}
             <div className="border border-border rounded-xl divide-y divide-border overflow-hidden bg-panel">
               <button className="w-full flex items-center gap-3 px-4 py-4 bg-white/[0.04] text-left">
-                <span className="w-5 h-5 rounded-full border-2 border-violet-500 flex items-center justify-center shrink-0">
-                  <span className="w-2.5 h-2.5 rounded-full bg-violet-500" />
+                <span className="w-5 h-5 rounded-full bg-violet-500 border border-violet-500 flex items-center justify-center shrink-0">
+                  <Check size={12} className="text-white" />
                 </span>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="https://play-lh.googleusercontent.com/8FKgiOlF2nIXXD5-1lXNpfulu8Yaste4Dnl61aUEYBtcA5nGEWq5FyE1NJPvJW0TPSKisfWlTAuXDjKbGlKJqQ=s512-rw" alt="Sumsub" className="w-9 h-9 rounded-lg object-cover border border-violet-500/20 shrink-0" />
@@ -188,7 +188,6 @@ export default function KycPage() {
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-white">Sumsub</span>
                     <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/20">Sandbox</span>
-                    <Check size={12} className="text-emerald-400 ml-1" />
                   </div>
                   <div className="text-xs text-muted">Document + Liveness • Level basic-attestgo</div>
                 </div>
