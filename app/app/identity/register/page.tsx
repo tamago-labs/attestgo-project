@@ -42,6 +42,7 @@ export default function RegisterPage() {
   const [pendingTx, setPendingTx] = useState<{ hash: string; block: number } | null>(null);
   const [sumsubToken, setSumsubToken] = useState<string | null>(null);
   const [sumsubLaunching, setSumsubLaunching] = useState(false);
+  const [sumsubCompleted, setSumsubCompleted] = useState(false);
   const sumsubContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -192,6 +193,23 @@ export default function RegisterPage() {
         })
           .withConf({ lang: "en", theme: "light" })
           .withOptions({ addViewportTag: false, adaptIframeHeight: true })
+          .on("idCheck.onStepCompleted", (p: unknown) => {
+            console.log("[sumsub] onStepCompleted", p);
+          })
+          .on("idCheck.onApplicantSubmitted", () => {
+            console.log("[sumsub] onApplicantSubmitted -> completed");
+            setSumsubCompleted(true);
+          })
+          .on("idCheck.onError", (e: unknown) => {
+            console.log("[sumsub] onError", e);
+          })
+          .onMessage((type: string, payload: unknown) => {
+            console.log("[sumsub] onMessage", type, payload);
+            if (type === "idCheck.onApplicantSubmitted" || type === "idCheck.onApplicantStatusChanged") {
+              const pl = payload as { reviewStatus?: string; reviewResult?: { reviewAnswer?: string } } | null;
+              if (pl?.reviewResult?.reviewAnswer === "GREEN" || pl?.reviewStatus === "completed") setSumsubCompleted(true);
+            }
+          })
           .build();
         console.log("[sumsub] launching to #sumsub-websdk-container");
         try {
@@ -274,6 +292,7 @@ export default function RegisterPage() {
       const token = (d2 as { token?: string })?.token;
       console.log("[sumsub] token", token ? token.slice(0, 20) + "..." : "MISSING");
       if (!token) throw new Error("Failed to get Sumsub token — check SUMSUB_APP_TOKEN/SECRET in sandbox");
+      setSumsubCompleted(false);
       setSumsubToken(token);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -476,10 +495,16 @@ export default function RegisterPage() {
             ) : (
               <>
                 <div id="sumsub-websdk-container" ref={sumsubContainerRef} className="min-h-[500px] rounded-lg border border-border bg-white overflow-hidden" />
-                <button onClick={handleAfterSumsubMint} className="w-full py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-600 inline-flex justify-center items-center gap-2">
-                  Continue — Mint GO Pass <Check size={14} />
-                </button>
-                <p className="text-xs text-muted text-center">After completing Sumsub, click Continue to mint your GO Pass on Sepolia (emits proof for attestation).</p>
+                {sumsubCompleted ? (
+                  <>
+                    <button onClick={handleAfterSumsubMint} className="w-full py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-600 inline-flex justify-center items-center gap-2">
+                      Continue — Mint GO Pass <Check size={14} />
+                    </button>
+                    <p className="text-xs text-emerald-300 text-center">Verification submitted — continue to mint your GO Pass.</p>
+                  </>
+                ) : (
+                  <p className="text-xs text-muted text-center">Complete verification in the frame above — Continue will appear after Sumsub submits.</p>
+                )}
               </>
             )}
             <button onClick={() => setStep("form")} className="w-full text-sm text-muted hover:text-white">
