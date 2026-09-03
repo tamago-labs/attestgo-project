@@ -40,6 +40,47 @@ export default function SendPage() {
   const [faucetToken, setFaucetToken] = useState<DefaultToken | null>(null);
   const [balNonce, setBalNonce] = useState(0);
   const [priceMap, setPriceMap] = useState<Record<string, number>>({});
+  const [identity, setIdentity] = useState<{ status: "verified" | "pending" | "unverified" | "idle"; tier?: number; country?: string }>({ status: "idle" });
+
+  useEffect(() => {
+    let cancelled = false;
+    async function runIdentity() {
+      if (!address) {
+        if (!cancelled) setIdentity({ status: "idle" });
+        return;
+      }
+      try {
+        const profile = await loadProfile(address);
+        if (!profile) {
+          if (!cancelled) setIdentity({ status: "unverified" });
+          return;
+        }
+        const countryCode = (profile as unknown as { country?: string }).country || undefined;
+        const client = getDataClient();
+        let rows: { status: string }[] = [];
+        try {
+          const res = await (client.models.PassRequest as unknown as { byUserProfile: (a: { userProfileId: string }) => Promise<{ data: unknown }> }).byUserProfile({ userProfileId: profile.id });
+          const d = (res as { data: unknown }).data;
+          rows = Array.isArray(d) ? (d as { status: string }[]) : d ? [d as { status: string }] : [];
+        } catch {
+          const res2 = await (client.models.PassRequest as unknown as { list: (a: unknown) => Promise<{ data: { status: string }[] }> }).list({ filter: { userProfileId: { eq: profile.id } } });
+          rows = res2.data || [];
+        }
+        if (!cancelled) {
+          const active = rows.find((r) => r.status === "active");
+          if (active) setIdentity({ status: "verified", tier: 10, country: countryCode });
+          else if (rows.find((r) => r.status === "pending")) setIdentity({ status: "pending", country: countryCode });
+          else setIdentity({ status: "unverified", country: countryCode });
+        }
+      } catch {
+        if (!cancelled) setIdentity({ status: "unverified" });
+      }
+    }
+    runIdentity();
+    return () => {
+      cancelled = true;
+    };
+  }, [address]);
 
   useEffect(() => {
     let cancelled = false;
@@ -260,7 +301,7 @@ export default function SendPage() {
   return (
     <div className="w-full h-[calc(100vh-7rem)] flex flex-col">
       <div className="rounded-xl border border-border bg-panel overflow-hidden grid md:grid-cols-[260px_1fr] flex-1 min-h-0">
-        <SendSidebar address={address} walletChainId={walletChainId} totalUsd={totalUsd} balancesLoading={balancesLoading} balancesCount={Object.keys(balances).length} filter={filter} setFilter={setFilter} alloc={alloc} onRefresh={() => setBalNonce((n) => n + 1)} />
+        <SendSidebar address={address} walletChainId={walletChainId} totalUsd={totalUsd} balancesLoading={balancesLoading} balancesCount={Object.keys(balances).length} filter={filter} setFilter={setFilter} alloc={alloc} onRefresh={() => setBalNonce((n) => n + 1)} identity={identity} />
         <div className="divide-y divide-border bg-canvas/30 overflow-y-auto min-h-0">
           <TokenList filtered={filtered} balances={balances} address={address} loadingRegistry={loadingRegistry} filter={filter} openMenu={openMenu} setOpenMenu={setOpenMenu} setFaucetToken={setFaucetToken} priceMap={priceMap} />
         </div>
