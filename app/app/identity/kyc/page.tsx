@@ -157,69 +157,77 @@ export default function KycPage() {
     );
   }
 
-  return (
-    <div className="max-w-2xl mx-auto w-full px-2 sm:px-0 py-2 space-y-6">
-      <Link href="/app/identity/register" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-white">
-        <ArrowLeft size={14} /> Back to Register
-      </Link>
-      <div>
-        <h1 className="font-display font-semibold text-2xl text-white">KYC Verification</h1>
-        <p className="mt-1 text-sm text-muted">Sandbox · basic-attestgo — document templates give deterministic GREEN.</p>
-      </div>
-
-      <div className="rounded-xl border border-border bg-panel overflow-hidden">
-        <div className="p-5 border-b border-border">
-          <div className="flex items-center gap-2">
-            <Shield size={16} className="text-violet-400" />
-            <span className="text-sm font-medium text-white">Sumsub KYC</span>
-            <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/20">Sandbox</span>
-          </div>
-          <p className="mt-1 text-xs text-muted">Country {country} • Wallet {wallet.slice(0, 10)}… • Level basic-attestgo</p>
+  if (!sumsubToken) {
+    return (
+      <div className="max-w-2xl mx-auto w-full px-2 sm:px-0 py-2 space-y-6">
+        <Link href="/app/identity/register" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-white">
+          <ArrowLeft size={14} /> Back to Register
+        </Link>
+        <div>
+          <h1 className="font-display font-semibold text-2xl text-white">KYC Verification</h1>
+          <p className="mt-1 text-sm text-muted">Sandbox · basic-attestgo — document templates give deterministic GREEN.</p>
         </div>
-        <div className="p-5 space-y-4">
-          {error && <div className="text-xs text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</div>}
-          {!sumsubToken ? (
-            <>
-              <div className="rounded-lg border border-border bg-canvas p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
-                  <Shield size={18} className="text-white/60" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm text-white">Ready to verify</div>
-                  <div className="text-xs text-muted">Click Verify to launch Sumsub widget.</div>
-                </div>
+        <div className="rounded-xl border border-border bg-panel overflow-hidden">
+          <div className="p-5 border-b border-border">
+            <div className="flex items-center gap-2">
+              <Shield size={16} className="text-violet-400" />
+              <span className="text-sm font-medium text-white">Sumsub KYC</span>
+              <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/20">Sandbox</span>
+            </div>
+            <p className="mt-1 text-xs text-muted">Country {country} • Wallet {wallet.slice(0, 10)}… • Level basic-attestgo</p>
+          </div>
+          <div className="p-5 space-y-4">
+            {error && <div className="text-xs text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</div>}
+            <div className="rounded-lg border border-border bg-canvas p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
+                <Shield size={18} className="text-white/60" />
               </div>
-              <button onClick={handleLaunch} disabled={sumsubLaunching} className="w-full py-2.5 rounded-lg bg-white text-canvas text-sm font-medium hover:bg-white/90 disabled:opacity-60 inline-flex justify-center items-center gap-2">
-                {sumsubLaunching ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" /> Launching…
-                  </>
-                ) : (
-                  <>
-                    Verify with Sumsub <ExternalLink size={14} />
-                  </>
-                )}
-              </button>
-              <div className="rounded-lg border border-dashed border-white/10 bg-canvas/50 p-3">
-                <p className="text-xs text-muted">Sandbox tip: use Document Template GREEN to get instant pass. Manual preset gives Pending.</p>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm text-white">Ready to verify</div>
+                <div className="text-xs text-muted">Click Verify to launch Sumsub widget.</div>
               </div>
-            </>
-          ) : (
-            <>
-              <div id="sumsub-websdk-container" className="min-h-[520px] rounded-lg border border-border bg-white overflow-hidden" />
-              {sumsubCompleted ? (
+            </div>
+            <button onClick={handleLaunch} disabled={sumsubLaunching} className="w-full py-2.5 rounded-lg bg-white text-canvas text-sm font-medium hover:bg-white/90 disabled:opacity-60 inline-flex justify-center items-center gap-2">
+              {sumsubLaunching ? (
                 <>
-                  <button onClick={() => router.push("/app/identity/mint")} className="w-full py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-600 inline-flex justify-center items-center gap-2">
-                    Continue — Mint GO Pass <Check size={14} />
-                  </button>
-                  <p className="text-xs text-emerald-300 text-center">Submitted — continue to mint.</p>
+                  <Loader2 size={16} className="animate-spin" /> Launching…
                 </>
               ) : (
-                <p className="text-xs text-muted text-center">Complete verification above — Continue appears after submit.</p>
+                <>
+                  Verify with Sumsub <ExternalLink size={14} />
+                </>
               )}
-            </>
-          )}
+            </button>
+            <div className="rounded-lg border border-dashed border-white/10 bg-canvas/50 p-3">
+              <p className="text-xs text-muted">Sandbox tip: use Document Template GREEN to get instant pass. Manual preset gives Pending.</p>
+            </div>
+          </div>
         </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-[calc(100vh-7rem)] flex flex-col">
+      <div className="flex items-center justify-between px-2 py-2">
+        <Link href="/app/identity/register" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-white">
+          <ArrowLeft size={14} /> Back to Register
+        </Link>
+        <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/20">Sandbox · basic-attestgo</span>
+      </div>
+      {error && <div className="mx-2 text-xs text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</div>}
+      <div id="sumsub-websdk-container" className="flex-1 border border-border bg-white overflow-hidden rounded-xl min-h-0" />
+      <div className="px-2 py-3 border-t border-border bg-panel">
+        {sumsubCompleted ? (
+          <>
+            <button onClick={() => router.push("/app/identity/mint")} className="w-full py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-600 inline-flex justify-center items-center gap-2">
+              Continue — Mint GO Pass <Check size={14} />
+            </button>
+            <p className="mt-2 text-xs text-emerald-300 text-center">Submitted — continue to mint.</p>
+          </>
+        ) : (
+          <p className="text-xs text-muted text-center">Complete verification in the frame above — Continue appears after Sumsub submits.</p>
+        )}
       </div>
     </div>
   );
