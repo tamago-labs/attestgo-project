@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Shield, ExternalLink, Loader2, Check } from "lucide-react";
+import { ArrowLeft, Shield, ExternalLink, Loader2, Check, ArrowRight } from "lucide-react";
 import { useWallet } from "@/components/app/WalletContext";
 import { loadProfile } from "@/lib/userProfile";
 
@@ -252,9 +252,9 @@ export default function KycPage() {
       <div className="px-2 py-3 border-t border-border bg-panel shrink-0">
         {sumsubCompleted ? (
           <>
-            <button onClick={() => router.push("/app/identity/mint")} className="w-full py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-600 inline-flex justify-center items-center gap-2">
-              Continue — Mint GO Pass <Check size={14} />
-            </button>
+                  <button onClick={() => router.push("/app/identity/mint")} className="w-full py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-600 inline-flex justify-center items-center gap-2">
+                    Continue — Mint GO Pass <ArrowRight size={14} />
+                  </button>
             <p className="mt-2 text-xs text-emerald-300 text-center">Submitted — continue to mint.</p>
           </>
         ) : (
