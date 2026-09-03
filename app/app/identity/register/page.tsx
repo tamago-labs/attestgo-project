@@ -197,11 +197,16 @@ export default function RegisterPage() {
       // 3. launch WebSDK 2.0
       const launch = () => {
         const w = window as unknown as any;
-        if (!w.SNSWebSDK) {
-          setError("Sumsub SDK failed to load — retry");
+        const sdk = w.snsWebSdk || w.SNSWebSDK;
+        console.log("[sumsub] launch", { hasSdk: !!sdk, keys: Object.keys(w).filter((k: string) => k.toLowerCase().includes("sns")).join(",") });
+        if (!sdk) {
+          setError("Sumsub SDK failed to load — retry (snsWebSdk not found)");
+          console.warn("[sumsub] window.snsWebSdk missing", Object.keys(w).slice(0, 20));
           return;
         }
-        const sns = w.SNSWebSDK.init(token, async () => {
+        console.log("[sumsub] init with token", token.slice(0, 20) + "...");
+        const sns = sdk.init(token, async () => {
+          console.log("[sumsub] token expired -> refresh");
           const rr = await client.mutations.sumsubGetAccessToken({ walletAddress: address, ttlInSecs: 600 });
           let rx = rr.data as unknown;
           for (let i = 0; i < 3 && typeof rx === "string"; i++) {
@@ -211,22 +216,34 @@ export default function RegisterPage() {
               break;
             }
           }
-          return (rx as { token?: string })?.token || token;
+          const nt = (rx as { token?: string })?.token || token;
+          console.log("[sumsub] new token", nt ? nt.slice(0, 20) + "..." : "none");
+          return nt;
         })
           .withConf({ lang: "en", theme: "light" })
           .withOptions({ addViewportTag: false, adaptIframeHeight: true })
           .build();
+        console.log("[sumsub] launching to #sumsub-websdk-container");
         sns.launch("#sumsub-websdk-container");
       };
       // load script if not present
       const existing = document.querySelector('script[src*="sns-websdk-builder"]');
-      if (existing && (window as unknown as any).SNSWebSDK) launch();
+      const hasSdk = (window as unknown as any).snsWebSdk || (window as unknown as any).SNSWebSDK;
+      console.log("[sumsub] existing script", !!existing, "hasSdk", !!hasSdk);
+      if (existing && hasSdk) launch();
       else {
+        console.log("[sumsub] injecting script https://static.sumsub.com/idensic/static/sns-websdk-builder.js");
         const s = document.createElement("script");
         s.src = "https://static.sumsub.com/idensic/static/sns-websdk-builder.js";
         s.async = true;
-        s.onload = launch;
-        s.onerror = () => setError("Failed to load Sumsub SDK");
+        s.onload = () => {
+          console.log("[sumsub] script loaded", !!(window as unknown as any).snsWebSdk || !!(window as unknown as any).SNSWebSDK);
+          launch();
+        };
+        s.onerror = (e) => {
+          console.warn("[sumsub] script onerror", e);
+          setError("Failed to load Sumsub SDK — check CSP / adblock");
+        };
         document.body.appendChild(s);
       }
     } catch (e: unknown) {
