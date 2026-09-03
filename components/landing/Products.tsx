@@ -29,7 +29,7 @@ const rows = [
   },
   {
     eyebrow: "Compliant Transfers",
-    title: "Institutional-Ready DeFi",
+    title: "Compliant Payments & DeFi",
     subtitle:
       "Send or earn in DeFi with the same compliance checks applied to every transfer across networks and payment flows.",
     bullets: [

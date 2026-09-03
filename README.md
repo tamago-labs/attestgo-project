@@ -1,12 +1,12 @@
 # AttestGO
 
-> We build real compliance infra for real people, not AI slop for judges. 
+> We build real compliance infra for humans, not AI slop for judges. 
 
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 [![API Docs](https://img.shields.io/badge/docs-attestgo-blue)](https://docs.attestcoin.org/)
 [![Discord](https://img.shields.io/badge/discord-join-5865F2)](https://discord.gg/creditcoin)
 
-Compliance layer for onchain finance — identity, RWA and cross-chain lending with AI inbox, powered by the [Attestcoin Protocol](https://docs.attestcoin.org/).
+Compliance layer for onchain finance — verified identity, compliant RWAs and cross-chain DeFi, with an AI inbox that explains every transaction, leveraging [Attestcoin](https://docs.attestcoin.org/) for trustless cross-chain interoperability.
 
 ## Overview
 
@@ -18,11 +18,11 @@ Compliance layer for onchain finance — identity, RWA and cross-chain lending w
 
 ## Key Features
 
-- **GO Pass — universal verified identity.** Soulbound KYC NFT minted once on Sepolia (chainKey 1), verified on Creditcoin via `verifySingle` + on-chain `PassMinted` decode. Mirrors on any EVM for ~5k-gas local checks. Privacy-preserving (minimal disclosure), Sumsub from day one.
-- **GO Assets — RWA with self-enforcing rules.** API to create, govern and distribute tokenized real-world value. Per-rule country bitmap (whitelist/blacklist), pause, 1:1 wrapping of any existing token, eligibility checked on every `transfer`. Update rules without touching holders or redeploying.
-- **Compliant payments & institutional DeFi.** Every transfer checks `GOPass` + `GToken` rules. Cross-chain lending: lock RWA in `SourceVault` on Sepolia, `CoreVault` verifies via `0x0FD2` and credits `Morpho` collateral on Creditcoin; borrow USDC against it. Travel-rule `IVMS101` data attached per transfer, hash-only on-chain.
-- **AI-composed inbox.** Salary/invoice/receipt — every send creates a structured document, hashed for proof, rendered by AI as email. ` <400ms` proof attach, recipients see an inbox, not hashes.
-- **Cross-chain verification & privacy.** Attestcoin `0x0FD2` synchronous proofs, replay protection, worker-minimized trust (only `CC→source` unlock), country/identity bitmaps keep data minimal.
+- **GO Pass — reusable KYC identity powered by Sumsub.** Complete KYC through Sumsub once and mint a verified, soulbound identity credential. Verify eligibility across chains with lightweight local checks while minimizing unnecessary identity disclosure.
+- **GO Assets — programmable compliance for RWAs.** Create and govern compliant tokenized assets with country-based restrictions, eligibility checks, pause controls, and 1:1 wrapping for existing tokens. Rules are enforced on every transfer and can be updated without redeploying the asset.
+- **Compliant payments & cross-chain DeFi.** Every transfer can automatically check identity and asset eligibility, and RWA holders can lock assets on their source chain to borrow on Creditcoin — collateral never leaves source, position credited trustlessly via Attestcoin, letting anyone supply USDC to earn.
+- **Documents & Travel Rule, attached to transactions.** Give every transaction its own compliance context with reusable document templates, proofs, and IVMS101 data — without putting sensitive information onchain.
+- **AI-composed inbox — compliance humans can understand.** AI turns complex transaction and compliance events into clear, actionable messages — from **KYC failures** and **unsupported jurisdictions** to **payment and asset eligibility** — so users get an explanation instead of an opaque transaction hash.
 
 ## Architecture / How it Works
 
