@@ -163,10 +163,10 @@ export default function KycPage() {
         <Link href="/app/identity/register" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-white">
           <ArrowLeft size={14} /> Back to Register
         </Link>
-        <div>
-          <h1 className="font-display font-semibold text-2xl text-white">KYC Verification</h1>
-          <p className="mt-1 text-sm text-muted">Sandbox · basic-attestgo — document templates give deterministic GREEN.</p>
-        </div>
+      <div>
+        <h1 className="font-display font-semibold text-2xl text-white">KYC Verification</h1>
+        <p className="mt-1 text-sm text-muted">Complete identity verification to receive your GO Pass</p>
+      </div>
         <div className="rounded-xl border border-border bg-panel overflow-hidden">
           <div className="p-5 border-b border-border">
             <div className="flex items-center gap-2">
