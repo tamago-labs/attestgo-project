@@ -5,7 +5,7 @@ import { env } from "$amplify/env/sumsubWebhook";
 import crypto from "crypto";
 import type { Schema } from "../../data/resource";
 
-const { resourceConfig, libraryOptions } = await getAmplifyDataClientConfig(env);
+const { resourceConfig, libraryOptions } = await getAmplifyDataClientConfig(env as unknown as Parameters<typeof getAmplifyDataClientConfig>[0]);
 Amplify.configure(resourceConfig, libraryOptions);
 const client = generateClient<Schema>();
 
