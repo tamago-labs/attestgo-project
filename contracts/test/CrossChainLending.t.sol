@@ -52,8 +52,8 @@ contract CrossChainLendingTest is Test {
         morpho = new Morpho(address(this));
         oracle = new OracleMock();
         oracle.setPrice(PRICE);
-        usdc = new ERC20Mock();
-        rwa = new ERC20Mock();
+        usdc = new ERC20Mock("USDC", "USDC", 6);
+        rwa = new ERC20Mock("RWA", "RWA", 18);
 
         morpho.enableIrm(address(0)); // zero IRM = 0% borrow rate (deterministic tests)
         morpho.enableLltv(LLTV);
