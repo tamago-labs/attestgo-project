@@ -165,7 +165,7 @@ export default function KycPage() {
         </Link>
       <div>
         <h1 className="font-display font-semibold text-2xl text-white">KYC Verification</h1>
-        <p className="mt-1 text-sm text-muted">Complete identity verification to receive your GO Pass</p>
+        <p className="mt-1 text-sm text-muted">Step 2 of 3 — Complete verification to receive your GO Pass</p>
       </div>
         <div className="rounded-xl border border-border bg-panel overflow-hidden">
           <div className="p-5 border-b border-border">
