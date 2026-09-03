@@ -97,7 +97,7 @@ export default function MintPage() {
       </Link>
       <div>
         <h1 className="font-display font-semibold text-2xl text-white">Mint GO Pass</h1>
-        <p className="mt-1 text-sm text-muted">After Sumsub — mint on Sepolia and attest to Creditcoin.</p>
+        <p className="mt-1 text-sm text-muted">Step 3 of 3 — Mint your GO Pass on Sepolia</p>
       </div>
 
       {!pendingTx ? (
