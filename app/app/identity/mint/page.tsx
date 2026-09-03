@@ -117,7 +117,7 @@ export default function MintPage() {
             <span className="text-sm text-white">Country {country}</span>
             <span className="ml-auto px-1.5 py-0.5 rounded-full border border-amber/20 bg-amber/10 text-[10px] font-medium text-amber">Silver • Tier 10</span>
           </div>
-          <div className="text-xs text-muted">Source chain <span className="text-white">ETH Sepolia</span> • Tier 10 • gas-free mint</div>
+          <div className="text-xs text-muted">No gas required — we sponsor the mint on Sepolia</div>
           {error && <div className="text-xs text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</div>}
           {!hasProfile && <div className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">No profile — back to Register</div>}
           <button onClick={handleMint} disabled={saving || !hasProfile} className="w-full py-2.5 rounded-lg bg-white text-canvas text-sm font-medium hover:bg-white/90 disabled:opacity-40 inline-flex justify-center items-center gap-2">
