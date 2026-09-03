@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check, ExternalLink, Loader2, Shield } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ExternalLink, Loader2, Shield } from "lucide-react";
 import { useWallet } from "@/components/app/WalletContext";
 import { loadProfile } from "@/lib/userProfile";
 
@@ -127,7 +127,7 @@ export default function MintPage() {
               </>
             ) : (
               <>
-                Mint GO Pass <Check size={14} />
+                Mint GO Pass <ArrowRight size={14} />
               </>
             )}
           </button>
