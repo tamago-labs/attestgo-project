@@ -240,16 +240,16 @@ export default function KycPage() {
   }
 
   return (
-    <div className="w-full h-[calc(100vh-7rem)] flex flex-col">
-      <div className="flex items-center justify-between px-2 py-2">
+    <div className="w-full min-h-[calc(100vh-7rem)] flex flex-col">
+      <div className="flex items-center justify-between px-2 py-2 shrink-0">
         <Link href="/app/identity/register" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-white">
           <ArrowLeft size={14} /> Back to Register
         </Link>
         <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/20">Sandbox · basic-attestgo</span>
       </div>
-      {error && <div className="mx-2 text-xs text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</div>}
-      <div id="sumsub-websdk-container" className="flex-1 border border-border bg-white overflow-hidden rounded-xl min-h-0" />
-      <div className="px-2 py-3 border-t border-border bg-panel">
+      {error && <div className="mx-2 text-xs text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 shrink-0">{error}</div>}
+      <div id="sumsub-websdk-container" className="flex-1 border border-border bg-white overflow-auto rounded-xl min-h-[600px]" />
+      <div className="px-2 py-3 border-t border-border bg-panel shrink-0">
         {sumsubCompleted ? (
           <>
             <button onClick={() => router.push("/app/identity/mint")} className="w-full py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-600 inline-flex justify-center items-center gap-2">
