@@ -171,10 +171,9 @@ export default function KycPage() {
           <div className="p-5 border-b border-border">
             <div className="flex items-center gap-2">
               <Shield size={16} className="text-violet-400" />
-              <span className="text-sm font-medium text-white">Sumsub KYC</span>
-              <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/20">Sandbox</span>
+              <span className="text-sm font-medium text-white">Choose KYC provider</span>
+              <span className="ml-auto text-xs text-muted">Step 2 · select one to continue</span>
             </div>
-            <p className="mt-1 text-xs text-muted">Country {country} • Wallet {wallet.slice(0, 10)}… • Level basic-attestgo</p>
           </div>
           <div className="p-5 space-y-4">
             {error && <div className="text-xs text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</div>}
