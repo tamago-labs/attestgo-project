@@ -6,7 +6,7 @@ import type { Schema } from "@/amplify/data/resource";
 import outputs from "@/amplify_outputs.json";
 
 let _client: ReturnType<typeof generateClient<Schema>> | null = null;
-function getClient() {
+export function getClient() {
   if (_client) return _client;
   try {
     Amplify.configure(outputs, { ssr: true });

@@ -1,85 +1,271 @@
 "use client";
 
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ethers } from "ethers";
+import { useWallet } from "@/components/app/WalletContext";
+import { DEFAULT_TOKENS, type DefaultToken } from "@/lib/defaultTokens";
+import { getChainById } from "@/lib/chains";
+import { loadProfile } from "@/lib/userProfile";
+import { getClient as getDataClient, listMyTokens, type TokenRegistryEntry } from "@/lib/tokenRegistry";
+import FaucetModal from "@/components/app/FaucetModal";
+import SendSidebar from "@/components/app/send/SendSidebar";
+import TokenList from "@/components/app/send/TokenList";
+import { getPriceUsd, getRpcProvider, type TokenRecordLite, type UnifiedRow } from "@/lib/send";
+
+const ERC20_ABI = ["function balanceOf(address) view returns (uint256)"] as const;
+
+function useInterval(callback: () => void, delay: number | null) {
+  const savedCallback = useRef(callback);
+  useEffect(() => {
+    savedCallback.current = callback;
+  }, [callback]);
+  useEffect(() => {
+    if (delay === null) return;
+    // call immediately on delay set, then interval
+    savedCallback.current();
+    const id = setInterval(() => savedCallback.current(), delay);
+    return () => clearInterval(id);
+  }, [delay]);
+}
+
 export default function SendPage() {
+  const { address, provider, chainId: walletChainId } = useWallet();
+  const [filter, setFilter] = useState<number | "all">("all");
+  const [myTokens, setMyTokens] = useState<TokenRegistryEntry[]>([]);
+  const [recordMap, setRecordMap] = useState<Record<string, TokenRecordLite>>({});
+  const [loadingRegistry, setLoadingRegistry] = useState(false);
+  const [balances, setBalances] = useState<Record<string, bigint>>({});
+  const [balancesLoading, setBalancesLoading] = useState(false);
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [faucetToken, setFaucetToken] = useState<DefaultToken | null>(null);
+  const [balNonce, setBalNonce] = useState(0);
+  const [priceMap, setPriceMap] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    console.log("[send] loadRegistry start", { address });
+    async function run() {
+      if (!address) {
+        console.log("[send] loadRegistry no address");
+        setMyTokens([]);
+        setRecordMap({});
+        return;
+      }
+      console.log("[send] loadRegistry fetching", address);
+      setLoadingRegistry(true);
+      try {
+        const profile = await loadProfile(address);
+        if (!profile) {
+          if (!cancelled) {
+            setMyTokens([]);
+            setRecordMap({});
+          }
+          return;
+        }
+        const rows = await listMyTokens(profile.id);
+        console.log("[send] loadRegistry rows", rows.length);
+        if (!cancelled) setMyTokens(rows);
+        const ids = rows.filter((r) => r.tokenRecordId).map((r) => r.tokenRecordId as string);
+        console.log("[send] loadRegistry ids", ids);
+        if (ids.length > 0) {
+          const client = getDataClient();
+          const map: Record<string, TokenRecordLite> = {};
+          await Promise.all(
+            ids.map(async (id) => {
+              try {
+                const res = await (client.models.TokenRecord as unknown as { get: (a: { id: string }) => Promise<{ data: TokenRecordLite | null }> }).get({ id });
+                if (res.data) map[id] = res.data;
+              } catch {}
+            })
+          );
+          console.log("[send] loadRegistry recordMap", Object.keys(map).length);
+          if (!cancelled) setRecordMap(map);
+        } else if (!cancelled) setRecordMap({});
+      } catch (e) {
+        console.warn("[send] loadRegistry error", e);
+        if (!cancelled) {
+          setMyTokens([]);
+          setRecordMap({});
+        }
+      } finally {
+        console.log("[send] loadRegistry done");
+        if (!cancelled) setLoadingRegistry(false);
+      }
+    }
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [address]);
+
+  const unified: UnifiedRow[] = useMemo(() => {
+    const map = new Map<string, UnifiedRow>();
+    DEFAULT_TOKENS.forEach((t) => {
+      const k = `${t.address.toLowerCase()}:${t.chainId}`;
+      map.set(k, { key: k, symbol: t.symbol, name: t.name, address: t.address, chainId: t.chainId, decimals: t.decimals, icon: t.icon, source: "default" });
+    });
+    myTokens.forEach((e) => {
+      const k = `${e.tokenAddress.toLowerCase()}:${e.chainId}`;
+      if (map.has(k)) return;
+      const rec = e.tokenRecordId ? recordMap[e.tokenRecordId] : undefined;
+      map.set(k, {
+        key: k,
+        symbol: e.symbol,
+        name: e.name || e.symbol,
+        address: e.tokenAddress,
+        chainId: e.chainId,
+        decimals: e.decimals ?? (rec as unknown as { decimals?: number })?.decimals ?? 18,
+        icon: rec?.iconURI || (e as unknown as { iconURI?: string }).iconURI || null,
+        source: e.isCustom ? "custom" : "factory",
+        ruleMinTier: rec?.ruleMinTier,
+        ruleBitmap: rec?.ruleBitmap,
+        isWrapped: rec?.isWrapped,
+        underlying: rec?.underlying,
+      });
+    });
+    return Array.from(map.values());
+  }, [myTokens, recordMap]);
+
+  const filtered = useMemo(() => {
+    const base = filter === "all" ? unified : unified.filter((r) => r.chainId === filter);
+    return [...base].sort((a, b) => a.chainId - b.chainId || a.symbol.localeCompare(b.symbol));
+  }, [unified, filter]);
+
+  const fetchPrices = useCallback(async () => {
+    try {
+      const client = getDataClient();
+      const res = await (client.models.AssetPrice as unknown as { list: (a?: unknown) => Promise<{ data: { symbol: string; priceUSD: number }[] }> }).list();
+      const map: Record<string, number> = {};
+      (res.data || []).forEach((r) => {
+        if (r.symbol && typeof r.priceUSD === "number") map[r.symbol] = r.priceUSD;
+      });
+      setPriceMap(map);
+    } catch {}
+  }, []);
+
+  const hasPriceValue = Object.keys(priceMap).length > 0;
+  const priceDelay = useMemo(() => {
+    if (!address || unified.length === 0) return null;
+    if (!hasPriceValue) return 5000;
+    return 30000;
+  }, [address, unified.length, hasPriceValue]);
+  useInterval(fetchPrices, priceDelay);
+  useEffect(() => {
+    if (!address || unified.length === 0) return;
+    fetchPrices();
+  }, [fetchPrices, address, unified.length]);
+
+  const fetchBalances = useCallback(async () => {
+    if (!address || unified.length === 0) {
+      console.log("[send] fetchBalances skip empty");
+      setBalances({});
+      setBalancesLoading(false);
+      return;
+    }
+    const addr = address as string;
+    console.log("[send] fetchBalances start", { addr, chains: [...new Set(unified.map((r) => r.chainId))], count: unified.length });
+    const t0 = Date.now();
+    setBalancesLoading(true);
+    const out: Record<string, bigint> = {};
+    const byChain = new Map<number, UnifiedRow[]>();
+    unified.forEach((r) => {
+      const arr = byChain.get(r.chainId) || [];
+      arr.push(r);
+      byChain.set(r.chainId, arr);
+    });
+    try {
+      await Promise.all(
+        Array.from(byChain.entries()).map(async ([chainId, rows]) => {
+          const prov: ethers.Provider | null = walletChainId === chainId && provider ? provider : getRpcProvider(chainId);
+          console.log("[send] chain start", { chainId, useWallet: !!(walletChainId === chainId && provider), count: rows.length });
+          if (!prov) {
+            console.warn("[send] no provider", chainId);
+            return;
+          }
+          await Promise.all(
+            rows.map(async (r) => {
+              const t = Date.now();
+              try {
+                const c = new ethers.Contract(r.address, ERC20_ABI, prov);
+                const bal: bigint = await Promise.race([
+                  (c as unknown as { balanceOf(a: string): Promise<bigint> }).balanceOf(addr),
+                  new Promise<bigint>((_, rej) => setTimeout(() => rej(new Error("timeout")), 4000)),
+                ]);
+                console.log("[send] balance ok", r.symbol, `${Date.now() - t}ms`, bal.toString());
+                out[r.key] = bal;
+              } catch (e) {
+                console.warn("[send] balance fail", r.symbol, e);
+                out[r.key] = BigInt(0);
+              }
+            })
+          );
+        })
+      );
+      console.log("[send] fetchBalances done", { ms: Date.now() - t0, out });
+      setBalances(out);
+    } catch (e) {
+      console.warn("[send] fetch top error", e);
+    } finally {
+      console.log("[send] fetchBalances finally");
+      setBalancesLoading(false);
+    }
+  }, [address, walletChainId, provider, unified]);
+
+  const hasValue = !!address && unified.length > 0 && Object.keys(balances).length > 0;
+  const intervalDelay = useMemo(() => {
+    if (!address || unified.length === 0) return null;
+    if (!hasValue) return 3000; // no value yet: fast poll
+    return 15000; // once fetched: longer
+  }, [address, unified.length, hasValue]);
+
+  useInterval(fetchBalances, intervalDelay);
+
+  // immediate fetch on mount / deps change (no value → fast, faucet via balNonce)
+  useEffect(() => {
+    if (!address || unified.length === 0) return;
+    console.log("[send] immediate fetch trigger", { balNonce, unifiedLen: unified.length });
+    fetchBalances();
+  }, [fetchBalances, balNonce, unified]);
+
+  const totalUsd = useMemo(() => {
+    let sum = 0;
+    unified.forEach((r) => {
+      const bal = balances[r.key] ?? BigInt(0);
+      const p = getPriceUsd(r.symbol, priceMap);
+      if (p && bal !== BigInt(0)) {
+        try {
+          sum += Number(ethers.formatUnits(bal, r.decimals)) * p;
+        } catch {}
+      }
+    });
+    return sum;
+  }, [unified, balances, priceMap]);
+
+  const alloc = useMemo(() => {
+    const by: Record<string, number> = {};
+    unified.forEach((r) => {
+      const bal = balances[r.key];
+      if (bal === undefined) return;
+      const p = getPriceUsd(r.symbol, priceMap);
+      let v = 0;
+      try {
+        v = Number(ethers.formatUnits(bal, r.decimals)) * p;
+      } catch {}
+      by[r.symbol] = (by[r.symbol] || 0) + v;
+    });
+    const total = Object.values(by).reduce((a, b) => a + b, 0) || 1;
+    return { by, total };
+  }, [unified, balances, priceMap]);
+
   return (
     <div className="w-full h-[calc(100vh-7rem)] flex flex-col">
       <div className="rounded-xl border border-border bg-panel overflow-hidden grid md:grid-cols-[260px_1fr] flex-1 min-h-0">
-        {/* sidebar */}
-        <div className="border-b md:border-b-0 md:border-r border-border flex flex-col min-h-0 bg-panel">
-          <div className="px-5 py-4 border-b border-border flex items-center gap-2 bg-panel">
-            <span className="w-1 h-4 bg-amber rounded" />
-            <h3 className="font-medium text-white text-sm">Send</h3>
-          </div>
-          <div className="p-4">
-            <p className="text-muted text-sm mb-1">Total balance</p>
-          <p className="text-2xl font-semibold tracking-tight text-white mb-4">$24,700.00</p>
-
-          <p className="text-white/30 text-xs uppercase tracking-wide mb-2">Allocation</p>
-          <div className="h-2 rounded-full overflow-hidden flex mb-3 bg-canvas border border-border">
-            <div className="bg-amber-400" style={{ width: "50.6%" }} />
-            <div className="bg-violet-400" style={{ width: "17%" }} />
-            <div className="bg-emerald-400" style={{ width: "32.4%" }} />
-          </div>
-          <ul className="space-y-2 text-sm">
-            <li className="flex items-center justify-between">
-              <span className="flex items-center gap-2 text-muted">
-                <span className="w-2 h-2 rounded-full bg-amber-400" />
-                USDC
-              </span>
-              <span className="font-mono text-white/40 text-xs">50.6%</span>
-            </li>
-            <li className="flex items-center justify-between">
-              <span className="flex items-center gap-2 text-muted">
-                <span className="w-2 h-2 rounded-full bg-violet-400" />
-                ATC
-              </span>
-              <span className="font-mono text-white/40 text-xs">17.0%</span>
-            </li>
-            <li className="flex items-center justify-between">
-              <span className="flex items-center gap-2 text-muted">
-                <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                T-Bill
-              </span>
-              <span className="font-mono text-white/40 text-xs">32.4%</span>
-            </li>
-          </ul>
-
-          <div className="mt-4 pt-4 border-t border-border">
-            <p className="text-white/30 text-xs mb-1">Identity</p>
-            <p className="text-sm text-white">Verified · Tier 10</p>
-          </div>
-          </div>
-        </div>
-
-        {/* list — scroll only this column */}
+        <SendSidebar address={address} walletChainId={walletChainId} totalUsd={totalUsd} balancesLoading={balancesLoading} balancesCount={Object.keys(balances).length} filter={filter} setFilter={setFilter} alloc={alloc} onRefresh={() => setBalNonce((n) => n + 1)} />
         <div className="divide-y divide-border bg-canvas/30 overflow-y-auto min-h-0">
-          {[
-            { name: "USD Coin", sub: "12,500.00 USDC", usd: "$12,500.00", act: "Send" },
-            { name: "Attestcoin", sub: "4,200.00 ATC", usd: "$4,200.00", act: "Lend" },
-            { name: "USD T-Bill", sub: "8,000.00 GO-TBILL · US, SG", usd: "$8,000.00", act: "Borrow" },
-            { name: "Wrapped USDC", sub: "5,300.00 wUSDC", usd: "$5,300.00", act: "Send" },
-            { name: "Euro T-Bill", sub: "3,100.00 GO-ETBILL · DE, FR", usd: "$3,350.00", act: "Borrow" },
-            { name: "SGD T-Bill", sub: "2,000.00 GO-SGTB · SG", usd: "$1,480.00", act: "Borrow" },
-            { name: "Gold Vault", sub: "1.20 GO-GOLD", usd: "$2,760.00", act: "Lend" },
-            { name: "Tether", sub: "4,800.00 USDT", usd: "$4,798.00", act: "Send" },
-            { name: "AttestGO LP", sub: "850.00 GO-LP", usd: "$920.00", act: "Lend" },
-            { name: "US Treasury 3M", sub: "6,000.00 GO-T3M · US", usd: "$6,000.00", act: "Borrow" },
-          ].map((r) => (
-            <div key={r.name} className="p-4 flex items-center justify-between">
-              <div>
-                <p className="font-medium text-white text-sm">{r.name}</p>
-                <p className="text-white/30 text-xs font-mono">{r.sub}</p>
-              </div>
-              <div className="flex items-center gap-4">
-                <p className="font-mono text-sm text-white">{r.usd}</p>
-                <a href="#" className="text-amber text-sm hover:text-white transition-colors">
-                  {r.act}
-                </a>
-              </div>
-            </div>
-          ))}
+          <TokenList filtered={filtered} balances={balances} address={address} loadingRegistry={loadingRegistry} filter={filter} openMenu={openMenu} setOpenMenu={setOpenMenu} setFaucetToken={setFaucetToken} priceMap={priceMap} />
         </div>
       </div>
+      <FaucetModal open={!!faucetToken} token={faucetToken} onClose={() => setFaucetToken(null)} onMinted={() => setBalNonce((n) => n + 1)} />
     </div>
   );
 }
