@@ -163,12 +163,13 @@ export default function RegisterPage() {
       if (r1.errors) throw new Error(r1.errors.map((e: { message: string }) => e.message).join(", "));
       let raw1 = r1.data as unknown;
       console.log("[sumsub] raw1", typeof raw1, String(raw1).slice(0, 600));
-      if (typeof raw1 === "string") {
+      for (let i = 0; i < 3 && typeof raw1 === "string"; i++) {
         try {
           raw1 = JSON.parse(raw1 as string);
-          console.log("[sumsub] parsed raw1", JSON.stringify(raw1).slice(0, 600));
+          console.log(`[sumsub] parsed raw1 #${i + 1}`, typeof raw1, JSON.stringify(raw1).slice(0, 600));
         } catch (e) {
           console.warn("[sumsub] raw1 parse fail", e);
+          break;
         }
       }
       // 2. get SDK token
@@ -178,12 +179,13 @@ export default function RegisterPage() {
       if (r2.errors) throw new Error(r2.errors.map((e: { message: string }) => e.message).join(", "));
       let raw2 = r2.data as unknown;
       console.log("[sumsub] raw2", typeof raw2, String(raw2).slice(0, 800));
-      if (typeof raw2 === "string") {
+      for (let i = 0; i < 3 && typeof raw2 === "string"; i++) {
         try {
           raw2 = JSON.parse(raw2 as string);
-          console.log("[sumsub] parsed raw2", JSON.stringify(raw2).slice(0, 600));
+          console.log(`[sumsub] parsed raw2 #${i + 1}`, typeof raw2, JSON.stringify(raw2).slice(0, 600));
         } catch (e) {
           console.warn("[sumsub] raw2 parse fail", e);
+          break;
         }
       }
       const d2 = raw2 as { token?: string } | null;
@@ -202,7 +204,13 @@ export default function RegisterPage() {
         const sns = w.SNSWebSDK.init(token, async () => {
           const rr = await client.mutations.sumsubGetAccessToken({ walletAddress: address, ttlInSecs: 600 });
           let rx = rr.data as unknown;
-          if (typeof rx === "string") try { rx = JSON.parse(rx as string); } catch {}
+          for (let i = 0; i < 3 && typeof rx === "string"; i++) {
+            try {
+              rx = JSON.parse(rx as string);
+            } catch {
+              break;
+            }
+          }
           return (rx as { token?: string })?.token || token;
         })
           .withConf({ lang: "en", theme: "light" })

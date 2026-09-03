@@ -78,5 +78,5 @@ export const handler: Schema["sumsubGetAccessToken"]["functionHandler"] = async 
   }
   if (!res.ok || !json?.token) throw new Error(`Sumsub token failed ${res.status}: ${text.slice(0, 400)}`);
   console.log("[sumsubGetAccessToken] ok", json.userId);
-  return JSON.stringify({ token: json.token, userId: json.userId || userId, levelName: LEVEL, ttlInSecs: ttl });
+  return { token: json.token, userId: json.userId || userId, levelName: LEVEL, ttlInSecs: ttl } as unknown as string;
 };

@@ -73,7 +73,7 @@ export const handler: Schema["sumsubCreateApplicant"]["functionHandler"] = async
       if (r.ok) {
         const j = await r.json();
         console.log("[sumsubCreateApplicant] GET ok", JSON.stringify(j).slice(0, 300));
-        return JSON.stringify({ applicantId: (j as { id?: string }).id || profile.applicantId, externalUserId, levelName: LEVEL, reused: true });
+        return { applicantId: (j as { id?: string }).id || profile.applicantId, externalUserId, levelName: LEVEL, reused: true } as unknown as string;
       } else {
         console.warn("[sumsubCreateApplicant] GET not ok", await r.text().then((t) => t.slice(0, 300)));
       }
@@ -110,7 +110,7 @@ export const handler: Schema["sumsubCreateApplicant"]["functionHandler"] = async
         } catch (e) {
           console.warn("[sumsubCreateApplicant] update profile fail", e);
         }
-        return JSON.stringify({ applicantId: j.id, externalUserId, levelName: LEVEL, reused: true });
+        return { applicantId: j.id, externalUserId, levelName: LEVEL, reused: true } as unknown as string;
       }
     } else {
       console.log("[sumsubCreateApplicant] GET externalUserId no hit", await r.text().then((t) => t.slice(0, 300)));
@@ -158,7 +158,7 @@ export const handler: Schema["sumsubCreateApplicant"]["functionHandler"] = async
       } catch (e) {
         console.warn("[sumsubCreateApplicant] update dup fail", e);
       }
-      return JSON.stringify({ applicantId: dupId, externalUserId, levelName: LEVEL, reused: true });
+      return { applicantId: dupId, externalUserId, levelName: LEVEL, reused: true } as unknown as string;
     }
     throw new Error(`Sumsub create failed ${res.status}: ${text.slice(0, 400)}`);
   }
@@ -173,5 +173,5 @@ export const handler: Schema["sumsubCreateApplicant"]["functionHandler"] = async
   } catch (e) {
     console.warn("[sumsubCreateApplicant] update new fail", e);
   }
-  return JSON.stringify({ applicantId, externalUserId, levelName: LEVEL, reused: false });
+  return { applicantId, externalUserId, levelName: LEVEL, reused: false } as unknown as string;
 };
