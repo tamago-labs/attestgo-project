@@ -182,9 +182,8 @@ export default function KycPage() {
                 <span className="w-5 h-5 rounded-full border-2 border-violet-500 flex items-center justify-center shrink-0">
                   <span className="w-2.5 h-2.5 rounded-full bg-violet-500" />
                 </span>
-                <div className="w-9 h-9 rounded-lg bg-violet-500/15 border border-violet-500/20 flex items-center justify-center shrink-0">
-                  <Shield size={16} className="text-violet-400" />
-                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="https://play-lh.googleusercontent.com/8FKgiOlF2nIXXD5-1lXNpfulu8Yaste4Dnl61aUEYBtcA5nGEWq5FyE1NJPvJW0TPSKisfWlTAuXDjKbGlKJqQ=s512-rw" alt="Sumsub" className="w-9 h-9 rounded-lg object-cover border border-violet-500/20 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-white">Sumsub</span>

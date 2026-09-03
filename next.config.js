@@ -6,6 +6,7 @@ const nextConfig = {
       { protocol: "https", hostname: "attestcoin.org" },
       { protocol: "https", hostname: "assets.coingecko.com" },
       { protocol: "https", hostname: "coin-images.coingecko.com" },
+      { protocol: "https", hostname: "play-lh.googleusercontent.com" },
     ],
   },
   async redirects() {
