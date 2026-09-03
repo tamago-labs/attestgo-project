@@ -5,6 +5,8 @@ import { createGToken } from "../functions/createGToken/resource";
 import { manageIssuerProfile } from "../functions/manageIssuerProfile/resource";
 import { manageRWATokenProfile } from "../functions/manageRWATokenProfile/resource";
 import { postAnnouncement } from "../functions/postAnnouncement/resource";
+import { sumsubCreateApplicant } from "../functions/sumsubCreateApplicant/resource";
+import { sumsubGetAccessToken } from "../functions/sumsubGetAccessToken/resource";
 
 const schema = a.schema({
   UserProfile: a
@@ -14,6 +16,7 @@ const schema = a.schema({
       country: a.string().required(),
       message: a.string().required(),
       signature: a.string().required(),
+      applicantId: a.string(),
       request: a.hasOne("PassRequest", "userProfileId"),
       addressBook: a.hasMany("AddressBookEntry", "ownerId"),
       registry: a.hasMany("UserTokenRegistry", "userProfileId"),
@@ -217,7 +220,19 @@ const schema = a.schema({
     .returns(a.json())
     .handler(a.handler.function(postAnnouncement))
     .authorization((allow) => [allow.publicApiKey()]),
-}).authorization((allow) => [allow.resource(mintPass), allow.resource(attestPass), allow.resource(createGToken), allow.resource(manageIssuerProfile), allow.resource(manageRWATokenProfile), allow.resource(postAnnouncement)]);
+  sumsubCreateApplicant: a
+    .mutation()
+    .arguments({ walletAddress: a.string().required() })
+    .returns(a.json())
+    .handler(a.handler.function(sumsubCreateApplicant))
+    .authorization((allow) => [allow.publicApiKey()]),
+  sumsubGetAccessToken: a
+    .mutation()
+    .arguments({ walletAddress: a.string().required(), ttlInSecs: a.integer() })
+    .returns(a.json())
+    .handler(a.handler.function(sumsubGetAccessToken))
+    .authorization((allow) => [allow.publicApiKey()]),
+}).authorization((allow) => [allow.resource(mintPass), allow.resource(attestPass), allow.resource(createGToken), allow.resource(manageIssuerProfile), allow.resource(manageRWATokenProfile), allow.resource(postAnnouncement), allow.resource(sumsubCreateApplicant), allow.resource(sumsubGetAccessToken)]);
 
 export type Schema = ClientSchema<typeof schema>;
 

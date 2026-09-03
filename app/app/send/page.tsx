@@ -204,7 +204,7 @@ export default function SendPage() {
       return;
     }
     const addr = address as string;
-    console.log("[send] fetchBalances start", { addr, chains: [...new Set(unified.map((r) => r.chainId))], count: unified.length });
+    console.log("[send] fetchBalances start", { addr, chains: Array.from(new Set(unified.map((r) => r.chainId))), count: unified.length });
     const t0 = Date.now();
     setBalancesLoading(true);
     const out: Record<string, bigint> = {};

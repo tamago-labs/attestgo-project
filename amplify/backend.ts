@@ -7,6 +7,9 @@ import { createGToken } from './functions/createGToken/resource.js';
 import { manageIssuerProfile } from './functions/manageIssuerProfile/resource.js';
 import { manageRWATokenProfile } from './functions/manageRWATokenProfile/resource.js';
 import { postAnnouncement } from './functions/postAnnouncement/resource.js';
+import { sumsubCreateApplicant } from './functions/sumsubCreateApplicant/resource.js';
+import { sumsubGetAccessToken } from './functions/sumsubGetAccessToken/resource.js';
+import { sumsubWebhook } from './functions/sumsubWebhook/resource.js';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 
 const backend = defineBackend({
@@ -18,6 +21,9 @@ const backend = defineBackend({
   manageIssuerProfile,
   manageRWATokenProfile,
   postAnnouncement,
+  sumsubCreateApplicant,
+  sumsubGetAccessToken,
+  sumsubWebhook,
 });
 
 // REST API POST /tokens — separate key PLATFORM_API_KEY (secret), not the Data apiKey
@@ -39,8 +45,14 @@ const cgt = api.root.addResource('createGToken');
 cgt.addMethod('POST', new apigateway.LambdaIntegration(backend.createGToken.resources.lambda));
 cgt.addMethod('GET', new apigateway.LambdaIntegration(backend.createGToken.resources.lambda));
 
+// Sumsub webhook: POST /webhooks/sumsub
+const webhooks = api.root.addResource('webhooks');
+const sumsub = webhooks.addResource('sumsub');
+sumsub.addMethod('POST', new apigateway.LambdaIntegration(backend.sumsubWebhook.resources.lambda));
+
 backend.addOutput({
   custom: {
     tokenApiUrl: api.url,
+    sumsubWebhookUrl: `${api.url}webhooks/sumsub`,
   },
 });

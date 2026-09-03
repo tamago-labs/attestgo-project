@@ -290,15 +290,55 @@ export default function IdentityPage() {
             </div>
           )}
           {passRequest && passRequest.status === "active" && (
-            <div className="rounded-xl border border-border bg-panel p-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-medium border border-emerald-500/20 bg-emerald-500/10 text-emerald-300">active</span>
-                <span className="text-xs font-mono text-muted">{shortAddr(passRequest.txHash)}</span>
+            <>
+              <div className="border border-border rounded-xl bg-panel px-5 py-4 flex items-center justify-between">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-medium border border-emerald-500/20 bg-emerald-500/10 text-emerald-300 shrink-0">active</span>
+                  <span className="text-sm font-mono text-white truncate">{shortAddr(passRequest.txHash)}</span>
+                </div>
+                <a href={`https://sepolia.etherscan.io/tx/${passRequest.txHash}`} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-amber hover:text-white inline-flex items-center gap-1 shrink-0 ml-3">
+                  View <ExternalLink size={12} />
+                </a>
               </div>
-              <a href={`https://sepolia.etherscan.io/tx/${passRequest.txHash}`} target="_blank" rel="noopener noreferrer" className="text-xs text-amber hover:text-white inline-flex items-center gap-1">
-                View <ExternalLink size={10} />
-              </a>
-            </div>
+              <div className="border border-border rounded-xl divide-y divide-border overflow-hidden bg-panel">
+                <button
+                  onClick={() => handleCopy(address || "")}
+                  className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/[0.03] transition-colors text-left"
+                >
+                  <span className="text-sm text-white">Wallet</span>
+                  <span className="flex items-center gap-2 text-sm font-mono text-muted">
+                    {shortAddr(address || "")} {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                  </span>
+                </button>
+                <a
+                  href={`https://sepolia.etherscan.io/tx/${passRequest.txHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/[0.03] transition-colors"
+                >
+                  <span className="text-sm text-white">Transaction</span>
+                  <span className="text-white/25">›</span>
+                </a>
+                <div className="w-full flex items-center justify-between px-5 py-4">
+                  <span className="text-sm text-white">Tier / Country</span>
+                  <span className="text-sm text-muted">
+                    Tier {displayPass?.tier ?? 10} · {profileCountry || "—"}
+                  </span>
+                </div>
+                <div className="w-full flex items-center justify-between px-5 py-4">
+                  <span className="text-sm text-white">Expires</span>
+                  <span className="text-sm text-muted">{expiryLabel || verifiedUntil}</span>
+                </div>
+                <button
+                  onClick={() => setAttestNote((v) => (v ? null : "Support coming soon — placeholder"))}
+                  className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/[0.03] transition-colors text-left"
+                >
+                  <span className="text-sm text-white">Help</span>
+                  <span className="text-white/25">›</span>
+                </button>
+              </div>
+              {attestNote && <p className="text-xs text-muted px-1">{attestNote}</p>}
+            </>
           )}
         </>
       ) : (

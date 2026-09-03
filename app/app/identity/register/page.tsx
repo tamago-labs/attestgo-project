@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Shield, ExternalLink, Check, Loader2 } from "lucide-react";
@@ -40,6 +40,9 @@ export default function RegisterPage() {
   const [hasProfile, setHasProfile] = useState(false);
   const [sourceChainId] = useState(11155111);
   const [pendingTx, setPendingTx] = useState<{ hash: string; block: number } | null>(null);
+  const [sumsubToken, setSumsubToken] = useState<string | null>(null);
+  const [sumsubLaunching, setSumsubLaunching] = useState(false);
+  const sumsubContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isConnected) {
@@ -141,6 +144,102 @@ export default function RegisterPage() {
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       setError(msg || "KYC failed");
+      setStep("kyc");
+    }
+  };
+
+  const handleSumsubLaunch = async () => {
+    if (!address) return;
+    setSumsubLaunching(true);
+    setError(null);
+    try {
+      const { generateClient } = await import("aws-amplify/data");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const client: any = generateClient<any>();
+      // 1. create applicant (idempotent)
+      const r1 = await client.mutations.sumsubCreateApplicant({ walletAddress: address });
+      if (r1.errors) throw new Error(r1.errors.map((e: { message: string }) => e.message).join(", "));
+      // 2. get SDK token
+      const r2 = await client.mutations.sumsubGetAccessToken({ walletAddress: address, ttlInSecs: 600 });
+      if (r2.errors) throw new Error(r2.errors.map((e: { message: string }) => e.message).join(", "));
+      let raw2 = r2.data as unknown;
+      if (typeof raw2 === "string") {
+        try {
+          raw2 = JSON.parse(raw2 as string);
+        } catch {}
+      }
+      const d2 = raw2 as { token?: string } | null;
+      const token = (d2 as { token?: string })?.token;
+      if (!token) throw new Error("Failed to get Sumsub token — check SUMSUB_APP_TOKEN/SECRET in sandbox");
+      setSumsubToken(token);
+      // 3. launch WebSDK 2.0
+      const launch = () => {
+        const w = window as unknown as any;
+        if (!w.SNSWebSDK) {
+          setError("Sumsub SDK failed to load — retry");
+          return;
+        }
+        const sns = w.SNSWebSDK.init(token, async () => {
+          const rr = await client.mutations.sumsubGetAccessToken({ walletAddress: address, ttlInSecs: 600 });
+          let rx = rr.data as unknown;
+          if (typeof rx === "string") try { rx = JSON.parse(rx as string); } catch {}
+          return (rx as { token?: string })?.token || token;
+        })
+          .withConf({ lang: "en", theme: "light" })
+          .withOptions({ addViewportTag: false, adaptIframeHeight: true })
+          .build();
+        sns.launch("#sumsub-websdk-container");
+      };
+      // load script if not present
+      const existing = document.querySelector('script[src*="sns-websdk-builder"]');
+      if (existing && (window as unknown as any).SNSWebSDK) launch();
+      else {
+        const s = document.createElement("script");
+        s.src = "https://static.sumsub.com/idensic/static/sns-websdk-builder.js";
+        s.async = true;
+        s.onload = launch;
+        s.onerror = () => setError("Failed to load Sumsub SDK");
+        document.body.appendChild(s);
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg.includes("not set") ? `${msg} — ask admin to set SUMSUB_APP_TOKEN/SECRET (sandbox) in amplify env` : msg);
+    } finally {
+      setSumsubLaunching(false);
+    }
+  };
+
+  const handleAfterSumsubMint = async () => {
+    setStep("creating");
+    setError(null);
+    try {
+      const profile = await loadProfile(address!);
+      if (!profile) throw new Error("Profile not found");
+      const { generateClient } = await import("aws-amplify/data");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const client: any = generateClient<any>();
+      const res = await client.mutations.mintPass({ userProfileId: (profile as unknown as { id: string }).id });
+      if (res.errors) throw new Error(res.errors.map((e: { message: string }) => e.message).join(", "));
+      let raw = res.data as unknown;
+      if (typeof raw === "string") try { raw = JSON.parse(raw as string); } catch {}
+      const data = raw as { txHash: string; blockNumber: number; recordHash: string } | null;
+      if (!data?.txHash) throw new Error("mintPass no txHash");
+      setPendingTx({ hash: data.txHash, block: data.blockNumber });
+      try {
+        await client.models.PassRequest.create({
+          userProfileId: (profile as unknown as { id: string }).id,
+          chainId: sourceChainId,
+          txHash: data.txHash,
+          blockNumber: data.blockNumber,
+          recordHash: data.recordHash,
+          status: "pending",
+        });
+      } catch {}
+      setStep("done");
+      setTimeout(() => router.push("/app/identity"), 900);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg || "Mint failed");
       setStep("kyc");
     }
   };
@@ -251,10 +350,10 @@ export default function RegisterPage() {
           <div className="p-5 border-b border-border">
             <div className="flex items-center gap-2">
               <Shield size={16} className="text-violet-400" />
-              <span className="text-sm font-medium text-white">KYC via {kycSource || "Sumsub"}</span>
-              <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/20">Mock</span>
+              <span className="text-sm font-medium text-white">KYC via Sumsub</span>
+              <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/20">Sandbox · basic-attestgo</span>
             </div>
-            <p className="mt-1 text-xs text-muted">Simulated Sumsub — no real verification. Click verify to create pass.</p>
+            <p className="mt-1 text-xs text-muted">Sandbox mode — use Document Templates for deterministic GREEN. No approval algorithm.</p>
           </div>
           <div className="p-5 space-y-4">
             {error && <div className="text-xs text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</div>}
@@ -263,28 +362,52 @@ export default function RegisterPage() {
                 <Shield size={18} className="text-white/60" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm text-white">Sumsub KYC</div>
+                <div className="text-sm text-white">Sumsub KYC · basic-attestgo</div>
                 <div className="text-xs text-muted truncate">
-                  Country {country} • Wallet {wallet.slice(0, 10)}…
+                  Country {country} • Wallet {wallet.slice(0, 10)}… • Level basic-attestgo
                 </div>
               </div>
-              <span className="text-[10px] px-2 py-1 rounded bg-amber/15 text-amber border border-amber/20">Required</span>
+              <span className="text-[10px] px-2 py-1 rounded bg-amber-500/15 text-amber-300 border border-amber-500/20">Sandbox</span>
             </div>
-            <button
-              onClick={handleKyc}
-              disabled={kycLoading}
-              className="w-full py-2.5 rounded-lg bg-white text-canvas text-sm font-medium hover:bg-white/90 disabled:opacity-60 inline-flex justify-center items-center gap-2"
-            >
-              {kycLoading ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" /> Verifying…
-                </>
-              ) : (
-                <>
-                  Verify with {kycSource ? "Sumsub" : "Provider"} <ExternalLink size={14} />
-                </>
-              )}
-            </button>
+            {!sumsubToken ? (
+              <>
+                <button
+                  onClick={handleSumsubLaunch}
+                  disabled={sumsubLaunching}
+                  className="w-full py-2.5 rounded-lg bg-white text-canvas text-sm font-medium hover:bg-white/90 disabled:opacity-60 inline-flex justify-center items-center gap-2"
+                >
+                  {sumsubLaunching ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" /> Launching Sumsub…
+                    </>
+                  ) : (
+                    <>
+                      Verify with Sumsub <ExternalLink size={14} />
+                    </>
+                  )}
+                </button>
+                <div className="rounded-lg border border-dashed border-white/10 bg-canvas/50 p-3">
+                  <p className="text-xs text-muted">Sandbox tip: open widget → upload any Document Template (GREEN) from Sumsub collection to get instant pass. Or use manual preset for Pending.</p>
+                </div>
+                <button onClick={handleKyc} disabled={kycLoading} className="w-full py-2 rounded-lg border border-white/10 text-sm text-muted hover:text-white hover:bg-white/5 inline-flex justify-center items-center gap-2">
+                  {kycLoading ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" /> Creating mock pass…
+                    </>
+                  ) : (
+                    <>Mock mint (fallback)</>
+                  )}
+                </button>
+              </>
+            ) : (
+              <>
+                <div id="sumsub-websdk-container" ref={sumsubContainerRef} className="min-h-[500px] rounded-lg border border-border bg-white overflow-hidden" />
+                <button onClick={handleAfterSumsubMint} className="w-full py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-600 inline-flex justify-center items-center gap-2">
+                  Continue — Mint GO Pass <Check size={14} />
+                </button>
+                <p className="text-xs text-muted text-center">After completing Sumsub, click Continue to mint your GO Pass on Sepolia (emits proof for attestation).</p>
+              </>
+            )}
             <button onClick={() => setStep("form")} className="w-full text-sm text-muted hover:text-white">
               Back to form
             </button>
