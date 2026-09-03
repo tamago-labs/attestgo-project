@@ -157,19 +157,39 @@ export default function RegisterPage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const client: any = generateClient<any>();
       // 1. create applicant (idempotent)
+      console.log("[sumsub] createApplicant start", address);
       const r1 = await client.mutations.sumsubCreateApplicant({ walletAddress: address });
+      console.log("[sumsub] r1", JSON.stringify(r1).slice(0, 800));
       if (r1.errors) throw new Error(r1.errors.map((e: { message: string }) => e.message).join(", "));
+      let raw1 = r1.data as unknown;
+      console.log("[sumsub] raw1", typeof raw1, String(raw1).slice(0, 600));
+      if (typeof raw1 === "string") {
+        try {
+          raw1 = JSON.parse(raw1 as string);
+          console.log("[sumsub] parsed raw1", JSON.stringify(raw1).slice(0, 600));
+        } catch (e) {
+          console.warn("[sumsub] raw1 parse fail", e);
+        }
+      }
       // 2. get SDK token
+      console.log("[sumsub] getAccessToken start");
       const r2 = await client.mutations.sumsubGetAccessToken({ walletAddress: address, ttlInSecs: 600 });
+      console.log("[sumsub] r2", JSON.stringify(r2).slice(0, 800));
       if (r2.errors) throw new Error(r2.errors.map((e: { message: string }) => e.message).join(", "));
       let raw2 = r2.data as unknown;
+      console.log("[sumsub] raw2", typeof raw2, String(raw2).slice(0, 800));
       if (typeof raw2 === "string") {
         try {
           raw2 = JSON.parse(raw2 as string);
-        } catch {}
+          console.log("[sumsub] parsed raw2", JSON.stringify(raw2).slice(0, 600));
+        } catch (e) {
+          console.warn("[sumsub] raw2 parse fail", e);
+        }
       }
       const d2 = raw2 as { token?: string } | null;
+      console.log("[sumsub] d2", d2);
       const token = (d2 as { token?: string })?.token;
+      console.log("[sumsub] token", token ? token.slice(0, 20) + "..." : "MISSING");
       if (!token) throw new Error("Failed to get Sumsub token — check SUMSUB_APP_TOKEN/SECRET in sandbox");
       setSumsubToken(token);
       // 3. launch WebSDK 2.0
