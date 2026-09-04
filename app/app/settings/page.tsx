@@ -7,6 +7,7 @@ import { loadProfile, type UserProfile } from "@/lib/userProfile";
 import EditProfileModal from "@/components/app/EditProfileModal";
 import AddressBookDrawer from "@/components/app/AddressBookDrawer";
 import TokenRegistryDrawer from "@/components/app/TokenRegistryDrawer";
+import KYCStatusModal from "@/components/app/KYCStatusModal";
 
 function shortAddr(a: string) {
   return a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "—";
@@ -33,6 +34,7 @@ export default function SettingsPage() {
   const [copied, setCopied] = useState(false);
   const [bookOpen, setBookOpen] = useState(false);
   const [tokenOpen, setTokenOpen] = useState(false);
+  const [kycOpen, setKycOpen] = useState(false);
 
   const fetch = async () => {
     if (!address) {
@@ -107,14 +109,6 @@ export default function SettingsPage() {
             </button>
           </div>
 
-          {/* kyc detail */}
-          {profile && (profile as unknown as { kycStatus?: string; kycReviewAnswer?: string; kycRejectType?: string })?.kycStatus && (
-            <div className={`mb-6 rounded-xl border p-3 text-xs ${ (profile as unknown as { kycStatus?: string }).kycStatus === "green" ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300" : (profile as unknown as { kycStatus?: string }).kycStatus === "red" ? "border-red-500/20 bg-red-500/10 text-red-300" : "border-amber-500/20 bg-amber-500/10 text-amber-300"}`}>
-              <div className="font-medium">KYC { (profile as unknown as { kycStatus?: string }).kycStatus === "green" ? "Verified — ready to mint GO Pass" : (profile as unknown as { kycStatus?: string }).kycStatus === "red" ? `Rejected • ${(profile as unknown as { kycRejectType?: string }).kycRejectType || (profile as unknown as { kycReviewAnswer?: string }).kycReviewAnswer || "RETRY"}` : "Under review — we’ll update when Sumsub finishes"}</div>
-              {(profile as unknown as { kycStatus?: string }).kycStatus === "red" && <div className="mt-1 opacity-80">Upload a clearer ID where the photo matches your selfie, then retry in Identity → KYC.</div>}
-            </div>
-          )}
-
           {/* menu */}
           <div className="border border-border rounded-xl divide-y divide-border overflow-hidden bg-panel">
             <button onClick={() => setEditOpen(true)} className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/[0.03] transition-colors text-left">
@@ -129,6 +123,19 @@ export default function SettingsPage() {
               <span className="text-sm text-white">Token registry</span>
               <span className="text-white/25">›</span>
             </button>
+            <button onClick={() => setKycOpen(true)} className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/[0.03] transition-colors text-left">
+              <span className="text-sm text-white">KYC Status</span>
+              <span className="flex items-center gap-2">
+                {profile && (profile as unknown as { kycStatus?: string })?.kycStatus ? (
+                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono border ${ (profile as unknown as { kycStatus?: string }).kycStatus === "green" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300" : (profile as unknown as { kycStatus?: string }).kycStatus === "red" ? "bg-red-500/10 border-red-500/20 text-red-300" : (profile as unknown as { kycStatus?: string }).kycStatus === "pending" ? "bg-amber-500/10 border-amber-500/20 text-amber-300" : "bg-white/5 border-white/10 text-white/60"}`}>
+                    {(profile as unknown as { kycStatus?: string }).kycStatus === "green" ? "Verified" : (profile as unknown as { kycStatus?: string }).kycStatus === "red" ? "Rejected" : (profile as unknown as { kycStatus?: string }).kycStatus === "pending" ? "Pending" : (profile as unknown as { kycStatus?: string }).kycStatus}
+                  </span>
+                ) : (
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-white/5 border border-white/10 text-white/60">Not started</span>
+                )}
+                <span className="text-white/25">›</span>
+              </span>
+            </button>
           </div>
         </>
       ) : (
@@ -140,6 +147,7 @@ export default function SettingsPage() {
       <EditProfileModal open={editOpen} initialName={displayName} initialCountry={country} onClose={() => setEditOpen(false)} onSaved={fetch} />
       <AddressBookDrawer open={bookOpen} onClose={() => setBookOpen(false)} ownerId={(profile as unknown as { id: string } | null)?.id || null} />
       <TokenRegistryDrawer open={tokenOpen} onClose={() => setTokenOpen(false)} ownerId={(profile as unknown as { id: string } | null)?.id || null} />
+      <KYCStatusModal open={kycOpen} onClose={() => setKycOpen(false)} profile={profile as unknown as { kycStatus?: string; kycReviewAnswer?: string; kycRejectType?: string; applicantId?: string } | null} />
     </div>
   );
 }
