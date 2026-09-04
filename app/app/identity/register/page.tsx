@@ -28,6 +28,8 @@ export default function RegisterPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasProfile, setHasProfile] = useState(false);
+  const [kycStatus, setKycStatus] = useState<"init" | "pending" | "green" | "red" | null>(null);
+  const [kycRejectType, setKycRejectType] = useState<string | null>(null);
   const sourceChainId = 11155111;
 
   useEffect(() => {
@@ -41,7 +43,12 @@ export default function RegisterPage() {
         setHasProfile(true);
         if (p?.country) setCountry(p.country);
         if (p?.displayName) setDisplayName((cur) => cur || p.displayName);
-      } else setHasProfile(false);
+        if (p?.kycStatus) setKycStatus(p.kycStatus);
+        if (p?.kycRejectType) setKycRejectType(p.kycRejectType);
+      } else {
+        setHasProfile(false);
+        setKycStatus(null);
+      }
     });
   }, [address]);
 
@@ -147,12 +154,20 @@ export default function RegisterPage() {
               <span className="flex-1 font-mono text-sm text-white/70 truncate">{wallet}</span>
               <span className="shrink-0 px-1.5 py-0.5 rounded-full border border-amber/20 bg-amber/10 text-[10px] font-medium text-amber">Silver • Tier 10</span>
             </div>
+            {kycStatus && (
+              <div className={`mt-2 flex items-center gap-2 text-xs px-3 py-2 rounded-lg border ${kycStatus === "green" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300" : kycStatus === "red" ? "bg-red-500/10 border-red-500/20 text-red-300" : kycStatus === "pending" ? "bg-amber-500/10 border-amber-500/20 text-amber-300" : "bg-white/5 border-white/10 text-muted"}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${kycStatus === "green" ? "bg-emerald-400" : kycStatus === "red" ? "bg-red-400" : kycStatus === "pending" ? "bg-amber-400" : "bg-white/30"}`} />
+                KYC: {kycStatus === "green" ? "Verified" : kycStatus === "red" ? `Rejected${kycRejectType ? ` • ${kycRejectType}` : ""}` : kycStatus === "pending" ? "Under review" : "Not started"}
+                {kycStatus === "red" && <Link href="/app/identity/kyc" className="ml-auto text-xs underline hover:text-white">Retry</Link>}
+                {kycStatus === "green" && <span className="ml-auto text-xs opacity-70">Ready to mint</span>}
+              </div>
+            )}
           </div>
           <button onClick={() => router.push("/app/identity/kyc")} disabled={!hasProfile} className="w-full py-2.5 rounded-lg bg-white text-canvas text-sm font-medium hover:bg-white/90 disabled:opacity-40 disabled:cursor-not-allowed inline-flex justify-center items-center gap-2">
-            Continue to KYC <ExternalLink size={14} />
+            {kycStatus === "green" ? "Continue to Mint" : "Continue to KYC"} <ExternalLink size={14} />
           </button>
           {!hasProfile && <p className="text-xs text-amber/80 text-center">Save profile first to continue</p>}
-          <p className="text-xs text-muted text-center">Next: KYC verification → Mint pass</p>
+          <p className="text-xs text-muted text-center">Next: {kycStatus === "green" ? "Mint pass" : "KYC verification → Mint pass"}</p>
         </div>
       </div>
     </div>

@@ -26,6 +26,10 @@ export type UserProfile = {
   signature: string;
   createdAt?: string;
   updatedAt?: string;
+  applicantId?: string | null;
+  kycStatus?: "init" | "pending" | "green" | "red" | null;
+  kycReviewAnswer?: string | null;
+  kycRejectType?: string | null;
 };
 
 export function buildMessage(wallet: string, displayName: string, country: string): string {
