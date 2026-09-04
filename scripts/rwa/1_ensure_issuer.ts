@@ -12,9 +12,9 @@ const PRESETS: Record<string, { issuerName: string; handle: string; website: str
   go_asset: {
     issuerName: 'Go Asset Management',
     handle: 'go_asset',
-    website: 'https://attestgo.xyz',
+    website: 'https://attestgo.tamagolabs.com/demo-products',
     description: 'Go Asset Management — Nikkei 225 index funds & ETFs, and T-Bill products',
-    logoURI: 'https://icons.test/go-asset.svg',
+    logoURI: 'https://attestgo.tamagolabs.com/go-asset-logo.png',
   },
 };
 
