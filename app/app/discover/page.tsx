@@ -256,8 +256,8 @@ export default function DiscoverPage() {
             {tab === "token" && (
               <div className="p-6 space-y-3">
                 <div className="rounded-lg border border-border bg-panel p-3 space-y-2">
-                  <div className="text-xs font-mono text-white/40">Token</div><div className="text-xs font-mono text-white break-all">{selected.tokenAddress}</div><div className="text-xs text-muted">{selected.chain} · {selected.chainId}</div>
-                  <div className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-mono border ${selected.isWrapped ? "bg-violet-500/10 border-violet-500/20 text-violet-300" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-300"}`}>{selected.isWrapped ? `Wrapped 1:1` : "Direct"}</div>
+                  <div className="text-xs font-mono text-white/40">Token</div><div className="text-xs font-mono text-white break-all">{selected.tokenAddress}</div>
+                  <a href={`https://${selected.chain === "Sepolia" ? "sepolia.etherscan.io" : "explorer.creditcoin.xyz"}/address/${selected.tokenAddress}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-mono text-white/60 hover:text-white underline underline-offset-2">View on explorer <ExternalLink size={10} /></a>
                 </div>
                 <div className="text-xs text-muted">Add to registry to track in Send & Portfolio.</div>
               </div>
