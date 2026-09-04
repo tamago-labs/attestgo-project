@@ -97,11 +97,6 @@ export default function SettingsPage() {
                         <Check size={10} /> Signature
                       </span>
                       <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-white/5 border border-white/10 text-white/60">{country}</span>
-                      {(profile as unknown as { kycStatus?: string })?.kycStatus && (
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono border ${ (profile as unknown as { kycStatus?: string }).kycStatus === "green" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300" : (profile as unknown as { kycStatus?: string }).kycStatus === "red" ? "bg-red-500/10 border-red-500/20 text-red-300" : (profile as unknown as { kycStatus?: string }).kycStatus === "pending" ? "bg-amber-500/10 border-amber-500/20 text-amber-300" : "bg-white/5 border-white/10 text-white/60"}`}>
-                          KYC { (profile as unknown as { kycStatus?: string }).kycStatus === "green" ? "Verified" : (profile as unknown as { kycStatus?: string }).kycStatus === "red" ? "Rejected" : (profile as unknown as { kycStatus?: string }).kycStatus === "pending" ? "Pending" : (profile as unknown as { kycStatus?: string }).kycStatus}
-                        </span>
-                      )}
                     </>
                   )}
                 </div>
