@@ -16,8 +16,8 @@ import {
 
 const navItems = [
   { label: "Inbox", href: "/app", icon: Inbox },
-  { label: "Discover", href: "/app/discover", icon: Compass },
   { label: "Identity", href: "/app/identity", icon: CreditCard },
+  { label: "Discover", href: "/app/discover", icon: Compass },
   { label: "Send", href: "/app/send", icon: Send },
   { label: "Earn", href: "/app/defi", icon: HandCoins },
   { label: "Settings", href: "/app/settings", icon: Settings },
