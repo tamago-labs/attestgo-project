@@ -325,7 +325,7 @@ export default function DiscoverPage() {
                         💬 {f.replies.length} {openComments.has(f.id) ? "hide" : "reply"}
                       </button>
                       {f.tokenProfileId && (
-                        <button onClick={() => { const o = offers.find((x) => x.id === f.tokenProfileId); if (o) setSelected(o); }} className="ml-auto text-xs text-white/30 hover:text-white">↗ View</button>
+                        <button onClick={() => { console.log("[View] click", { tokenProfileId: f.tokenProfileId, offers: offers.map((o) => ({ id: o.id, symbol: o.symbol })), feedId: f.id }); const o = offers.find((x) => x.id === f.tokenProfileId); console.log("[View] found", o); if (o) setSelected(o); else console.warn("[View] no offer for tokenProfileId", f.tokenProfileId); }} className="ml-auto text-xs text-white/30 hover:text-white">↗ View</button>
                       )}
                     </div>
                   </div>
