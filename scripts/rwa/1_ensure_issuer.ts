@@ -9,28 +9,21 @@ import { apiPost, apiGet, apiPatch } from './lib/api';
 function arg(k: string) { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : undefined; }
 
 const PRESETS: Record<string, { issuerName: string; handle: string; website: string; description: string; logoURI: string }> = {
-  nikko_am: {
-    issuerName: 'Nikko Asset Management',
-    handle: 'nikko_am',
-    website: 'https://www.nikkoam.com',
-    description: "Japan's leading asset manager — Nikkei 225 index funds & ETFs, tokenized for US/JP/SG via GO Pass",
-    logoURI: 'https://icons.test/nikko-am.svg',
-  },
-  attestgo_treasury: {
-    issuerName: 'AttestGo Treasury',
-    handle: 'attestgo_treasury',
-    website: 'https://attestgo.xyz/treasury',
-    description: 'AttestGo in-house US Treasury vault, 1:1 T-Bill backed, US only',
-    logoURI: 'https://icons.test/attestgo-treasury.svg',
+  go_asset: {
+    issuerName: 'Go Asset Management',
+    handle: 'go_asset',
+    website: 'https://attestgo.xyz',
+    description: 'Go Asset Management — Nikkei 225 index funds & ETFs, and T-Bill products',
+    logoURI: 'https://icons.test/go-asset.svg',
   },
 };
 
 async function main() {
-  const handle = (arg('--handle') || 'nikko_am').toLowerCase();
-  const wallet = (arg('--wallet') || process.env.ISSUER_NIKKO_WALLET || '').trim();
+  const handle = (arg('--handle') || 'go_asset').toLowerCase();
+  const wallet = (arg('--wallet') || process.env.ISSUER_WALLET || process.env.ISSUER_NIKKO_WALLET || '').trim();
   const doVerify = process.argv.includes('--verify');
-  if (!wallet) { console.error('need --wallet 0x... or ISSUER_*_WALLET'); process.exit(1); }
-  const preset = PRESETS[handle] || PRESETS.nikko_am;
+  if (!wallet) { console.error('need --wallet 0x... or ISSUER_WALLET'); process.exit(1); }
+  const preset = PRESETS[handle] || PRESETS.go_asset;
 
   // try GET first
   try {
