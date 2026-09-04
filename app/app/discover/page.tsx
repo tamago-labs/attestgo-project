@@ -44,6 +44,7 @@ type FeedItem = {
   id: string;
   issuer: string;
   handle: string;
+  logoURI?: string;
   time: string;
   text: string;
   tokenProfileId?: string;
@@ -139,6 +140,7 @@ export default function DiscoverPage() {
             id: a.id,
             issuer: issuer.issuerName,
             handle: issuer.handle,
+            logoURI: issuer.logoURI || undefined,
             time: timeAgo(a.createdAt),
             text: a.text,
             tokenProfileId: a.tokenProfileId || undefined,
@@ -257,7 +259,11 @@ export default function DiscoverPage() {
                 <div key={f.id} className="rounded-xl border border-border bg-panel overflow-hidden">
                   <div className="p-4">
                     <div className="flex gap-3">
-                      <div className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-xs font-bold text-white border border-white/10" style={{ background: issuerGradient(f.issuer) }}>{issuerInitials(f.issuer)}</div>
+                      {f.logoURI ? (
+                        <img src={f.logoURI} alt={f.issuer} className="w-9 h-9 rounded-full shrink-0 object-cover border border-white/10 bg-white" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                      ) : (
+                        <div className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-xs font-bold text-white border border-white/10" style={{ background: issuerGradient(f.issuer) }}>{issuerInitials(f.issuer)}</div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-medium text-white text-sm">{f.issuer}</span>
