@@ -38,6 +38,7 @@ type Offer = {
   isWrapped: boolean;
   ruleMinTier: number;
   countries: string[];
+  iconURI?: string;
 };
 
 type FeedItem = {
@@ -92,6 +93,8 @@ export default function DiscoverPage() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<"overview" | "eligibility" | "token">("overview");
+  useEffect(() => { setTab("overview"); }, [selected?.id]);
 
   useEffect(() => setMounted(true), []);
   useEffect(() => { if (!address) { setOwnerId(null); return; } loadProfile(address).then((p) => setOwnerId((p as unknown as { id: string } | null)?.id || null)); }, [address]);
@@ -127,6 +130,7 @@ export default function DiscoverPage() {
             isWrapped: token.isWrapped,
             ruleMinTier: token.ruleMinTier,
             countries: bitmapToCountries(token.ruleBitmap),
+            iconURI: token.iconURI || undefined,
           });
         }
         setOffers(list);
@@ -189,33 +193,73 @@ export default function DiscoverPage() {
     <AnimatePresence>
       <div className="fixed inset-0 z-[100] flex justify-end">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelected(null)} />
-        <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", stiffness: 300, damping: 30 }} className="relative w-[420px] max-w-[95vw] h-full bg-canvas border-l border-border flex flex-col overflow-y-auto">
-          <div className="px-4 py-4 border-b border-border flex items-center gap-3 sticky top-0 bg-canvas z-10">
-            <span className="font-medium text-white text-sm flex-1">Details</span>
-            <button onClick={() => setSelected(null)} className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-panel"><X size={14} /></button>
+        <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", stiffness: 300, damping: 30 }} className="relative w-[420px] max-w-[95vw] h-full bg-canvas border-l border-border flex flex-col overflow-hidden">
+          <div className="px-5 py-4 border-b border-border flex items-center justify-between shrink-0 bg-canvas">
+            <p className="text-xs text-white/40 font-mono">Details</p>
+            <button onClick={() => setSelected(null)} className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-panel text-white/60 hover:text-white"><X size={14} /></button>
           </div>
-          <div className="p-5 space-y-4">
-            <div>
-              <div className="flex items-center gap-2"><span className="w-1 h-4 bg-amber rounded" /><span className="text-xs font-mono text-white/40">{selected.region} · {selected.apy !== "—" ? `${selected.apy} APY` : "Vault"}</span></div>
-              <h3 className="mt-2 text-lg font-semibold text-white">{selected.productName}</h3>
-              <p className="text-sm text-muted">{selected.symbol} · {selected.chain}</p>
-              <p className="mt-3 text-sm text-muted leading-relaxed">{selected.desc}</p>
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-6 flex items-center gap-4 border-b border-border">
+              {selected.iconURI ? (
+                <img src={selected.iconURI} alt={selected.symbol} className="w-14 h-14 rounded-xl object-cover border border-white/10 bg-white shrink-0" />
+              ) : (
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center font-mono text-sm font-semibold text-white shrink-0">{selected.symbol.slice(0, 4).toUpperCase()}</div>
+              )}
+              <div className="min-w-0">
+                <h3 className="font-semibold leading-snug text-white truncate">{selected.productName}</h3>
+                <p className="text-white/40 text-xs font-mono">{selected.symbol} · {selected.chain}</p>
+              </div>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-lg border border-border bg-panel p-3"><div className="flex items-center gap-1 text-[11px] text-white/40 uppercase tracking-wide"><TrendingUp size={12} /> APY</div><p className="mt-1 text-sm font-mono font-medium text-white">{selected.apy}</p></div>
-              <div className="rounded-lg border border-border bg-panel p-3"><div className="flex items-center gap-1 text-[11px] text-white/40 uppercase tracking-wide"><ShieldCheck size={12} /> Tier</div><p className="mt-1 text-sm font-mono font-medium text-white">≥{selected.ruleMinTier}</p></div>
-              <div className="rounded-lg border border-border bg-panel p-3"><div className="flex items-center gap-1 text-[11px] text-white/40 uppercase tracking-wide"><Globe2 size={12} /> Region</div><p className="mt-1 text-sm font-mono font-medium text-white">{selected.countries.length ? selected.countries.join(", ") : "All"}</p></div>
+            <div className="flex gap-1 px-5 pt-4">
+              {(["overview", "eligibility", "token"] as const).map((t) => (
+                <button key={t} onClick={() => setTab(t)} className={`px-3 py-1.5 rounded-full text-xs capitalize ${tab === t ? "bg-panel border border-border text-white" : "text-white/40 hover:text-white"}`}>{t}</button>
+              ))}
             </div>
-            <div className="rounded-lg border border-border bg-panel p-3 space-y-2">
-              <div className="text-xs font-mono text-white/40">Token</div><div className="text-xs font-mono text-white break-all">{selected.tokenAddress}</div><div className="text-xs text-muted">{selected.chain} · {selected.chainId}</div>
-              <div className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-mono border ${selected.isWrapped ? "bg-violet-500/10 border-violet-500/20 text-violet-300" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-300"}`}>{selected.isWrapped ? `Wrapped` : "Native"}</div>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => handleAdd(selected)} disabled={adding || isAdded(selected) || !ownerId} className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-white text-canvas text-sm font-medium hover:bg-white/90 disabled:opacity-40">{adding ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} {isAdded(selected) ? "Added" : "Add to registry"}</button>
-              {selected.productUrl && <a href={selected.productUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-1 px-4 py-2.5 rounded-lg border border-border bg-panel text-sm text-white hover:bg-white/[0.04]">View product <ExternalLink size={12} /></a>}
-            </div>
+            {tab === "overview" && (
+              <div className="p-6 space-y-5">
+                <p className="text-muted text-sm leading-relaxed">{selected.desc || "—"}</p>
+                <div className="flex items-center gap-6">
+                  <div>
+                    <p className="text-white/40 text-xs mb-1 uppercase tracking-wide">APY</p>
+                    <p className="text-2xl font-semibold font-mono text-emerald-300">{selected.apy}</p>
+                  </div>
+                  <div className="flex-1">
+                    <svg viewBox="0 0 200 50" className="w-full h-10">
+                      <polyline fill="none" stroke="#3FCF8E" strokeWidth="2" points="0,35 20,32 40,38 60,26 80,30 100,18 120,22 140,12 160,16 180,6 200,10" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="border border-border rounded-lg divide-y divide-border overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3"><span className="text-muted text-sm">Tier</span><span className="font-mono text-sm text-white">≥ {selected.ruleMinTier}</span></div>
+                  <div className="flex items-center justify-between px-4 py-3"><span className="text-muted text-sm">Region</span><span className="text-sm text-white">{selected.countries.length ? selected.countries.join(", ") : "All"}</span></div>
+                  <div className="flex items-center justify-between px-4 py-3"><span className="text-muted text-sm">Type</span><span className="text-sm text-white">{selected.isWrapped ? "Wrapped" : "Native"}</span></div>
+                </div>
+              </div>
+            )}
+            {tab === "eligibility" && (
+              <div className="p-6 space-y-4">
+                <p className="text-muted text-sm leading-relaxed">GO Pass required. Tier ≥ {selected.ruleMinTier}, allowed: {selected.countries.length ? selected.countries.join(", ") : "All regions"}.</p>
+                <div className="flex flex-wrap gap-1.5">{selected.countries.map((c) => (<span key={c} className="px-2 py-1 rounded-full bg-white/[0.06] border border-white/10 text-xs font-mono text-white">{c}</span>))}{selected.countries.length === 0 && <span className="text-xs text-muted">All</span>}</div>
+                <div className="rounded-lg border border-border bg-panel p-3 flex items-center gap-2 text-sm"><ShieldCheck size={14} className="text-emerald-300" /> Eligible holders can transfer; compliance checked on every transfer.</div>
+              </div>
+            )}
+            {tab === "token" && (
+              <div className="p-6 space-y-3">
+                <div className="rounded-lg border border-border bg-panel p-3 space-y-2">
+                  <div className="text-xs font-mono text-white/40">Token</div><div className="text-xs font-mono text-white break-all">{selected.tokenAddress}</div><div className="text-xs text-muted">{selected.chain} · {selected.chainId}</div>
+                  <div className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-mono border ${selected.isWrapped ? "bg-violet-500/10 border-violet-500/20 text-violet-300" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-300"}`}>{selected.isWrapped ? `Wrapped` : "Native"}</div>
+                </div>
+                <div className="text-xs text-muted">Add to registry to track in Send & Portfolio.</div>
+              </div>
+            )}
+          </div>
+          <div className="border-t border-border p-4 space-y-2 shrink-0 bg-canvas">
+            {!ownerId && <p className="text-amber-200/70 text-xs">Save profile in Settings to add tokens.</p>}
             {err && <div className="text-xs text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{err}</div>}
-            {!ownerId && <div className="text-xs text-amber-200/70">Save profile in Settings to add tokens.</div>}
+            <div className="flex gap-2">
+              <button onClick={() => handleAdd(selected)} disabled={adding || isAdded(selected) || !ownerId} className="flex-1 py-2.5 rounded-md bg-panel border border-border text-muted text-sm disabled:opacity-40 inline-flex items-center justify-center gap-1.5 hover:bg-white/[0.04] hover:text-white">{adding ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} {isAdded(selected) ? "Added" : "Add to registry"}</button>
+              {selected.productUrl ? <a href={selected.productUrl} target="_blank" rel="noreferrer" className="flex-1 py-2.5 rounded-md bg-emerald-500 text-white text-sm text-center hover:bg-emerald-600">View product</a> : <a href={`https://${selected.chain === "Sepolia" ? "sepolia.etherscan.io" : "explorer.creditcoin.xyz"}/address/${selected.tokenAddress}`} target="_blank" rel="noreferrer" className="flex-1 py-2.5 rounded-md bg-emerald-500 text-white text-sm text-center hover:bg-emerald-600">View on explorer</a>}
+            </div>
           </div>
         </motion.div>
       </div>
