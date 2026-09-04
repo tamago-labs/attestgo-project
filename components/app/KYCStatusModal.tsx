@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy, Check, X, Shield, ExternalLink } from "lucide-react";
+import { Copy, Check, X, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
@@ -42,10 +42,7 @@ export default function KYCStatusModal({ open, onClose, profile }: Props) {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
           <motion.div initial={{ opacity: 0, y: 8, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.98 }} transition={{ duration: 0.18 }} className="relative w-full max-w-md rounded-xl border border-border bg-panel p-5 space-y-4 shadow-xl">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Shield size={16} className="text-violet-400" />
-            <span className="text-sm font-medium text-white">KYC Status</span>
-          </div>
+          <span className="text-sm font-medium text-white">KYC Status</span>
           <button onClick={onClose} className="p-1 rounded hover:bg-white/10">
             <X size={16} className="text-muted" />
           </button>
