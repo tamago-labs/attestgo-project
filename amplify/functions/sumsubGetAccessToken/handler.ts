@@ -111,12 +111,12 @@ export const handler: Schema["sumsubGetAccessToken"]["functionHandler"] = async 
     }
     if (toSave && toSave.toLowerCase() !== externalUserId) {
       const profRes = await (client.models.UserProfile as unknown as { byWallet: (a: { walletAddress: string }) => Promise<{ data: { id: string; applicantId?: string | null }[] }> }).byWallet({ walletAddress: externalUserId });
-      let pid = profRes.data?.[0]?.id;
-      let curId = profRes.data?.[0]?.applicantId;
+      let pid: string | null | undefined = profRes.data?.[0]?.id;
+      let curId: string | null | undefined = profRes.data?.[0]?.applicantId;
       if (!pid) {
         const rL = await (client.models.UserProfile as unknown as { list: (a: unknown) => Promise<{ data: { id: string; applicantId?: string | null }[] }> }).list({ filter: { walletAddress: { eq: externalUserId } } });
-        pid = rL.data?.[0]?.id || null;
-        curId = rL.data?.[0]?.applicantId || null;
+        pid = rL.data?.[0]?.id ?? null;
+        curId = rL.data?.[0]?.applicantId ?? null;
       }
       if (pid && curId !== toSave) {
         await (client.models.UserProfile as unknown as { update: (a: unknown) => Promise<unknown> }).update({ id: pid, applicantId: toSave, kycStatus: "pending" });
