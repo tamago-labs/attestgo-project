@@ -264,7 +264,6 @@ export default function DiscoverPage() {
             )}
           </div>
           <div className="border-t border-border p-4 space-y-2 shrink-0 bg-canvas">
-            {!ownerId && <p className="text-amber-200/70 text-xs">Save profile in Settings to add tokens.</p>}
             {err && <div className="text-xs text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{err}</div>}
             <div className="flex gap-2">
               <button onClick={() => handleAdd(selected)} disabled={adding || isAdded(selected) || !ownerId} className="flex-1 py-2.5 rounded-md bg-panel border border-border text-muted text-sm disabled:opacity-40 inline-flex items-center justify-center gap-1.5 hover:bg-white/[0.04] hover:text-white">{adding ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} {isAdded(selected) ? "Added" : "Add to registry"}</button>
