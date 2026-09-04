@@ -3,6 +3,7 @@
 import { Copy, Check, X, Shield, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
 
 type Props = {
   open: boolean;
@@ -17,7 +18,6 @@ type Props = {
 
 export default function KYCStatusModal({ open, onClose, profile }: Props) {
   const [copied, setCopied] = useState(false);
-  if (!open) return null;
   const status = profile?.kycStatus || "init";
   const isGreen = status === "green";
   const isRed = status === "red";
@@ -36,9 +36,11 @@ export default function KYCStatusModal({ open, onClose, profile }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-xl border border-border bg-panel p-5 space-y-4">
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+          <motion.div initial={{ opacity: 0, y: 8, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.98 }} transition={{ duration: 0.18 }} className="relative w-full max-w-md rounded-xl border border-border bg-panel p-5 space-y-4 shadow-xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Shield size={16} className="text-violet-400" />
@@ -103,7 +105,9 @@ export default function KYCStatusModal({ open, onClose, profile }: Props) {
             Close
           </button>
         </div>
-      </div>
-    </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 }
