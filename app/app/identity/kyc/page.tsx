@@ -189,7 +189,7 @@ export default function KycPage() {
                     <span className="text-sm font-medium text-white">Sumsub</span>
                     <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/20">Sandbox</span>
                   </div>
-                  <div className="text-xs text-muted">Document + Liveness • Level basic-attestgo</div>
+                  <div className="text-xs text-muted">Document + Liveness</div>
                 </div>
               </button>
               <div className="w-full flex items-center gap-3 px-4 py-4 opacity-40">
@@ -245,7 +245,7 @@ export default function KycPage() {
         <Link href="/app/identity/register" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-white">
           <ArrowLeft size={14} /> Back to Register
         </Link>
-        <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/20">Sandbox · basic-attestgo</span>
+        <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/20">Sandbox</span>
       </div>
       {error && <div className="mx-2 text-xs text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 shrink-0">{error}</div>}
       <div id="sumsub-websdk-container" className="flex-1 border border-border bg-white overflow-auto rounded-xl min-h-[600px]" />
