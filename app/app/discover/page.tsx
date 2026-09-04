@@ -105,7 +105,17 @@ export default function DiscoverPage() {
       setLoading(true);
       try {
         const client = getClient();
-        const { data: tokenProfiles } = await (client.models.RWATokenProfile as any).byTokenStatus({ status: "listed" });
+        let tokenProfiles: any[] = [];
+        try {
+          const { data } = await (client.models.RWATokenProfile as any).byTokenStatus({ status: "listed" });
+          tokenProfiles = (data as any[]) || [];
+          console.log("[Discover] byTokenStatus listed", tokenProfiles.length, tokenProfiles.map((t:any)=>t.id));
+        } catch (e) { console.warn("[Discover] byTokenStatus failed", e); }
+        if (!tokenProfiles || tokenProfiles.length === 0) {
+          const { data } = await (client.models.RWATokenProfile as any).list({ limit: 50 });
+          tokenProfiles = ((data as any[]) || []).filter((t:any)=> t.status === "listed");
+          console.log("[Discover] fallback list listed", tokenProfiles.length);
+        }
         const list: Offer[] = [];
         for (const tp of (tokenProfiles as any[]) || []) {
           const { data: issuer } = await (client.models.RWAIssuerProfile as any).get({ id: tp.issuerProfileId });
