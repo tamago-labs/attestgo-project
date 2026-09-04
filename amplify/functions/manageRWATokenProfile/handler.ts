@@ -13,12 +13,52 @@ function json(statusCode: number, body: unknown) {
 }
 
 export const handler = async (event: any) => {
+  const method = String(event.httpMethod || event.requestContext?.http?.method || "").toUpperCase();
+  const qs = event.queryStringParameters || event.queryParameters || {};
+  const pathParams = event.pathParameters || {};
+  if (method === "OPTIONS") return { statusCode: 204, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type,x-api-key,x-platform-api-key,authorization", "Access-Control-Allow-Methods": "POST,GET,PATCH,DELETE,OPTIONS" }, body: "" };
+  if (method === "GET") {
+    const idQ = String(pathParams.id || qs.id || "").trim();
+    if (idQ) {
+      const { data } = await (client.models.RWATokenProfile as any).get({ id: idQ });
+      if (!data) return json(404, { error: "profile not found" });
+      return json(200, data);
+    }
+    const issuerQ = String(qs.issuerProfileId || qs.issuer || "").trim();
+    const tokenRecordQ = String(qs.tokenRecordId || qs.tokenAddress || "").trim();
+    if (issuerQ) {
+      const { data } = await (client.models.RWATokenProfile as any).listByIssuerProfile({ issuerProfileId: issuerQ });
+      return json(200, { items: data || [], count: (data || []).length });
+    }
+    if (tokenRecordQ) {
+      // if looks like address, try lookup TokenRecord first then profile
+      const { data } = await (client.models.RWATokenProfile as any).byTokenRecordId({ tokenRecordId: tokenRecordQ });
+      return json(200, { items: data || [], count: (data || []).length });
+    }
+    const { data } = await (client.models.RWATokenProfile as any).list({ limit: 50 });
+    return json(200, { items: data || [], count: (data || []).length });
+  }
   const headers = Object.fromEntries(Object.entries((event.headers || event.request?.headers || {}) as any).map(([k, v]) => [k.toLowerCase(), String(v || "")]));
   const provided = headers["x-platform-api-key"] || headers["x-api-key"] || String(event.arguments?.platformKey || event.arguments?.platformApiKey || "");
   const expected = (env as any).PLATFORM_API_KEY as string;
   if (expected && provided && provided !== expected) return json(401, { error: "unauthorized: invalid platform api key" });
-  const args = event.arguments ?? (event.body ? JSON.parse(event.body) : {});
-  const action = String(args.action || "").toLowerCase();
+  // support PATCH /listings/{id} and DELETE /listings/{id} via path param
+  const rawArgs = event.arguments ?? (event.body ? JSON.parse(event.body) : {});
+  const pathId = String(pathParams.id || "").trim();
+  // tokenAddress+chainId alias: resolve TokenRecord -> tokenRecordId for docs contract POST /listings
+  let tokenRecordIdAlias: string | undefined;
+  if (rawArgs.tokenAddress && !rawArgs.tokenRecordId) {
+    const addr = String(rawArgs.tokenAddress).trim().toLowerCase();
+    const chainIdQ = Number(rawArgs.chainId || 11155111);
+    try {
+      const { data: recs } = await (client.models.TokenRecord as any).list({ filter: { tokenAddress: { eq: addr }, chainId: { eq: chainIdQ } } });
+      if (recs && recs.length > 0) tokenRecordIdAlias = recs[0].id;
+    } catch {}
+  }
+  const args = pathId ? { ...rawArgs, tokenProfileId: rawArgs.tokenProfileId || pathId, id: pathId, tokenRecordId: rawArgs.tokenRecordId || tokenRecordIdAlias } : { ...rawArgs, tokenRecordId: rawArgs.tokenRecordId || tokenRecordIdAlias };
+  const isPatch = method === "PATCH";
+  const isDelete = method === "DELETE";
+  const action = String(args.action || (isDelete ? "delete" : isPatch ? "update" : "")).toLowerCase();
   if (action === "delete") {
     const tokenProfileId = String(args.tokenProfileId || args.id || "").trim();
     const callerWallet = args.callerWallet ? String(args.callerWallet).trim().toLowerCase() : undefined;

@@ -47,6 +47,28 @@ const cgt = api.root.addResource('createGToken');
 cgt.addMethod('POST', new apigateway.LambdaIntegration(backend.createGToken.resources.lambda));
 cgt.addMethod('GET', new apigateway.LambdaIntegration(backend.createGToken.resources.lambda));
 
+// Issuer & RWA REST via PLATFORM_API_KEY  — matches app/docs/page.tsx contract
+const issuers = api.root.addResource('issuers');
+issuers.addMethod('POST', new apigateway.LambdaIntegration(backend.manageIssuerProfile.resources.lambda));
+issuers.addMethod('GET', new apigateway.LambdaIntegration(backend.manageIssuerProfile.resources.lambda));
+const issuersId = issuers.addResource('{id}');
+issuersId.addMethod('PATCH', new apigateway.LambdaIntegration(backend.manageIssuerProfile.resources.lambda));
+issuersId.addMethod('GET', new apigateway.LambdaIntegration(backend.manageIssuerProfile.resources.lambda));
+const listings = api.root.addResource('listings');
+listings.addMethod('POST', new apigateway.LambdaIntegration(backend.manageRWATokenProfile.resources.lambda));
+listings.addMethod('GET', new apigateway.LambdaIntegration(backend.manageRWATokenProfile.resources.lambda));
+const listingsId = listings.addResource('{id}');
+listingsId.addMethod('PATCH', new apigateway.LambdaIntegration(backend.manageRWATokenProfile.resources.lambda));
+listingsId.addMethod('DELETE', new apigateway.LambdaIntegration(backend.manageRWATokenProfile.resources.lambda));
+listingsId.addMethod('GET', new apigateway.LambdaIntegration(backend.manageRWATokenProfile.resources.lambda));
+const feed = api.root.addResource('feed');
+feed.addMethod('POST', new apigateway.LambdaIntegration(backend.postAnnouncement.resources.lambda));
+feed.addMethod('GET', new apigateway.LambdaIntegration(backend.postAnnouncement.resources.lambda));
+const feedId = feed.addResource('{id}');
+const feedReplies = feedId.addResource('replies');
+feedReplies.addMethod('POST', new apigateway.LambdaIntegration(backend.postAnnouncement.resources.lambda));
+feedReplies.addMethod('GET', new apigateway.LambdaIntegration(backend.postAnnouncement.resources.lambda));
+
 // Sumsub webhook: POST /webhooks/sumsub
 const webhooks = api.root.addResource('webhooks');
 const sumsub = webhooks.addResource('sumsub');

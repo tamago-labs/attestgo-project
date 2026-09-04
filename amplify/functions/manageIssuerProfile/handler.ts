@@ -13,6 +13,33 @@ function json(statusCode: number, body: unknown) {
 }
 
 export const handler = async (event: any) => {
+  const method = String(event.httpMethod || event.requestContext?.http?.method || "").toUpperCase();
+  const qs = event.queryStringParameters || event.queryParameters || {};
+  const pathParams = event.pathParameters || {};
+  if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type,x-api-key,x-platform-api-key,authorization", "Access-Control-Allow-Methods": "POST,GET,PATCH,OPTIONS" }, body: "" };
+  // GET /issuers?handle= or ?ownerWallet= or /issuers/{id}
+  if (method === "GET") {
+    const handleQ = String(qs.handle || "").trim().toLowerCase();
+    const ownerQ = String(qs.ownerWallet || qs.owner || "").trim().toLowerCase();
+    const idQ = String(pathParams.id || qs.id || "").trim();
+    if (idQ) {
+      const { data } = await (client.models.RWAIssuerProfile as any).get({ id: idQ });
+      if (!data) return json(404, { error: "issuer not found" });
+      return json(200, data);
+    }
+    if (handleQ) {
+      const { data } = await (client.models.RWAIssuerProfile as any).byHandle({ handle: handleQ });
+      if (!data || data.length === 0) return json(404, { error: "issuer not found" });
+      return json(200, data[0]);
+    }
+    if (ownerQ) {
+      const { data } = await (client.models.RWAIssuerProfile as any).byOwnerWallet({ ownerWallet: ownerQ });
+      return json(200, { items: data || [], count: (data || []).length });
+    }
+    // list all fallback
+    const { data } = await (client.models.RWAIssuerProfile as any).list({ limit: 50 });
+    return json(200, { items: data || [], count: (data || []).length });
+  }
   const headers = Object.fromEntries(Object.entries((event.headers || event.request?.headers || {}) as any).map(([k, v]) => [k.toLowerCase(), String(v || "")]));
   const provided = headers["x-platform-api-key"] || headers["x-api-key"] || String(event.arguments?.platformKey || event.arguments?.platformApiKey || "");
   const expected = (env as any).PLATFORM_API_KEY as string;
@@ -20,8 +47,12 @@ export const handler = async (event: any) => {
     const hasKey = !!provided;
     if (hasKey) return json(401, { error: "unauthorized: invalid platform api key" });
   }
-  const args = event.arguments ?? (event.body ? JSON.parse(event.body) : {});
-  const action = String(args.action || (args.issuerProfileId ? "update" : "create")).toLowerCase();
+  // normalize body + path id for PATCH /issuers/{id}
+  const rawArgs = event.arguments ?? (event.body ? JSON.parse(event.body) : {});
+  const pathId = String(pathParams.id || "").trim();
+  const args = pathId ? { ...rawArgs, issuerProfileId: rawArgs.issuerProfileId || pathId, id: pathId } : rawArgs;
+  const isPatch = method === "PATCH";
+  const action = String(args.action || (isPatch ? "update" : args.issuerProfileId ? "update" : "create")).toLowerCase();
   if (action === "create") {
     const issuerName = String(args.issuerName || "").trim();
     const handle = String(args.handle || "").trim().toLowerCase();
@@ -53,6 +84,12 @@ export const handler = async (event: any) => {
       const { data: byHandle } = await (client.models.RWAIssuerProfile as any).byHandle({ handle: h });
       if (byHandle && byHandle.length > 0 && byHandle[0].id !== issuerProfileId) return json(409, { error: "handle taken" });
       patch.handle = h;
+    }
+    if (args.status) {
+      const s = String(args.status).trim().toLowerCase();
+      if (!["pending", "verified", "rejected"].includes(s)) return json(400, { error: "status pending|verified|rejected" });
+      patch.status = s;
+      if (s === "verified") patch.verifiedAt = new Date().toISOString();
     }
     const { data } = await (client.models.RWAIssuerProfile as any).update({ id: issuerProfileId, ...patch });
     return json(200, data);
