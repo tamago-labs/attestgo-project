@@ -189,12 +189,12 @@ export default function DiscoverPage() {
   const q = search.toLowerCase();
   const filteredOffers = offers.filter((o) => (search ? `${o.symbol} ${o.productName} ${o.issuer} ${o.handle}`.toLowerCase().includes(q) : true))
     .sort((a, b) => { const av = a.apy === "—" ? -1 : parseFloat(a.apy); const bv = b.apy === "—" ? -1 : parseFloat(b.apy); return bv - av; });
+  const offersById = new Map(filteredOffers.map((o) => [o.id, o]));
   const filteredFeed = feed.filter((f) => {
     if (search) return `${f.issuer} ${f.handle} ${f.text}`.toLowerCase().includes(q);
     if (filter !== "all") {
       const o = f.tokenProfileId ? filteredOffers.find((x) => x.id === f.tokenProfileId) : undefined;
       if (!o) return false;
-      // simple cat filter by region/apy? map tvl? keep all for now when filter not all
     }
     return true;
   });
@@ -327,6 +327,22 @@ export default function DiscoverPage() {
                         <p className="text-white text-sm mt-1 leading-relaxed">{f.text}</p>
                       </div>
                     </div>
+                    {f.tokenProfileId && offersById.get(f.tokenProfileId) && (
+                      <div onClick={() => { const o = offersById.get(f.tokenProfileId!); if (o) setSelected(o); }} className="mt-3 border border-border rounded-md p-3 flex items-center justify-between bg-panel hover:bg-white/[0.04] cursor-pointer">
+                        <div className="flex items-center gap-3 min-w-0">
+                          {offersById.get(f.tokenProfileId)!.iconURI ? (
+                            <img src={offersById.get(f.tokenProfileId)!.iconURI} alt={offersById.get(f.tokenProfileId)!.symbol} className="w-8 h-8 rounded-lg object-cover border border-white/10 bg-white shrink-0" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center font-mono text-[10px] font-semibold text-white shrink-0">{offersById.get(f.tokenProfileId)!.symbol.slice(0,4)}</div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-white truncate">{offersById.get(f.tokenProfileId)!.productName}</p>
+                            <p className="text-white/40 text-xs font-mono">{offersById.get(f.tokenProfileId)!.symbol} · rule-verified</p>
+                          </div>
+                        </div>
+                        <p className="font-mono text-sm text-white shrink-0 ml-3">{offersById.get(f.tokenProfileId)!.tvl}</p>
+                      </div>
+                    )}
                     <div className="mt-3 flex items-center gap-5">
                       <button onClick={() => setLiked((prev) => { const n = new Set(prev); if (n.has(f.id)) n.delete(f.id); else n.add(f.id); return n; })} className={`inline-flex items-center gap-1.5 text-xs ${liked.has(f.id) ? "text-red-300" : "text-white/40 hover:text-white"}`}>
                         ♥ {f.likes + (liked.has(f.id) ? 1 : 0)}
