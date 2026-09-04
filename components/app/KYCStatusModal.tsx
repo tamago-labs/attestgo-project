@@ -88,17 +88,12 @@ export default function KYCStatusModal({ open, onClose, profile }: Props) {
               Retry KYC
             </Link>
           )}
-          {isGreen && (
-            <Link href="/app/identity/mint" onClick={onClose} className="flex-1 py-2 rounded-lg bg-emerald-500 text-white text-sm font-medium text-center hover:bg-emerald-600 inline-flex justify-center items-center gap-1">
-              Mint GO Pass <ExternalLink size={12} />
-            </Link>
-          )}
           {!isGreen && !isRed && (
             <Link href="/app/identity/kyc" onClick={onClose} className="flex-1 py-2 rounded-lg bg-white text-canvas text-sm font-medium text-center hover:bg-white/90">
               Go to KYC
             </Link>
           )}
-          <button onClick={onClose} className="px-4 py-2 rounded-lg border border-border text-sm text-white hover:bg-white/5">
+          <button onClick={onClose} className="flex-1 py-2 rounded-lg border border-border text-sm text-white hover:bg-white/5">
             Close
           </button>
         </div>
