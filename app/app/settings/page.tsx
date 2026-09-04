@@ -115,14 +115,6 @@ export default function SettingsPage() {
               <span className="text-sm text-white">Edit profile</span>
               <span className="text-white/25">›</span>
             </button>
-            <button onClick={() => setBookOpen(true)} className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/[0.03] transition-colors text-left">
-              <span className="text-sm text-white">Address book</span>
-              <span className="text-white/25">›</span>
-            </button>
-            <button onClick={() => setTokenOpen(true)} className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/[0.03] transition-colors text-left">
-              <span className="text-sm text-white">Token registry</span>
-              <span className="text-white/25">›</span>
-            </button>
             <button onClick={() => setKycOpen(true)} className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/[0.03] transition-colors text-left">
               <span className="text-sm text-white">KYC Status</span>
               <span className="flex items-center gap-2">
@@ -135,6 +127,14 @@ export default function SettingsPage() {
                 )}
                 <span className="text-white/25">›</span>
               </span>
+            </button>
+            <button onClick={() => setBookOpen(true)} className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/[0.03] transition-colors text-left">
+              <span className="text-sm text-white">Address book</span>
+              <span className="text-white/25">›</span>
+            </button>
+            <button onClick={() => setTokenOpen(true)} className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/[0.03] transition-colors text-left">
+              <span className="text-sm text-white">Token registry</span>
+              <span className="text-white/25">›</span>
             </button>
           </div>
         </>
