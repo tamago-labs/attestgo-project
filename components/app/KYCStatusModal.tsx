@@ -24,7 +24,7 @@ export default function KYCStatusModal({ open, onClose, profile }: Props) {
   const isPending = status === "pending";
   const dot = isGreen ? "bg-emerald-400" : isRed ? "bg-red-400" : isPending ? "bg-amber-400" : "bg-white/30";
   const label = isGreen ? "Verified" : isRed ? "Rejected" : isPending ? "Under review" : "Not started";
-  const sub = isGreen ? "Ready to mint GO Pass" : isRed ? `${profile?.kycRejectType || profile?.kycReviewAnswer || "RETRY"}` : isPending ? "We’ll update when Sumsub finishes" : "Start KYC in Identity → Register";
+  const sub = isGreen ? "Verification completed" : isRed ? `${profile?.kycRejectType || profile?.kycReviewAnswer || "RETRY"}` : isPending ? "We’ll update when Sumsub finishes" : "Start KYC in Identity → Register";
 
   const handleCopy = async () => {
     if (!profile?.applicantId) return;
