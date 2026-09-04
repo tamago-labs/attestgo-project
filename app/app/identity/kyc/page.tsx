@@ -13,8 +13,10 @@ export default function KycPage() {
   const [country, setCountry] = useState("US");
   const [sumsubToken, setSumsubToken] = useState<string | null>(null);
   const [sumsubLaunching, setSumsubLaunching] = useState(false);
-  const [sumsubCompleted, setSumsubCompleted] = useState(false);
+  const [kycStatus, setKycStatus] = useState<"init" | "pending" | "green" | "red" | null>(null);
+  const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const sumsubCompleted = kycStatus === "green";
 
   useEffect(() => {
     if (!isConnected) router.replace("/app/identity");
@@ -68,14 +70,20 @@ export default function KycPage() {
           .withOptions({ addViewportTag: false, adaptIframeHeight: true })
           .on("idCheck.onStepCompleted", (p: unknown) => console.log("[sumsub] onStepCompleted", p))
           .on("idCheck.onApplicantSubmitted", () => {
-            console.log("[sumsub] onApplicantSubmitted");
-            setSumsubCompleted(true);
+            console.log("[sumsub] onApplicantSubmitted — waiting for review");
+            setSubmitted(true);
+            setKycStatus("pending");
           })
           .on("idCheck.onError", (e: unknown) => console.log("[sumsub] onError", e))
           .onMessage((type: string, payload: unknown) => {
-            if (type === "idCheck.onApplicantSubmitted" || type === "idCheck.onApplicantStatusChanged") {
-              const pl = payload as { reviewStatus?: string; reviewResult?: { reviewAnswer?: string } } | null;
-              if (pl?.reviewResult?.reviewAnswer === "GREEN" || pl?.reviewStatus === "completed") setSumsubCompleted(true);
+            if (type === "idCheck.onApplicantSubmitted") {
+              setSubmitted(true);
+              setKycStatus((s) => s || "pending");
+            }
+            if (type === "idCheck.onApplicantStatusChanged") {
+              const pl = payload as { reviewStatus?: string; reviewResult?: { reviewAnswer?: string; reviewRejectType?: string } } | null;
+              if (pl?.reviewResult?.reviewAnswer === "GREEN") setKycStatus("green");
+              else if (pl?.reviewResult?.reviewAnswer === "RED") setKycStatus("red");
             }
           })
           .build();
@@ -103,6 +111,51 @@ export default function KycPage() {
     };
   }, [sumsubToken, address]);
 
+  // poll webhook + Sumsub live status when submitted
+  useEffect(() => {
+    if (!submitted || kycStatus === "green" || kycStatus === "red" || !address) return;
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const { generateClient } = await import("aws-amplify/data");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const client: any = generateClient<any>();
+        // 1) check UserProfile kycStatus written by webhook
+        const prof = await loadProfile(address);
+        const wk = (prof as unknown as { kycStatus?: string } | null)?.kycStatus;
+        if (wk === "green") {
+          if (!cancelled) setKycStatus("green");
+          return;
+        }
+        if (wk === "red") {
+          if (!cancelled) setKycStatus("red");
+          return;
+        }
+        // 2) fallback live Sumsub status
+        const r = await client.mutations.sumsubGetApplicantStatus({ walletAddress: address });
+        let raw = r.data as unknown;
+        for (let i = 0; i < 3 && typeof raw === "string"; i++) {
+          try {
+            raw = JSON.parse(raw as string);
+          } catch {
+            break;
+          }
+        }
+        const ans = (raw as { reviewAnswer?: string; kycStatus?: string } | null)?.reviewAnswer || (raw as { kycStatus?: string } | null)?.kycStatus;
+        if (!cancelled) {
+          if (ans === "GREEN" || ans === "green") setKycStatus("green");
+          else if (ans === "RED" || ans === "red") setKycStatus("red");
+        }
+      } catch {}
+    };
+    poll();
+    const id = setInterval(poll, 3000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [submitted, kycStatus, address]);
+
   const handleLaunch = async () => {
     if (!address) return;
     setSumsubLaunching(true);
@@ -111,16 +164,7 @@ export default function KycPage() {
       const { generateClient } = await import("aws-amplify/data");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const client: any = generateClient<any>();
-      const r1 = await client.mutations.sumsubCreateApplicant({ walletAddress: address });
-      if (r1.errors) throw new Error(r1.errors.map((e: { message: string }) => e.message).join(", "));
-      let raw1 = r1.data as unknown;
-      for (let i = 0; i < 3 && typeof raw1 === "string"; i++) {
-        try {
-          raw1 = JSON.parse(raw1 as string);
-        } catch {
-          break;
-        }
-      }
+      // Single call: getAccessToken auto-creates applicant if needed (Sumsub creates on levelName)
       const r2 = await client.mutations.sumsubGetAccessToken({ walletAddress: address, ttlInSecs: 600 });
       if (r2.errors) throw new Error(r2.errors.map((e: { message: string }) => e.message).join(", "));
       let raw2 = r2.data as unknown;
@@ -133,7 +177,8 @@ export default function KycPage() {
       }
       const token = (raw2 as { token?: string } | null)?.token;
       if (!token) throw new Error("Failed to get Sumsub token — check SUMSUB_APP_TOKEN/SECRET in sandbox");
-      setSumsubCompleted(false);
+      setKycStatus(null);
+      setSubmitted(false);
       setSumsubToken(token);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
@@ -231,7 +276,7 @@ export default function KycPage() {
               )}
             </button>
             <div className="rounded-lg border border-dashed border-white/10 bg-canvas/50 p-3">
-              <p className="text-xs text-muted">We&apos;re in test mode — live verification will use a real provider: upload your ID and take a quick selfie so we can match the photo.</p>
+              <p className="text-xs text-muted">We use a real KYC provider — you&apos;ll need an ID with a photo that matches your liveness selfie.</p>
             </div>
           </div>
         </div>
@@ -250,15 +295,23 @@ export default function KycPage() {
       {error && <div className="mx-2 text-xs text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 shrink-0">{error}</div>}
       <div id="sumsub-websdk-container" className="flex-1 border border-border bg-white overflow-auto rounded-xl min-h-[600px]" />
       <div className="px-2 py-3 border-t border-border bg-panel shrink-0">
-        {sumsubCompleted ? (
+        {kycStatus === "green" ? (
           <>
-                  <button onClick={() => router.push("/app/identity/mint")} className="w-full py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-600 inline-flex justify-center items-center gap-2">
-                    Continue — Mint GO Pass <ArrowRight size={14} />
-                  </button>
-            <p className="mt-2 text-xs text-emerald-300 text-center">Submitted — continue to mint.</p>
+            <button onClick={() => router.push("/app/identity/mint")} className="w-full py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-600 inline-flex justify-center items-center gap-2">
+              Continue — Mint GO Pass <ArrowRight size={14} />
+            </button>
+            <p className="mt-2 text-xs text-emerald-300 text-center">Verified — continue to mint.</p>
           </>
+        ) : kycStatus === "red" ? (
+          <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-center">
+            <p className="text-sm font-medium text-red-300">Verification failed — please retry</p>
+            <p className="text-xs text-red-200/70 mt-1">Your documents were rejected. Re-upload a clear ID where the photo matches your selfie.</p>
+            <button onClick={() => { setKycStatus(null); setSubmitted(false); }} className="mt-3 text-xs px-3 py-1.5 rounded-lg bg-white text-canvas font-medium">Try again</button>
+          </div>
+        ) : submitted ? (
+          <p className="text-xs text-muted text-center inline-flex items-center justify-center gap-2 w-full"><Loader2 size={12} className="animate-spin" /> Under review — checking result…</p>
         ) : (
-          <p className="text-xs text-muted text-center">Complete verification in the frame above — Continue appears after Sumsub submits.</p>
+          <p className="text-xs text-muted text-center">Complete verification in the frame above — Continue appears only when approved.</p>
         )}
       </div>
     </div>

@@ -7,6 +7,7 @@ import { manageRWATokenProfile } from "../functions/manageRWATokenProfile/resour
 import { postAnnouncement } from "../functions/postAnnouncement/resource";
 import { sumsubCreateApplicant } from "../functions/sumsubCreateApplicant/resource";
 import { sumsubGetAccessToken } from "../functions/sumsubGetAccessToken/resource";
+import { sumsubGetApplicantStatus } from "../functions/sumsubGetApplicantStatus/resource";
 import { sumsubWebhook } from "../functions/sumsubWebhook/resource";
 
 const schema = a.schema({
@@ -18,6 +19,9 @@ const schema = a.schema({
       message: a.string().required(),
       signature: a.string().required(),
       applicantId: a.string(),
+      kycStatus: a.enum(["init", "pending", "green", "red"]),
+      kycReviewAnswer: a.string(),
+      kycRejectType: a.string(),
       request: a.hasOne("PassRequest", "userProfileId"),
       addressBook: a.hasMany("AddressBookEntry", "ownerId"),
       registry: a.hasMany("UserTokenRegistry", "userProfileId"),
@@ -233,7 +237,13 @@ const schema = a.schema({
     .returns(a.json())
     .handler(a.handler.function(sumsubGetAccessToken))
     .authorization((allow) => [allow.publicApiKey()]),
-}).authorization((allow) => [allow.resource(mintPass), allow.resource(attestPass), allow.resource(createGToken), allow.resource(manageIssuerProfile), allow.resource(manageRWATokenProfile), allow.resource(postAnnouncement), allow.resource(sumsubCreateApplicant), allow.resource(sumsubGetAccessToken), allow.resource(sumsubWebhook)]);
+  sumsubGetApplicantStatus: a
+    .mutation()
+    .arguments({ walletAddress: a.string().required() })
+    .returns(a.json())
+    .handler(a.handler.function(sumsubGetApplicantStatus))
+    .authorization((allow) => [allow.publicApiKey()]),
+}).authorization((allow) => [allow.resource(mintPass), allow.resource(attestPass), allow.resource(createGToken), allow.resource(manageIssuerProfile), allow.resource(manageRWATokenProfile), allow.resource(postAnnouncement), allow.resource(sumsubCreateApplicant), allow.resource(sumsubGetAccessToken), allow.resource(sumsubGetApplicantStatus), allow.resource(sumsubWebhook)]);
 
 export type Schema = ClientSchema<typeof schema>;
 

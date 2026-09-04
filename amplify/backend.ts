@@ -9,6 +9,7 @@ import { manageRWATokenProfile } from './functions/manageRWATokenProfile/resourc
 import { postAnnouncement } from './functions/postAnnouncement/resource.js';
 import { sumsubCreateApplicant } from './functions/sumsubCreateApplicant/resource.js';
 import { sumsubGetAccessToken } from './functions/sumsubGetAccessToken/resource.js';
+import { sumsubGetApplicantStatus } from './functions/sumsubGetApplicantStatus/resource.js';
 import { sumsubWebhook } from './functions/sumsubWebhook/resource.js';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 
@@ -23,6 +24,7 @@ const backend = defineBackend({
   postAnnouncement,
   sumsubCreateApplicant,
   sumsubGetAccessToken,
+  sumsubGetApplicantStatus,
   sumsubWebhook,
 });
 

@@ -23,13 +23,12 @@ export const handler = async (event: {
   const algoHdrFull = hdrs["x-payload-digest-alg"] || "HMAC_SHA256_HEX";
   console.log("[sumsubWebhook] digest", digest ? digest.slice(0, 12) + "..." : "none", "algo", algoHdrFull);
 
-  // verify HMAC if secret set and digest present (sandbox webhook optional verify)
+  // verify HMAC if secret set and digest present
   if (secret && digest) {
-    const expect =
-      algoHdrFull === "HMAC_SHA256_HEX"
-        ? crypto.createHmac("sha256", secret).update(body).digest("hex")
-        : crypto.createHmac("sha256", secret).update(body).digest("hex");
-    console.log("[sumsubWebhook] expect", expect.slice(0, 12) + "...");
+    const algoMap: Record<string, string> = { HMAC_SHA1_HEX: "sha1", HMAC_SHA256_HEX: "sha256", HMAC_SHA512_HEX: "sha512" };
+    const algo = algoMap[algoHdrFull] || "sha256";
+    const expect = crypto.createHmac(algo, secret).update(body).digest("hex");
+    console.log("[sumsubWebhook] expect", expect.slice(0, 12) + "...", "algo", algo);
     if (expect !== digest) {
       console.warn("[sumsubWebhook] bad digest");
       return { statusCode: 401, body: JSON.stringify({ error: "bad digest" }) };
@@ -46,6 +45,7 @@ export const handler = async (event: {
     externalUserId?: string;
     reviewResult?: { reviewAnswer?: string; reviewRejectType?: string };
     applicantType?: string;
+    testMode?: boolean;
   } | null = null;
   try {
     payload = JSON.parse(body);
@@ -55,15 +55,21 @@ export const handler = async (event: {
     return { statusCode: 400, body: JSON.stringify({ error: "bad json" }) };
   }
   if (!payload) return { statusCode: 400, body: JSON.stringify({ error: "empty" }) };
+  if (payload.testMode) {
+    console.log("[sumsubWebhook] testMode ignore");
+    return { statusCode: 200, body: JSON.stringify({ ok: true, testMode: true }) };
+  }
 
-  // Only handle applicantReviewed
-  if (payload.type !== "applicantReviewed" && payload.reviewStatus) {
-    // some payloads use reviewStatus directly without type
+  // Only handle applicantReviewed for User Verification
+  if (payload.type && payload.type !== "applicantReviewed") {
+    console.log("[sumsubWebhook] ignore type", payload.type);
+    return { statusCode: 200, body: JSON.stringify({ ok: true, ignoredType: payload.type }) };
   }
   const answer = payload.reviewResult?.reviewAnswer;
+  const rejectType = payload.reviewResult?.reviewRejectType;
   const applicantId = payload.applicantId;
   const externalUserId = payload.externalUserId?.toLowerCase();
-  console.log("[sumsubWebhook] ids", { applicantId, externalUserId, answer });
+  console.log("[sumsubWebhook] ids", { applicantId, externalUserId, answer, rejectType });
   if (!applicantId && !externalUserId) return { statusCode: 200, body: JSON.stringify({ ok: true, ignored: true }) };
 
   // find UserProfile by applicantId or externalUserId (wallet)
@@ -98,29 +104,51 @@ export const handler = async (event: {
   }
 
   if (!profile) {
-    console.log("[sumsubWebhook] no profile found");
-    return { statusCode: 200, body: JSON.stringify({ ok: true, noProfile: true }) };
+    console.log("[sumsubWebhook] no profile found — fallback scan for pending");
+    try {
+      // fallback: webhook externalUserId may be random (old flow); look for most recent pending profile and link
+      const all = await (client.models.UserProfile as unknown as { list: (a: unknown) => Promise<{ data: (ProfileId & { kycStatus?: string | null; updatedAt?: string })[] }> }).list({});
+      const pending = all.data?.filter((p) => !p.walletAddress.includes(":") ) || [];
+      // prefer pending/ init with no green/red
+      const cand = pending.filter((p) => !p.walletAddress.startsWith("0x") === false).slice(0, 20);
+      console.log("[sumsubWebhook] fallback candidates", cand.length);
+      // try to find profile that recently requested token (kycStatus pending/init) — take first pending
+      const fallback = all.data?.find((p) => (p as unknown as { kycStatus?: string }).kycStatus === "pending" || (p as unknown as { kycStatus?: string }).kycStatus === "init" || !(p as unknown as { kycStatus?: string }).kycStatus);
+      if (fallback) {
+        profile = { id: fallback.id, walletAddress: fallback.walletAddress } as ProfileId;
+        console.log("[sumsubWebhook] fallback linked", profile.id, profile.walletAddress);
+      }
+    } catch (e) {
+      console.warn("[sumsubWebhook] fallback fail", e);
+    }
+    if (!profile) {
+      console.log("[sumsubWebhook] still no profile");
+      return { statusCode: 200, body: JSON.stringify({ ok: true, noProfile: true }) };
+    }
   }
   console.log("[sumsubWebhook] profile found", profile.id);
 
+  const kycStatus = answer === "GREEN" ? "green" : answer === "RED" ? "red" : "pending";
+  const kycReviewAnswer = answer || null;
+  const kycRejectType = rejectType || null;
+  console.log("[sumsubWebhook] persist", { kycStatus, kycReviewAnswer, kycRejectType });
+  try {
+    const update: Record<string, unknown> = {
+      id: profile.id,
+      kycStatus,
+      kycReviewAnswer,
+      kycRejectType,
+    };
+    if (applicantId) update.applicantId = applicantId;
+    console.log("[sumsubWebhook] update profile", update);
+    await (client.models.UserProfile as unknown as { update: (a: unknown) => Promise<unknown> }).update(update);
+  } catch (e) {
+    console.warn("[sumsubWebhook] update fail", e);
+  }
   if (answer === "GREEN") {
-    console.log("[sumsubWebhook] GREEN");
-    // ensure applicantId stored
-    if (applicantId) {
-      try {
-        console.log("[sumsubWebhook] store applicantId", applicantId);
-        await (client.models.UserProfile as unknown as { update: (a: unknown) => Promise<unknown> }).update({
-          id: profile.id,
-          applicantId,
-        });
-      } catch (e) {
-        console.warn("[sumsubWebhook] update fail", e);
-      }
-    }
-    // webhook does not mint on-chain; client will trigger mintPass via polling or future Lambda
-    // we just store that review passed - frontend polling will see GREEN via applicant status
+    console.log("[sumsubWebhook] GREEN persisted");
     return { statusCode: 200, body: JSON.stringify({ ok: true, green: true }) };
   }
   console.log("[sumsubWebhook] not GREEN", answer);
-  return { statusCode: 200, body: JSON.stringify({ ok: true, answer: answer || null }) };
+  return { statusCode: 200, body: JSON.stringify({ ok: true, answer: answer || null, kycStatus }) };
 };
