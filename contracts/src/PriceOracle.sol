@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity 0.8.19;
 
-import {IOracle} from "../../interfaces/IOracle.sol";
-import {AggregatorV2V3Interface} from "../../interfaces/AggregatorV2V3Interface.sol";
+import {IOracle} from "./interfaces/IOracle.sol";
+import {AggregatorV2V3Interface} from "./interfaces/AggregatorV2V3Interface.sol";
 
 /// @title PriceOracle
 /// @notice A multi-source price oracle
@@ -140,15 +140,15 @@ contract PriceOracle is IOracle {
 
         // Get aggregator decimals and normalize to 18 decimals
         uint8 aggDecimals = AggregatorV2V3Interface(aggregator).decimals();
-        uint256 price = uint256(answer);
+        uint256 aggPrice = uint256(answer);
 
         if (aggDecimals < 18) {
-            price = price * (10 ** (18 - aggDecimals));
+            aggPrice = aggPrice * (10 ** (18 - aggDecimals));
         } else if (aggDecimals > 18) {
-            price = price / (10 ** (aggDecimals - 18));
+            aggPrice = aggPrice / (10 ** (aggDecimals - 18));
         }
 
-        return price;
+        return aggPrice;
     }
 
     // ──────────────────────────── Fallback Price Setter ─────────────────

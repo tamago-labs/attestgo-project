@@ -46,6 +46,9 @@ interface IMorphoStaticTyping {
     function extSloads(bytes32[] calldata slots) external view returns (bytes32[] memory);
 }
 interface IMorphoBase {
+    function owner() external view returns (address);
+    function isLltvEnabled(uint256 lltv) external view returns (bool);
+    function isIrmEnabled(address irm) external view returns (bool);
     function flashLoan(address token, uint256 assets, bytes calldata data) external;
     function market(Id id) external view returns (Market memory);
     function position(Id id, address user) external view returns (Position memory);

@@ -93,6 +93,8 @@ Foundry project in [`contracts/`](contracts). Solc 0.8.19, tested with `forge te
 | RWA token with self-enforcing rules | any chain | country bitmap, pause, 1:1 wrapping | [`contracts/src/GToken.sol`](contracts/src/GToken.sol) |
 | RWA issuance factory (native + wrapped) | any chain | operator-paid issuance on behalf of issuers | [`contracts/src/GTokenFactory.sol`](contracts/src/GTokenFactory.sol) |
 | Lending core (Morpho Blue fork) | Creditcoin | + remote-collateral accounting patch | [`contracts/src/Morpho.sol`](contracts/src/Morpho.sol) |
+| Market oracle | Creditcoin | fallback USD price + Chainlink-style feeds, staleness guard | [`contracts/src/PriceOracle.sol`](contracts/src/PriceOracle.sol) |
+| Interest rate model | Creditcoin | Compound-style jump rate curve (immutable params) | [`contracts/src/irm/JumpRateIrm.sol`](contracts/src/irm/JumpRateIrm.sol) |
 | RWA collateral escrow (lock/unlock, FIFO) | Sepolia | proof payload emitter | [`contracts/src/SourceVault.sol`](contracts/src/SourceVault.sol) |
 | ASC verifier + lending facade + liquidation claims | Creditcoin | 0x0FD2 + RLP Phase 4 decode | [`contracts/src/CoreVault.sol`](contracts/src/CoreVault.sol) |
 | ISO-2 country bitmap library | any chain | whitelist/blacklist per Rule | [`contracts/src/libraries/CountryBitmap.sol`](contracts/src/libraries/CountryBitmap.sol) |
@@ -149,14 +151,21 @@ forge script contracts/script/1_DeployGOPass.s.sol --rpc-url $SEPOLIA_RPC_URL --
 GOPASS_ADDR=0x... forge script contracts/script/2_DeployGOPassRegistry.s.sol --rpc-url $CREDITCOIN_RPC_URL --broadcast --legacy
 ```
 
-Deploy — cross-chain lending (see [deploy plan](contracts/CROSS_CHAIN_LENDING_PLAN.md)):
+Deploy — cross-chain lending (see [deploy plan](contracts/CROSS_CHAIN_LENDING_PLAN.md)); each script
+deploys only its own contract, reuses anything already deployed via its `*_ADDR` env, and the
+CoreVault script validates oracle/IRM/Morpho before spending gas:
 
 ```shell
+# Creditcoin: lending primitives
+forge script contracts/script/5_DeployMorpho.s.sol --rpc-url $CREDITCOIN_RPC_URL --broadcast --legacy
+COLLATERAL_USD=1000000000000000000 LOAN_USD=1000000000000000000 LOAN_TOKEN=0x.. COLLATERAL_TOKEN=0x.. \
+  forge script contracts/script/6_DeployOracle.s.sol --rpc-url $CREDITCOIN_RPC_URL --broadcast --legacy
+forge script contracts/script/7_DeployIrm.s.sol --rpc-url $CREDITCOIN_RPC_URL --broadcast --legacy
+# Creditcoin: validates + wires + creates the market
+MORPHO_ADDR=0x.. ORACLE_ADDR=0x.. IRM_ADDR=0x.. SOURCE_VAULT_ADDR=0x.. USDC_CC=0x.. GTOKEN_CC=0x.. GTOKEN_SOURCE=0x.. \
+  forge script contracts/script/8_DeployCoreVault.s.sol --rpc-url $CREDITCOIN_RPC_URL --broadcast --legacy
 # Sepolia: collateral escrow
-LENDING_SIDE=source forge script contracts/script/5_DeployLending.s.sol --rpc-url $SEPOLIA_RPC_URL --broadcast --legacy
-# Creditcoin: Morpho + CoreVault + market
-LENDING_SIDE=credit USDC_CC=0x.. GTOKEN_CC=0x.. GTOKEN_SOURCE=0x.. ORACLE_ADDR=0x.. SOURCE_VAULT_ADDR=0x.. \
-  forge script contracts/script/5_DeployLending.s.sol --rpc-url $CREDITCOIN_RPC_URL --broadcast --legacy
+forge script contracts/script/9_DeploySourceVault.s.sol --rpc-url $SEPOLIA_RPC_URL --broadcast --legacy
 ```
 
 ### Environment variables

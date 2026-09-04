@@ -38,6 +38,8 @@ GToken (RWA) ─▶ SourceVault     ─▶   CoreVault (ASC) ─▶ Morpho marke
 | [`src/GToken.sol`](src/GToken.sol) | any chain | Compliant ERC20 gated by GOPass eligibility; native or wrapped 1:1 |
 | [`src/GTokenFactory.sol`](src/GTokenFactory.sol) | any chain | Operator-paid issuance of native/wrapped GTokens |
 | [`src/Morpho.sol`](src/Morpho.sol) | Creditcoin | Morpho Blue fork + remote-collateral patch (`supplyRemoteCollateral`, remote liquidate branch) |
+| [`src/PriceOracle.sol`](src/PriceOracle.sol) | Creditcoin | Market oracle: fallback USD price + Chainlink-style feeds, staleness guard |
+| [`src/irm/JumpRateIrm.sol`](src/irm/JumpRateIrm.sol) | Creditcoin | Compound-style jump rate IRM (immutable params) |
 | [`src/SourceVault.sol`](src/SourceVault.sol) | Sepolia | RWA collateral escrow; `Locked` tx is the proof payload; cumulative FIFO unlocks |
 | [`src/CoreVault.sol`](src/CoreVault.sol) | Creditcoin | ASC verifier + Morpho facade + liquidation claims ledger |
 | [`src/libraries/RLPReader.sol`](src/libraries/RLPReader.sol) | — | Minimal RLP decoder for on-chain tx/receipt parsing |
@@ -53,14 +55,22 @@ forge fmt
 
 ### Deploy order
 
+Each lending script deploys exactly one contract and reuses anything already deployed via its
+`*_ADDR` env (unset = deploy, set = reuse). `8_DeployCoreVault` validates every upstream address
+(code present, `price()` / `borrowRateView()` succeed) **before** broadcasting.
+
 1. **Sepolia** — GO Pass hub: [`script/1_DeployGOPass.s.sol`](script/1_DeployGOPass.s.sol);
    RWA GToken: [`script/3_DeployGToken.s.sol`](script/3_DeployGToken.s.sol);
-   collateral escrow: [`script/5_DeployLending.s.sol`](script/5_DeployLending.s.sol) (`LENDING_SIDE=source`)
+   collateral escrow: [`script/9_DeploySourceVault.s.sol`](script/9_DeploySourceVault.s.sol)
 2. **Creditcoin** — registry: [`script/2_DeployGOPassRegistry.s.sol`](script/2_DeployGOPassRegistry.s.sol);
    mirror: [`script/4_DeployGOPassMirror.s.sol`](script/4_DeployGOPassMirror.s.sol);
-   lending: [`script/5_DeployLending.s.sol`](script/5_DeployLending.s.sol) (`LENDING_SIDE=credit`)
-   — deploys/reuses Morpho, deploys CoreVault, wires `setRemoteCollateralManager`, sets source
-   token mapping, creates the market (USDC loan / GToken collateral, lltv `0.62e18`).
+   lending primitives: [`script/5_DeployMorpho.s.sol`](script/5_DeployMorpho.s.sol),
+   [`script/6_DeployOracle.s.sol`](script/6_DeployOracle.s.sol) (fallback USD prices; feeds
+   attachable via `setBkcFeed`), [`script/7_DeployIrm.s.sol`](script/7_DeployIrm.s.sol)
+   (omit/zero `IRM_ADDR` in step 3 for a zero-rate market);
+   [`script/8_DeployCoreVault.s.sol`](script/8_DeployCoreVault.s.sol) — deploys CoreVault, wires
+   `setRemoteCollateralManager` + source token mapping, enables lltv/irm, creates the market
+   (USDC loan / GToken collateral, lltv `0.62e18`).
 3. Fund + supply USDC on Creditcoin (`scripts/lending/1_lend_setup.ts`), then run the borrower
    E2E (`scripts/lending/2_lend_e2e.ts`) with the unlock worker running
    (`scripts/lending/3_worker_unlock.ts`).

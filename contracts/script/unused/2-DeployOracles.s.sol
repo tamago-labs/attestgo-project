@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import {Script, console} from "forge-std/Script.sol";
-import {PriceOracle} from "../../src/unused/PriceOracle/PriceOracle.sol";
+import {PriceOracle} from "../../src/PriceOracle.sol";
 
 /**
  * @title DeployOracles

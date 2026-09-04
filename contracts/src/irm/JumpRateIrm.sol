@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity 0.8.19;
 
-import {IIrm} from "../../interfaces/IIrm.sol";
-import {MarketParams, Market} from "../../interfaces/IMorpho.sol";
-import {MathLib, WAD} from "../../libraries/MathLib.sol";
+import {IIrm} from "../interfaces/IIrm.sol";
+import {MarketParams, Market} from "../interfaces/IMorpho.sol";
+import {MathLib, WAD} from "../libraries/MathLib.sol";
 
 /// @title JumpRateIrm
 /// @notice A jump-rate interest rate model for Morpho Blue, ported from Compound V2's BaseJumpRateModelV2.

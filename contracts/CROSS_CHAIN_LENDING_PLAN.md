@@ -45,10 +45,17 @@ Market = one supply token (USDC_CC) + one collateral token (GToken mirror, ident
 - Liquidation demo: unhealthy position → anyone `liquidate` on CC → `onRemoteSeized` credits claims → liquidator `requestLiquidationPayout` → worker unlocks real RWA on Sepolia to liquidator.
 
 ## Files to Create
-`src/Morpho.sol` (vendored + 4 patches) · `src/SourceVault.sol` · `src/CoreVault.sol` · `script/5_DeployLending.s.sol` · `test/CrossChainLending.t.sol` — 10 tests: lock escrow, verifySupply credits remote position, replay reverts, supply USDC, borrow healthy, borrow unhealthy reverts, repay + requestUnlock, worker unlock FIFO, liquidate credits claims (no token transfer), onlyWorkerOrOwner/onlyMorpho reverts · `scripts/lending/{1_lend_setup,2_lend_e2e,3_worker_unlock}.ts`.
+`src/Morpho.sol` (vendored + 4 patches) · `src/SourceVault.sol` · `src/CoreVault.sol` · `src/irm/JumpRateIrm.sol` + `src/PriceOracle.sol` (promoted from kilolend-v2) · `script/{5_DeployMorpho,6_DeployOracle,7_DeployIrm,8_DeployCoreVault,9_DeploySourceVault}.s.sol` · `test/CrossChainLending.t.sol` — 13 tests: lock escrow + nonce, verifySupply credits remote position, replay reverts, supply USDC, borrow healthy/unhealthy, repay + requestUnlock, worker unlock FIFO, liquidate credits claims (no token transfer), onlyWorkerOrOwner/onlyMorpho reverts, pause semantics, access control · `scripts/lending/{1_lend_setup,2_lend_e2e,3_worker_unlock}.ts`.
 
-## Deploy Order
-1. CC: `Morpho` `PriceOracle` `JumpRateIrm` → 2. `CoreVault(morpho, worker)` + `setRemoteCollateralManager(coreVault)` + `GTokenFactory.createGToken` (mirror) → 3. Sepolia: `SourceVault(worker)` + GToken RWA (`3_DeployGToken.s.sol`) → 4. `setSourceTokenMapping` + `createMarket(USDC, mirror, oracle, irm, 0.62e18)` → 5. fund + `supply` USDC → 6. E2E: `lock 10 RWA` → proof → `verifyAndSupplyCollateral 10` → `borrow 6 USDC` → `repay` → `requestUnlock` → worker `unlock`; liquidation path separately.
+## Deploy Order (scripts are granular + idempotent; unset ADDR env = deploy, set = reuse)
+1. CC `5_DeployMorpho` — Morpho core (owner = deployer).
+2. CC `6_DeployOracle` — `PriceOracle` bound to the collateral/loan pair (fallback USD prices at deploy; feeds attachable later).
+3. CC `7_DeployIrm` — `JumpRateIrm` (2%/8% yearly, 40% jump, kink 80% defaults).
+4. CC `8_DeployCoreVault` — validates all upstream addresses (code present + `price()`/`borrowRateView()` succeed) BEFORE broadcasting, then deploys `CoreVault`, wires `setRemoteCollateralManager` + `setSourceTokenMapping`, enables lltv/irm, creates the market (USDC / mirror GToken, lltv 0.62e18). `IRM_ADDR` unset = zero-rate market.
+5. Sepolia `9_DeploySourceVault` — collateral escrow (worker = CC→ETH settler).
+6. Sepolia GToken RWA (`3_DeployGToken.s.sol`) + CC mirror GToken (via `GTokenFactory`).
+7. Fund + supply USDC (`scripts/lending/1_lend_setup.ts`).
+8. E2E: `lock 10 RWA` → proof → `verifyAndSupplyCollateral 10` → `borrow 6 USDC` → `repay` → `requestUnlock` → worker `unlock`; liquidation path separately.
 
 ## Hardening Backlog (v2, non-blocking)
 - Confirm SDK `getProof` encodedTransaction includes receipt data (docs say yes); else calldata-parse fallback (already specified in CoreVault impl note).
