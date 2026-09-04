@@ -6,7 +6,7 @@ export const mintPass = defineFunction({
   runtime: 22,
   timeoutSeconds: 60,
   environment: {
-    GOPASS_ADDR: "0x9236590Ffa4FA7B633F1F6ce3a23338b532a5302",
+    GOPASS_ADDR: "0x0a6aD3b8B8D1A69Ba44002983e64e4824cB63334",
     SEPOLIA_RPC_URL: secret("SEPOLIA_RPC_URL"),
     OWNER_PK: secret("OWNER_PK"),
   },

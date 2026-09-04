@@ -7,7 +7,7 @@ import {GOPassMirror} from "../src/GOPassMirror.sol";
 /**
  * 4_DeployGOPassMirror — universal pass mirror on new chain (e.g. Base chainKey 2) synced from CC registry
  * Usage:
- *   forge script contracts/script/4_DeployGOPassMirror.s.sol --rpc-url $BASE_RPC_URL --broadcast --legacy
+ *   forge script contracts/script/4_DeployGOPassMirror.s.sol --rpc-url $BASE_RPC_URL --broadcast 
  * Env: PRIVATE_KEY, WORKER (optional)
  */
 contract DeployGOPassMirror is Script {

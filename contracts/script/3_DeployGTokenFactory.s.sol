@@ -6,7 +6,7 @@ import {GTokenFactory} from "../src/GTokenFactory.sol";
 
 /**
  * Deploy GTokenFactory — one per chain, holds eligibleProvider (GOPass or Mirror)
- * Usage: GOPASS_ADDR=0x... forge script script/3_DeployGTokenFactory.s.sol --rpc-url $SEPOLIA_RPC_URL --broadcast --legacy
+ * Usage: GOPASS_ADDR=0x... forge script script/3_DeployGTokenFactory.s.sol --rpc-url $SEPOLIA_RPC_URL --broadcast
  */
 contract DeployGTokenFactory is Script {
     function run() external {

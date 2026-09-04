@@ -6,8 +6,8 @@ export const attestPass = defineFunction({
   runtime: 22,
   timeoutSeconds: 300,
   environment: {
-    GOPASS_ADDR: "0x9236590Ffa4FA7B633F1F6ce3a23338b532a5302",
-    GOPASS_REGISTRY_ADDR: "0xF3475177692D1D88a34c4E9a508D4ee6d17DFB68",
+    GOPASS_ADDR: "0x0a6aD3b8B8D1A69Ba44002983e64e4824cB63334",
+    GOPASS_REGISTRY_ADDR: "0x6354C59497Ba87F1c05b5B56C7c45283187BD09E",
     SEPOLIA_RPC_URL: secret("SEPOLIA_RPC_URL"),
     CREDITCOIN_RPC_URL: "https://rpc.cc3-testnet.creditcoin.network",
     PROOF_BUILDER_URL: "https://prover.cc3-testnet.creditcoin.network",

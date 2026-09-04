@@ -6,7 +6,7 @@ export const createGToken = defineFunction({
   runtime: 22,
   timeoutSeconds: 60,
   environment: {
-    FACTORY_ADDR: "0xEB263edDaED69C1bAc361Db2E50eAe6813145803",
+    FACTORY_ADDR: "0x7843c062939FCBfA150c962a4214d2e14714A820",
     CHAIN_ID: "11155111",
     SEPOLIA_RPC_URL: secret("SEPOLIA_RPC_URL"),
     OWNER_PK: secret("OWNER_PK"),
