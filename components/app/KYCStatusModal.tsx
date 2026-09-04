@@ -56,8 +56,8 @@ export default function KYCStatusModal({ open, onClose, profile }: Props) {
 
         <div className="space-y-2 text-xs">
           <div className="flex justify-between py-2 border-b border-border">
-            <span className="text-muted">Review answer</span>
-            <span className="font-mono text-white">{profile?.kycReviewAnswer || "—"}</span>
+            <span className="text-muted">Result</span>
+            <span className="font-mono text-white">{profile?.kycReviewAnswer === "GREEN" ? "Approved" : profile?.kycReviewAnswer === "RED" ? "Rejected" : profile?.kycReviewAnswer || "—"}</span>
           </div>
           <div className="flex justify-between py-2 border-b border-border">
             <span className="text-muted">Reject type</span>
