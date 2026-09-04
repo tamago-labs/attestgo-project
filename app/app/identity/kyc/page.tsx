@@ -231,7 +231,7 @@ export default function KycPage() {
               )}
             </button>
             <div className="rounded-lg border border-dashed border-white/10 bg-canvas/50 p-3">
-              <p className="text-xs text-muted">Sandbox tip: use Document Template GREEN to get instant pass. Manual preset gives Pending.</p>
+              <p className="text-xs text-muted">We&apos;re in test mode — live verification will use a real provider: upload your ID and take a quick selfie so we can match the photo.</p>
             </div>
           </div>
         </div>
