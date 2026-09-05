@@ -78,11 +78,11 @@ export default function StepAttest({ market, records, onAttested }: { market: De
               {rec.status !== "attested" && (
                 <button
                   onClick={() => sendProof(rec)}
-                  disabled={busyTx !== null || rec.status === "failed"}
+                  disabled={busyTx !== null}
                   className="shrink-0 px-3 py-1.5 rounded-lg bg-amber text-canvas text-xs font-semibold hover:bg-amber/90 disabled:opacity-40 inline-flex items-center gap-1.5"
                 >
                   {busyTx === rec.lockTxHash ? <Loader2 size={12} className="animate-spin" /> : <Hourglass size={12} />}
-                  {rec.status === "failed" ? "Retry unavailable" : "Send proof"}
+                  {"Send proof"}
                 </button>
               )}
             </div>
