@@ -178,45 +178,30 @@ export default function DeFiPage() {
   const { address, isConnected } = useWallet();
   const { rows, error } = useDefiMarkets(MARKETS);
 
-  const totals = rows.reduce(
-    (acc, r) => {
-      if (r.data) {
-        const sup = Number(formatUnits(r.data.state.totalSupplyAssets, r.market.loan.decimals));
-        const bor = Number(formatUnits(r.data.state.totalBorrowAssets, r.market.loan.decimals));
-        acc.supplied += sup;
-        acc.borrowed += bor;
-      }
-      return acc;
-    },
-    { supplied: 0, borrowed: 0 }
-  );
-  const loaded = rows.every((r) => r.data);
+  let totalSupplied = 0;
+  let totalBorrowed = 0;
+  let loaded = 0;
+  for (const r of rows) {
+    if (r.data) {
+      totalSupplied += Number(formatUnits(r.data.state.totalSupplyAssets, r.market.loan.decimals));
+      totalBorrowed += Number(formatUnits(r.data.state.totalBorrowAssets, r.market.loan.decimals));
+      loaded++;
+    }
+  }
 
   return (
     <div className="w-full">
-      <div className="mb-8">
-        <h1 className="font-extrabold text-3xl tracking-tight text-white mb-2">Earn</h1>
-        <p className="text-muted text-sm max-w-lg leading-relaxed">
-          Supply on Creditcoin. Borrow by locking RWA collateral on Sepolia — kept as two separate lanes below.
-        </p>
-      </div>
-
-      <div className="grid sm:grid-cols-3 gap-4 mb-4">
-        <div className="bg-panel border border-border rounded-2xl px-5 py-4">
-          <div className="text-muted text-xs uppercase tracking-widest mb-1">Total supplied</div>
-          <div className="font-mono text-lg font-semibold text-white">
-            {loaded ? fmtUsd(totals.supplied) : <Loader2 size={16} className="animate-spin text-white/30" />}
+      <div className="mb-5 flex items-end justify-between gap-4">
+        <h1 className="font-extrabold text-3xl tracking-tight text-white">Earn</h1>
+        <div className="flex items-center gap-5">
+          <div className="text-right">
+            <div className="text-[10px] uppercase tracking-widest text-muted">Supplied</div>
+            <div className="font-mono text-sm font-semibold text-violet-300">{loaded === rows.length ? fmtUsd(totalSupplied) : "—"}</div>
           </div>
-        </div>
-        <div className="bg-panel border border-border rounded-2xl px-5 py-4">
-          <div className="text-muted text-xs uppercase tracking-widest mb-1">Total borrowed</div>
-          <div className="font-mono text-lg font-semibold text-white">
-            {loaded ? fmtUsd(totals.borrowed) : <Loader2 size={16} className="animate-spin text-white/30" />}
+          <div className="text-right">
+            <div className="text-[10px] uppercase tracking-widest text-muted">Borrowed</div>
+            <div className="font-mono text-sm font-semibold text-amber">{loaded === rows.length ? fmtUsd(totalBorrowed) : "—"}</div>
           </div>
-        </div>
-        <div className="bg-panel border border-border rounded-2xl px-5 py-4">
-          <div className="text-muted text-xs uppercase tracking-widest mb-1">Markets</div>
-          <div className="font-mono text-lg font-semibold text-white">{MARKETS.length}</div>
         </div>
       </div>
 
@@ -226,51 +211,55 @@ export default function DeFiPage() {
         </div>
       )}
 
-      <div className="mb-8">
-        <LaneBanner
-          tone="violet"
-          title="Supply"
-          subtitle="deposit stablecoins on Creditcoin, earn yield"
-          badge="no bridging"
-        />
-        <div className="grid sm:grid-cols-2 gap-4">
-          {rows.map((r) => (
-            <SupplyCard
-              key={`supply-${r.market.slug}`}
-              market={r.market}
-              data={
-                r.data
-                  ? { supplyApy: r.data.supplyApy, utilization: r.data.utilization, state: r.data.state }
-                  : null
-              }
-              address={address}
-              isConnected={isConnected}
-            />
-          ))}
+      <div className="grid lg:grid-cols-[1fr_1fr] gap-5 items-start">
+        {/* Supply column */}
+        <div className="rounded-2xl border border-violet-400/20 bg-violet-400/[0.04] p-4">
+          <LaneBanner
+            tone="violet"
+            title="Supply"
+            subtitle="deposit stablecoins on Creditcoin, earn yield"
+            badge="no bridging"
+          />
+          <div className="grid sm:grid-cols-2 lg:grid-cols-1 gap-3">
+            {rows.map((r) => (
+              <SupplyCard
+                key={`supply-${r.market.slug}`}
+                market={r.market}
+                data={
+                  r.data
+                    ? { supplyApy: r.data.supplyApy, utilization: r.data.utilization, state: r.data.state }
+                    : null
+                }
+                address={address}
+                isConnected={isConnected}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Borrow column */}
+        <div className="rounded-2xl border border-amber/20 bg-amber/[0.04] p-4">
+          <LaneBanner
+            tone="amber"
+            title="Borrow"
+            subtitle="lock RWA collateral on Sepolia, borrow stablecoins"
+            badge="Sepolia → attested"
+          />
+          <div className="grid sm:grid-cols-2 lg:grid-cols-1 gap-3">
+            {rows.map((r) => (
+              <BorrowCard
+                key={`borrow-${r.market.slug}`}
+                market={r.market}
+                data={r.data ? { borrowApy: r.data.borrowApy } : null}
+                address={address}
+                isConnected={isConnected}
+              />
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="mb-8">
-        <LaneBanner
-          tone="amber"
-          title="Borrow"
-          subtitle="lock RWA collateral on Sepolia, borrow stablecoins"
-          badge="Sepolia → attested"
-        />
-        <div className="grid sm:grid-cols-2 gap-4">
-          {rows.map((r) => (
-            <BorrowCard
-              key={`borrow-${r.market.slug}`}
-              market={r.market}
-              data={r.data ? { borrowApy: r.data.borrowApy } : null}
-              address={address}
-              isConnected={isConnected}
-            />
-          ))}
-        </div>
-      </div>
-
-      <p className="text-[11px] text-muted max-w-2xl leading-relaxed">
+      <p className="text-[11px] text-muted max-w-2xl leading-relaxed mt-5">
         CUSDT and ATC are mock testnet tokens available from the faucet. Collateral for borrowing stays on Sepolia — only its verified state is attested to
         Creditcoin.
       </p>
