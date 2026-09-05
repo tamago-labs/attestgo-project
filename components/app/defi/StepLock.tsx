@@ -148,7 +148,7 @@ export default function StepLock({ market, address, onLocked }: { market: DefiMa
           )}
         </div>
       ) : (
-        <button onClick={lock} disabled={busy} className="w-full py-2.5 rounded-lg bg-violet-400 text-canvas text-sm font-semibold hover:bg-violet-300 disabled:opacity-60 inline-flex justify-center items-center gap-2">
+        <button onClick={lock} disabled={busy} className="w-full py-2.5 rounded-lg bg-white text-canvas text-sm font-medium hover:bg-white/90 disabled:opacity-60 inline-flex justify-center items-center gap-2">
           {busy && <Loader2 size={15} className="animate-spin" />} {busy && <Lock size={14} />} {label}
         </button>
       )}
