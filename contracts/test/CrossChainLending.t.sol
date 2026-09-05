@@ -11,6 +11,7 @@ import {MarketParamsLib} from "../src/libraries/MarketParamsLib.sol";
 import {ErrorsLib} from "../src/libraries/ErrorsLib.sol";
 import {OracleMock} from "../src/mocks/OracleMock.sol";
 import {ERC20Mock} from "../src/mocks/ERC20Mock.sol";
+import {RlpProof} from "./helpers/RlpProof.sol";
 
 contract CrossChainLendingTest is Test {
     using MarketParamsLib for MarketParams;
@@ -87,85 +88,16 @@ contract CrossChainLendingTest is Test {
         coreVault.supply(mp, 100e6, 0, supplier);
     }
 
-    /* ---------- helpers: RLP encoding (test-side ProofBuilder stand-in) ---------- */
+    /* ---------- helper: ProofBuilder stand-in (ABI-encoded encodedTransaction) ---------- */
 
-    function _uintLen(uint256 v) internal pure returns (uint256 n) {
-        while (v != 0) {
-            n++;
-            v >>= 8;
-        }
-    }
-
-    function _be(uint256 v, uint256 n) internal pure returns (bytes memory b) {
-        b = new bytes(n);
-        for (uint256 i = 0; i < n; i++) b[n - 1 - i] = bytes1(uint8(v >> (8 * i)));
-    }
-
-    function _encUint(uint256 v) internal pure returns (bytes memory) {
-        if (v == 0) return abi.encodePacked(uint8(0x80));
-        if (v < 0x80) return abi.encodePacked(uint8(v));
-        uint256 n = _uintLen(v);
-        return abi.encodePacked(uint8(0x80 + n), _be(v, n));
-    }
-
-    function _encBytes(bytes memory b) internal pure returns (bytes memory) {
-        if (b.length == 1 && uint8(b[0]) < 0x80) return b;
-        if (b.length <= 55) return abi.encodePacked(uint8(0x80 + b.length), b);
-        uint256 n = _uintLen(b.length);
-        return abi.encodePacked(uint8(0xB7 + n), _be(b.length, n), b);
-    }
-
-    function _encList(bytes[] memory items) internal pure returns (bytes memory) {
-        uint256 total;
-        for (uint256 i = 0; i < items.length; i++) total += items[i].length;
-        bytes memory payload = new bytes(total);
-        uint256 ptr;
-        for (uint256 i = 0; i < items.length; i++) {
-            for (uint256 j = 0; j < items[i].length; j++) payload[ptr + j] = items[i][j];
-            ptr += items[i].length;
-        }
-        if (total <= 55) return abi.encodePacked(uint8(0xC0 + total), payload);
-        uint256 n = _uintLen(total);
-        return abi.encodePacked(uint8(0xF7 + n), _be(total, n), payload);
-    }
-
-    /// @notice Builds encodedTransaction = txRlp || receiptRlp with a single `Locked` log, matching
-    ///         the Attestcoin encodedTransaction layout (transaction + receipt data).
+    /// @notice Builds an encodedTransaction in the Attestcoin ProofBuilder ABI layout with a
+    ///         single `Locked` log (see test/helpers/RlpProof.sol).
     function _buildTxBytes(
         address emitter,
         bytes32[] memory topics,
         bytes memory logData
-    ) internal view returns (bytes memory) {
-        bytes[] memory txFields = new bytes[](9);
-        txFields[0] = _encUint(0); // nonce
-        txFields[1] = _encUint(1); // gasPrice
-        txFields[2] = _encUint(100000); // gas
-        txFields[3] = _encBytes(abi.encodePacked(emitter)); // to
-        txFields[4] = _encUint(0); // value
-        txFields[5] = _encBytes(hex"deadbeef"); // data
-        txFields[6] = _encUint(27); // v
-        txFields[7] = _encUint(1); // r
-        txFields[8] = _encUint(1); // s
-        bytes memory txRlp = _encList(txFields);
-
-        bytes[] memory topicEnc = new bytes[](topics.length);
-        for (uint256 i = 0; i < topics.length; i++) topicEnc[i] = _encBytes(abi.encodePacked(topics[i]));
-
-        bytes[] memory logFields = new bytes[](3);
-        logFields[0] = _encBytes(abi.encodePacked(emitter)); // logger
-        logFields[1] = _encList(topicEnc); // topics
-        logFields[2] = _encBytes(logData); // data
-        bytes[] memory logList = new bytes[](1);
-        logList[0] = _encList(logFields);
-
-        bytes[] memory receiptFields = new bytes[](4);
-        receiptFields[0] = _encUint(1); // status
-        receiptFields[1] = _encUint(100000); // cumulativeGasUsed
-        receiptFields[2] = _encBytes(new bytes(256)); // logsBloom
-        receiptFields[3] = _encList(logList); // logs
-        bytes memory receiptRlp = _encList(receiptFields);
-
-        return abi.encodePacked(txRlp, receiptRlp);
+    ) internal pure returns (bytes memory) {
+        return RlpProof.buildEncodedTransaction(emitter, topics, logData, 1);
     }
 
     /// @notice Locks on SourceVault (recording the real event) and builds the cross-chain proof.
@@ -268,7 +200,19 @@ contract CrossChainLendingTest is Test {
         coreVault.verifyAndSupplyCollateral(p, mp);
         vm.prank(borrower);
         vm.expectRevert(bytes(ErrorsLib.INSUFFICIENT_COLLATERAL));
-        coreVault.borrow(mp, COLL / 1e12 + 1, borrower); // > 62% of 10
+        // maxBorrow = 10 × $1 / 0.62 = 16.129 USDC; anything above reverts
+        coreVault.borrow(mp, (COLL * PRICE / 1e36) * 1e18 / LLTV + 1, borrower);
+    }
+
+    function test_borrow_at_lltv_boundary() public {
+        CoreVault.CrossChainLockProof memory p = _lockAndBuildProof(COLL);
+        coreVault.verifyAndSupplyCollateral(p, mp);
+        // exactly maxBorrow = collateral value / lltv = 16.129032 USDC must be borrowable
+        // (regression: upstream kilolend _isHealthy multiplied by lltv, clamping LTV to lltv^2)
+        uint256 maxBorrow = (COLL * PRICE / 1e36) * 1e18 / LLTV;
+        assertEq(maxBorrow, 16129032);
+        vm.prank(borrower);
+        coreVault.borrow(mp, maxBorrow, borrower);
     }
 
     function test_repay_then_request_unlock() public {
@@ -299,7 +243,7 @@ contract CrossChainLendingTest is Test {
         vm.prank(borrower);
         coreVault.borrow(mp, BORROW, borrower);
 
-        oracle.setPrice(5e23); // 0.5 → maxBorrow = 3.1e6 < 6e6 → unhealthy
+        oracle.setPrice(3e23); // $0.3 → maxBorrow = 4.83e6 < 6e6 → unhealthy
 
         uint256 rwaBalBefore = rwa.balanceOf(liquidator);
         vm.prank(liquidator);

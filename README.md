@@ -48,8 +48,8 @@ gives an [Attestcoin Smart Contract (ASC)](https://docs.attestcoin.org/attestcoi
 1. **Attestation** — a decentralized attestor network tracks finalized source-chain blocks and
    stores consensus attestations on Creditcoin.
 2. **Transaction proving** — proofs are generated off-chain (ProofBuilder) and verified
-   synchronously on-chain by the **Block Prover Precompile (`0x0FD2`)**. The contract then decodes
-   the verified transaction bytes (receipt status + events) and acts on them.
+   synchronously on-chain by the **Block Prover Precompile (`0x0FD2`)**. The contract then extracts
+   the expected event log from the verified bytes (ABI-encoded transaction + receipt) and acts on it.
 
 AttestGO uses this in two ways:
 
@@ -96,7 +96,7 @@ Foundry project in [`contracts/`](contracts). Solc 0.8.19, tested with `forge te
 | Market oracle | Creditcoin | fallback USD price + Chainlink-style feeds, staleness guard | [`contracts/src/PriceOracle.sol`](contracts/src/PriceOracle.sol) |
 | Interest rate model | Creditcoin | Compound-style jump rate curve (immutable params) | [`contracts/src/irm/JumpRateIrm.sol`](contracts/src/irm/JumpRateIrm.sol) |
 | RWA collateral escrow (lock/unlock, FIFO) | Sepolia | proof payload emitter | [`contracts/src/SourceVault.sol`](contracts/src/SourceVault.sol) |
-| ASC verifier + lending facade + liquidation claims | Creditcoin | 0x0FD2 + RLP Phase 4 decode | [`contracts/src/CoreVault.sol`](contracts/src/CoreVault.sol) |
+| ASC verifier + lending facade + liquidation claims | Creditcoin | 0x0FD2 + on-chain Phase 4 log extraction | [`contracts/src/CoreVault.sol`](contracts/src/CoreVault.sol) |
 | ISO-2 country bitmap library | any chain | whitelist/blacklist per Rule | [`contracts/src/libraries/CountryBitmap.sol`](contracts/src/libraries/CountryBitmap.sol) |
 
 ## Workers & scripts

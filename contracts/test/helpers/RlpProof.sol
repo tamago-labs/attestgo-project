@@ -1,84 +1,80 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-/// @notice Test-side ProofBuilder stand-in: RLP encoding + Attestcoin encodedTransaction builder
-///         (layout: txRlp || receiptRlp, matching RLPReader/CoreVault expectations).
+/// @notice Test-side ProofBuilder stand-in: builds an encodedTransaction in the Attestcoin
+///         ProofBuilder ABI layout ??? ABI-encoded (transaction, receipt) ??? containing the given
+///         log (or no log when status == 0), matching what CoreVault/GOPassRegistry scan for.
 library RlpProof {
-    function uintLen(uint256 v) internal pure returns (uint256 n) {
-        while (v != 0) {
-            n++;
-            v >>= 8;
-        }
+    uint256 internal constant WORD = 32;
+
+    function _w(uint256 v) internal pure returns (bytes memory) {
+        return abi.encodePacked(bytes32(v));
     }
 
-    function be(uint256 v, uint256 n) internal pure returns (bytes memory b) {
-        b = new bytes(n);
-        for (uint256 i = 0; i < n; i++) b[n - 1 - i] = bytes1(uint8(v >> (8 * i)));
+    function _addr(address a) internal pure returns (bytes memory) {
+        return abi.encodePacked(bytes32(uint256(uint160(a))));
     }
 
-    function encUint(uint256 v) internal pure returns (bytes memory) {
-        if (v == 0) return abi.encodePacked(uint8(0x80));
-        if (v < 0x80) return abi.encodePacked(uint8(v));
-        uint256 n = uintLen(v);
-        return abi.encodePacked(uint8(0x80 + n), be(v, n));
-    }
-
-    function encBytes(bytes memory b) internal pure returns (bytes memory) {
-        if (b.length == 1 && uint8(b[0]) < 0x80) return b;
-        if (b.length <= 55) return abi.encodePacked(uint8(0x80 + b.length), b);
-        uint256 n = uintLen(b.length);
-        return abi.encodePacked(uint8(0xB7 + n), be(b.length, n), b);
-    }
-
-    function encList(bytes[] memory items) internal pure returns (bytes memory) {
-        uint256 total;
-        for (uint256 i = 0; i < items.length; i++) total += items[i].length;
-        bytes memory payload = new bytes(total);
-        uint256 ptr;
-        for (uint256 i = 0; i < items.length; i++) {
-            for (uint256 j = 0; j < items[i].length; j++) payload[ptr + j] = items[i][j];
-            ptr += items[i].length;
-        }
-        if (total <= 55) return abi.encodePacked(uint8(0xC0 + total), payload);
-        uint256 n = uintLen(total);
-        return abi.encodePacked(uint8(0xF7 + n), be(total, n), payload);
-    }
-
-    /// @notice Builds encodedTransaction = txRlp || receiptRlp with a single log (topics + data).
     function buildEncodedTransaction(address emitter, bytes32[] memory topics, bytes memory logData, uint8 status)
         internal
         pure
         returns (bytes memory)
     {
-        bytes[] memory txFields = new bytes[](9);
-        txFields[0] = encUint(0); // nonce
-        txFields[1] = encUint(1); // gasPrice
-        txFields[2] = encUint(100000); // gas
-        txFields[3] = encBytes(abi.encodePacked(emitter)); // to
-        txFields[4] = encUint(0); // value
-        txFields[5] = encBytes(hex"deadbeef"); // data
-        txFields[6] = encUint(27); // v
-        txFields[7] = encUint(1); // r
-        txFields[8] = encUint(1); // s
-        bytes memory txRlp = encList(txFields);
+        // tx calldata section (cosmetic mirror of a SourceVault.lock call, 164 bytes)
+        bytes memory txData =
+            abi.encodeWithSignature("lock(address,address,uint256,bytes32,uint64)", emitter, emitter, uint256(1), bytes32(uint256(1)), uint64(1));
 
-        bytes[] memory topicEnc = new bytes[](topics.length);
-        for (uint256 i = 0; i < topics.length; i++) topicEnc[i] = encBytes(abi.encodePacked(topics[i]));
+        // ABI-encoded tx head (fixed shape, mirrors the ProofBuilder layout; `to` at word 11)
+        bytes memory head = abi.encodePacked(
+            _w(2),
+            _w(0x40),
+            _w(3),
+            _w(0x60),
+            _w(0x240),
+            _w(0x360),
+            _w(0x1c0),
+            _w(0), // nonce
+            _w(100000), // gas
+            _addr(address(uint160(1))), // from
+            _w(0), // value
+            _addr(emitter), // to
+            _w(0), // yParity
+            _w(0xe0), // data offset
+            _w(txData.length),
+            txData
+        );
 
-        bytes[] memory logFields = new bytes[](3);
-        logFields[0] = encBytes(abi.encodePacked(emitter)); // logger
-        logFields[1] = encList(topicEnc); // topics
-        logFields[2] = encBytes(logData); // data
-        bytes[] memory logList = new bytes[](1);
-        logList[0] = encList(logFields);
+        // pad the calldata section to a 32-byte boundary (the ProofBuilder blob is word-aligned)
+        uint256 txPad = ((txData.length + 31) / 32) * 32 - txData.length;
+        bytes memory headPadded = txPad > 0 ? abi.encodePacked(head, new bytes(txPad)) : head;
 
-        bytes[] memory receiptFields = new bytes[](4);
-        receiptFields[0] = encUint(status); // status (1 = success)
-        receiptFields[1] = encUint(100000); // cumulativeGasUsed
-        receiptFields[2] = encBytes(new bytes(256)); // logsBloom
-        receiptFields[3] = encList(logList); // logs
-        bytes memory receiptRlp = encList(receiptFields);
+        bytes memory bloom = new bytes(256);
 
-        return abi.encodePacked(txRlp, receiptRlp);
+        if (status == 0) {
+            // failed tx: empty logs — nothing to scan for
+            return abi.encodePacked(headPadded, _w(0), _w(100000), _w(0x80), _w(6 * WORD), _w(0), _w(256), bloom);
+        }
+
+        uint256 dataPad = ((logData.length + 31) / 32) * 32 - logData.length;
+        uint256 logWords = 3 + 1 + topics.length + 1 + (logData.length + dataPad) / 32;
+        bytes memory log = abi.encodePacked(_addr(emitter), _w(0x60), _w((3 + topics.length) * WORD), _w(topics.length));
+        for (uint256 i = 0; i < topics.length; i++) log = abi.encodePacked(log, _w(uint256(topics[i])));
+        log = abi.encodePacked(log, _w(logData.length), logData);
+        if (dataPad > 0) log = abi.encodePacked(log, new bytes(dataPad));
+
+        // receipt: [status, gasUsed, logsOffset, bloomOffset, logCount, logOffset, logs..., bloomLen, bloom]
+        bytes memory receiptPart = abi.encodePacked(
+            _w(1),
+            _w(100000),
+            _w(0x80), // logs array starts after the 4 head words
+            _w((4 + 2 + logWords) * WORD), // bloom offset
+            _w(1), // log count
+            _w(0x60), // log starts after count + 1 offset word
+            log,
+            _w(256),
+            bloom
+        );
+
+        return abi.encodePacked(headPadded, receiptPart);
     }
 }

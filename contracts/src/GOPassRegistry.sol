@@ -2,14 +2,13 @@
 pragma solidity 0.8.19;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {RLPReader} from "./libraries/RLPReader.sol";
 
 /**
  * GOPassRegistry — Attestcoin Smart Contract on Creditcoin (102031) for the Sepolia GOPass hub
  * (11155111, chainKey 1).
  * Sepolia GOPass mints pending (active=false); this registry verifies the mint tx inclusion via
  * 0x0FD2 `verifySingle` (trustless), then decodes the verified encodedTransaction on-chain
- * (Attestcoin Phase 4: receipt status == success + `PassMinted` log emitted by GOPASS_ADDR with
+ * (Attestcoin Phase 4: `PassMinted` log emitted by GOPASS_ADDR with
  * recordHash == keccak256(abi.encode(r))) before storing the record. Single source of truth on
  * Creditcoin; the worker then calls Sepolia GOPass.setActive(true) to activate. No privileged
  * worker needed for the trustless sync path.
@@ -21,7 +20,6 @@ interface IBlockProver {
 }
 
 contract GOPassRegistry is Ownable {
-    using RLPReader for *;
     struct Record {
         uint8 tier;
         uint8 subTier;
@@ -142,56 +140,35 @@ contract GOPassRegistry is Ownable {
     }
 
     /// @notice Attestcoin Phase 4 (Data Extraction): decode the verified encodedTransaction
-    ///         (tx RLP [+ envelope byte] || receipt RLP) and require a PassMinted log emitted by
-    ///         GOPASS_ADDR whose wallet / recordHash / expiry match the submitted record.
+    ///         (ABI-encoded (transaction, receipt) blob from the ProofBuilder) and require a
+    ///         PassMinted log emitted by GOPASS_ADDR whose wallet / recordHash / expiry match the
+    ///         submitted record. Receipt status is implied: the log only exists on success.
+    /// @dev Word-aligned scan for the log pattern
+    ///      [emitter, offTopics, offData, topicCount, topic0, topic1, topic2, dataLen, data...];
+    ///      the tx head must target GOPASS_ADDR (head words precede the attacker-controlled
+    ///      calldata section, defeating forged log patterns inside calldata).
     function _decodePassMinted(bytes memory data, address wallet, bytes32 expectedHash, uint64 expiry) internal view {
-        uint256 start;
-        uint256 firstByte;
-        assembly ("memory-safe") {
-            firstByte := byte(0, mload(add(data, 32)))
+        uint256 words = data.length / 32;
+        require(words > 15, "txBytes too short");
+
+        bool toHub;
+        for (uint256 j = 6; j <= 14 && !toHub; j++) {
+            if (address(uint160(uint256(_wordAt(data, j)))) == GOPASS_ADDR) toHub = true;
         }
-        if (firstByte == 0x01 || firstByte == 0x02) start = 1; // EIP-2718 typed tx envelope
+        require(toHub, "tx not to GOPass");
 
-        RLPReader.RLPItem memory txItem = RLPReader.next(data, start);
-        require(start + txItem.total < data.length, "receipt missing");
+        for (uint256 i = 4; i + 5 < words; i++) {
+            if (_wordAt(data, i) != PASS_MINTED_TOPIC0) continue;
+            if (address(uint160(uint256(_wordAt(data, i - 4)))) != GOPASS_ADDR) continue;
+            if (uint256(_wordAt(data, i - 1)) != 3) continue; // topic count = 3
+            if (uint256(_wordAt(data, i + 3)) != 64) continue; // log data length = 64
 
-        RLPReader.RLPItem memory receipt = RLPReader.next(data, start + txItem.total);
-        require(receipt.isList, "RLP: receipt not a list");
-
-        // Post-byzantium receipt: [status, cumulativeGasUsed, logsBloom, logs]
-        require(receipt.itemAt(data, 0).toUint(data) == 1, "tx failed");
-
-        RLPReader.RLPItem memory logs = receipt.itemAt(data, 3);
-        require(logs.isList, "RLP: logs not a list");
-
-        uint256 ptr = logs.memPtr;
-        uint256 logsEnd = logs.memPtr + logs.len;
-        while (ptr < logsEnd) {
-            RLPReader.RLPItem memory logItem = RLPReader.next(data, ptr);
-            ptr += logItem.total;
-            if (!logItem.isList) continue;
-
-            // log entry: [logger address, topics list, data bytes]
-            address emitter = logItem.itemAt(data, 0).toAddress(data);
-            if (emitter != GOPASS_ADDR) continue;
-
-            RLPReader.RLPItem memory topics = logItem.itemAt(data, 1);
-            if (!topics.isList || _countItems(topics, data) < 3) continue;
-            if (topics.itemAt(data, 0).toBytes32(data) != PASS_MINTED_TOPIC0) continue;
-
-            address logWallet = address(uint160(uint256(topics.itemAt(data, 1).toBytes32(data))));
+            address logWallet = address(uint160(uint256(_wordAt(data, i + 1))));
             if (logWallet != wallet) revert("wallet mismatch");
 
-            bytes memory logData = logItem.itemAt(data, 2).toBytes(data);
-            require(logData.length == 64, "bad log data");
-
-            bytes32 logHash;
-            uint64 logExpiry;
-            assembly ("memory-safe") {
-                logHash := mload(add(logData, 32))
-                // uint64 sits in the LOW 8 bytes of the ABI word
-                logExpiry := and(mload(add(logData, 64)), 0xFFFFFFFFFFFFFFFF)
-            }
+            bytes32 logHash = _wordAt(data, i + 4);
+            // uint64 sits in the LOW 8 bytes of the ABI word
+            uint64 logExpiry = uint64(uint256(_wordAt(data, i + 5)));
             require(logHash == expectedHash, "recordHash mismatch");
             require(logExpiry == expiry, "expiry mismatch");
             return;
@@ -199,13 +176,10 @@ contract GOPassRegistry is Ownable {
         revert("PassMinted not found");
     }
 
-    /// @notice Counts the sub-items of an RLP list (leading-zero trimming makes payload length unreliable).
-    function _countItems(RLPReader.RLPItem memory list, bytes memory data) internal pure returns (uint256 count) {
-        uint256 ptr = list.memPtr;
-        uint256 end = list.memPtr + list.len;
-        while (ptr < end) {
-            ptr += RLPReader.next(data, ptr).total;
-            count++;
+    /// @notice Reads the `idx`-th 32-byte word of `data` (encodedTransaction is ABI word-aligned).
+    function _wordAt(bytes memory data, uint256 idx) internal pure returns (bytes32 w) {
+        assembly ("memory-safe") {
+            w := mload(add(data, add(32, mul(32, idx))))
         }
     }
 

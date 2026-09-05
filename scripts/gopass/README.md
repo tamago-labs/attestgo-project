@@ -29,4 +29,4 @@ npx tsx scripts/gopass/5_gtoken_mint.ts --to 0x2c1A... --amount 100
 npx tsx scripts/gopass/6_freeze.ts --wallet 0x2c1A... --frozen true
 ```
 
-Worker `3_worker_sync` is Advance-style: off-chain `getRecord` + `continuityLen=2` check, then `mirror.markVerified` (no on-chain `0x0FD2` decode). The trustless path `syncPassWithTxProof` (ProofBuilder → `0x0FD2 verifySingle`) now also decodes the verified tx on-chain (Attestcoin Phase 4: receipt status + `PassMinted` log recordHash binding), so submission stays permissionless. Fallback `syncPass` (raw storage-proof staticcall, experimental) is worker/owner-gated.
+Worker `3_worker_sync` is Advance-style: off-chain `getRecord` + `continuityLen=2` check, then `mirror.markVerified` (no on-chain `0x0FD2` decode). The trustless path `syncPassWithTxProof` (ProofBuilder → `0x0FD2 verifySingle`) now also decodes the verified tx on-chain (Attestcoin Phase 4: `PassMinted` log recordHash binding — the SDK's ABI-encoded `encodedTransaction` must be passed verbatim; log presence implies receipt success), so submission stays permissionless. Fallback `syncPass` (raw storage-proof staticcall, experimental) is worker/owner-gated.

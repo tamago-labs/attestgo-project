@@ -6,7 +6,6 @@ import {IMorpho, MarketParams, Position, Id} from "./interfaces/IMorpho.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IRemoteCollateralManager} from "./interfaces/IRemoteCollateralManager.sol";
 import {MarketParamsLib} from "./libraries/MarketParamsLib.sol";
-import {RLPReader} from "./libraries/RLPReader.sol";
 import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 
 /**
@@ -14,8 +13,8 @@ import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
  *
  * ETH → CC (trustless, permissionless): anyone submits a `CrossChainLockProof` for a SourceVault
  * `lock` tx on Sepolia (chainKey 1). The proof is verified by the Block Prover Precompile (0x0FD2
- * `verifySingle`), then the encodedTransaction (tx + receipt data) is decoded on-chain: receipt
- * status must be success and the `Locked` log emitted by SourceVault must match the proof fields.
+ * `verifySingle`), then the verified encodedTransaction (ABI-encoded tx + receipt data) is decoded
+ * on-chain: the `Locked` log emitted by SourceVault must match the proof fields.
  * The borrower's remote collateral position is then credited on the Morpho market — no token moves.
  *
  * CC → ETH (trusted worker): `requestUnlock` (after repay) and `requestLiquidationPayout` (after a
@@ -23,7 +22,6 @@ import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
  */
 contract CoreVault is IRemoteCollateralManager, Ownable {
     using MarketParamsLib for MarketParams;
-    using RLPReader for *;
 
     struct CrossChainLockProof {
         bytes32 lockId; // SourceVault lockId
@@ -32,7 +30,7 @@ contract CoreVault is IRemoteCollateralManager, Ownable {
         address recipient; // borrower credited on Creditcoin
         bytes32 marketId; // Morpho market id (Id.unwrap)
         uint64 headerNumber; // source chain block containing the lock tx
-        bytes txBytes; // encodedTransaction: tx RLP (+ envelope byte) || receipt RLP
+        bytes txBytes; // encodedTransaction: ABI-encoded (transaction, receipt) from the ProofBuilder
         bytes32 merkleRoot; // tx merkle root (block header)
         bytes32[] siblings; // merkle proof siblings
         bytes32 lowerDigest; // continuity proof lower endpoint digest
@@ -160,62 +158,41 @@ contract CoreVault is IRemoteCollateralManager, Ownable {
     }
 
     /// @notice Decodes the `Locked` log from the verified encodedTransaction and validates all proof fields.
+    /// @dev The precompile has already authenticated `txBytes` (Attestcoin encodedTransaction =
+    ///      ABI-encoded (transaction, receipt) blob returned by the ProofBuilder). We scan the
+    ///      word-aligned ABI words for the `Locked` log pattern
+    ///      [emitter, offTopics, offData, topicCount, topic0, topic1, topic2, topic3, dataLen, data...].
+    ///      Receipt status is implied: a `Locked` log only exists in a successful receipt.
+    ///      Security: a forged log pattern inside calldata of a tx NOT calling SourceVault is
+    ///      rejected by requiring the tx head to target SOURCE_VAULT (head words precede the
+    ///      attacker-controlled calldata section).
     function _decodeLockedLog(CrossChainLockProof calldata p) internal view returns (uint256 amount) {
         bytes memory data = p.txBytes;
+        uint256 words = data.length / 32;
+        require(words > 15, "txBytes too short");
 
-        // Typed transaction envelope (EIP-2718): 0x01 (2930) or 0x02 (1559) prefix byte.
-        uint256 start;
-        uint256 firstByte;
-        assembly ("memory-safe") {
-            firstByte := byte(0, mload(add(data, 32)))
+        // The ABI-encoded tx head is a fixed-shape section that precedes the calldata payload
+        // (word ~15 onward). Its `to` field must be SOURCE_VAULT; scanned over the plausible
+        // head range (nonce/gas/value positions are not forgeable to a full address word).
+        bool toVault;
+        for (uint256 j = 6; j <= 14 && !toVault; j++) {
+            if (address(uint160(uint256(_wordAt(data, j)))) == SOURCE_VAULT) toVault = true;
         }
-        if (firstByte == 0x01 || firstByte == 0x02) start = 1;
+        require(toVault, "tx not to SourceVault");
 
-        // Layout: txItem || receiptItem (Attestcoin encodedTransaction = transaction + receipt data).
-        RLPReader.RLPItem memory txItem = RLPReader.next(data, start);
-        require(start + txItem.total < data.length, "receipt missing");
+        for (uint256 i = 4; i + 7 < words; i++) {
+            if (_wordAt(data, i) != LOCKED_TOPIC0) continue;
+            if (address(uint160(uint256(_wordAt(data, i - 4)))) != SOURCE_VAULT) continue;
+            if (uint256(_wordAt(data, i - 1)) != 4) continue; // topic count = 4
+            if (uint256(_wordAt(data, i + 4)) != 96) continue; // log data length = 96
 
-        RLPReader.RLPItem memory receipt = RLPReader.next(data, start + txItem.total);
-        require(receipt.isList, "RLP: receipt not a list");
-
-        // Post-byzantium receipt: [status, cumulativeGasUsed, logsBloom, logs]
-        require(receipt.itemAt(data, 0).toUint(data) == 1, "tx failed");
-
-        RLPReader.RLPItem memory logs = receipt.itemAt(data, 3);
-        require(logs.isList, "RLP: logs not a list");
-
-        uint256 ptr = logs.memPtr;
-        uint256 logsEnd = logs.memPtr + logs.len;
-        while (ptr < logsEnd) {
-            RLPReader.RLPItem memory logItem = RLPReader.next(data, ptr);
-            ptr += logItem.total;
-            if (!logItem.isList) continue;
-
-            // log entry: [logger address, topics list, data bytes]
-            address logger = logItem.itemAt(data, 0).toAddress(data);
-            if (logger != SOURCE_VAULT) continue;
-
-            RLPReader.RLPItem memory topics = logItem.itemAt(data, 1);
-            if (!topics.isList || _countItems(topics, data) < 4) continue;
-            if (topics.itemAt(data, 0).toBytes32(data) != LOCKED_TOPIC0) continue;
-
-            bytes32 lockId = topics.itemAt(data, 1).toBytes32(data);
-            // topics are 32-byte strings; addresses sit in the low 20 bytes
-            address recipient = address(uint160(uint256(topics.itemAt(data, 2).toBytes32(data))));
-            address collateralToken = address(uint160(uint256(topics.itemAt(data, 3).toBytes32(data))));
-
-            bytes memory logData = logItem.itemAt(data, 2).toBytes(data);
-            require(logData.length == 96, "bad log data");
-
-            uint256 logAmount;
-            bytes32 logMarketId;
-            uint64 logNonce;
-            assembly ("memory-safe") {
-                logAmount := mload(add(logData, 32))
-                logMarketId := mload(add(logData, 64))
-                // uint64 sits in the LOW 8 bytes of the ABI word
-                logNonce := and(mload(add(logData, 96)), 0xFFFFFFFFFFFFFFFF)
-            }
+            bytes32 lockId = _wordAt(data, i + 1);
+            address recipient = address(uint160(uint256(_wordAt(data, i + 2))));
+            address collateralToken = address(uint160(uint256(_wordAt(data, i + 3))));
+            uint256 logAmount = uint256(_wordAt(data, i + 5));
+            bytes32 logMarketId = _wordAt(data, i + 6);
+            // uint64 sits in the LOW 8 bytes of the ABI word
+            uint64 logNonce = uint64(uint256(_wordAt(data, i + 7)));
 
             require(lockId == p.lockId, "lockId mismatch");
             require(recipient == p.recipient, "recipient mismatch");
@@ -233,13 +210,10 @@ contract CoreVault is IRemoteCollateralManager, Ownable {
         revert("Locked log not found");
     }
 
-    /// @notice Counts the sub-items of an RLP list (leading-zero trimming makes payload length unreliable).
-    function _countItems(RLPReader.RLPItem memory list, bytes memory data) internal pure returns (uint256 count) {
-        uint256 ptr = list.memPtr;
-        uint256 end = list.memPtr + list.len;
-        while (ptr < end) {
-            ptr += RLPReader.next(data, ptr).total;
-            count++;
+    /// @notice Reads the `idx`-th 32-byte word of `data` (encodedTransaction is ABI word-aligned).
+    function _wordAt(bytes memory data, uint256 idx) internal pure returns (bytes32 w) {
+        assembly ("memory-safe") {
+            w := mload(add(data, add(32, mul(32, idx))))
         }
     }
 

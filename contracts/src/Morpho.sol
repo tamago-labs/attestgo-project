@@ -571,8 +571,10 @@ contract Morpho is IMorphoStaticTyping {
     {
         uint256 borrowed = uint256(position[id][borrower].borrowShares)
             .toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
+        // max borrow = collateral value / lltv (multiply by WAD/lltv, NOT by lltv — the upstream
+        // kilolend fork multiplies, silently clamping effective LTV to lltv^2)
         uint256 maxBorrow = uint256(position[id][borrower].collateral).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE)
-            .wMulDown(marketParams.lltv);
+            .mulDivDown(WAD, marketParams.lltv);
 
         return maxBorrow >= borrowed;
     }

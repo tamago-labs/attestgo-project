@@ -23,7 +23,8 @@ GToken (RWA) ─▶ SourceVault     ─▶   CoreVault (ASC) ─▶ Morpho marke
 
 - **ETH → CC is trustless**: anyone submits a `CrossChainLockProof` (or pass sync) — the Block
   Prover Precompile (`0x0FD2 verifySingle`) proves tx inclusion + continuity, then the contract
-  decodes the verified `encodedTransaction` (receipt status + event fields) on-chain. Replay is
+  extracts the expected event log from the verified `encodedTransaction` (ABI-encoded
+  transaction + receipt, as returned by the ProofBuilder) on-chain. Replay is
   blocked via `lockId` / record hash bindings.
 - **CC → ETH uses a trusted worker** (`onlyWorkerOrOwner`): unlocks after repay, and liquidator
   claim payouts. See [`CROSS_CHAIN_LENDING_PLAN.md`](CROSS_CHAIN_LENDING_PLAN.md).
@@ -33,7 +34,7 @@ GToken (RWA) ─▶ SourceVault     ─▶   CoreVault (ASC) ─▶ Morpho marke
 | Contract | Chain | Purpose |
 |---|---|---|
 | [`src/GOPass.sol`](src/GOPass.sol) | Sepolia | Soulbound KYC NFT hub; mints `active=false` until Creditcoin verifies |
-| [`src/GOPassRegistry.sol`](src/GOPassRegistry.sol) | Creditcoin | Attestcoin Smart Contract: verifies hub mint txs (`0x0FD2` + RLP Phase 4), stores records, eligibility rules |
+| [`src/GOPassRegistry.sol`](src/GOPassRegistry.sol) | Creditcoin | Attestcoin Smart Contract: verifies hub mint txs (`0x0FD2` + on-chain Phase 4 log extraction), stores records, eligibility rules |
 | [`src/GOPassMirror.sol`](src/GOPassMirror.sol) | Base / any EVM | Worker-synced record cache; GTokens check eligibility locally (~5k gas) |
 | [`src/GToken.sol`](src/GToken.sol) | any chain | Compliant ERC20 gated by GOPass eligibility; native or wrapped 1:1 |
 | [`src/GTokenFactory.sol`](src/GTokenFactory.sol) | any chain | Operator-paid issuance of native/wrapped GTokens |
@@ -42,7 +43,6 @@ GToken (RWA) ─▶ SourceVault     ─▶   CoreVault (ASC) ─▶ Morpho marke
 | [`src/irm/JumpRateIrm.sol`](src/irm/JumpRateIrm.sol) | Creditcoin | Compound-style jump rate IRM (immutable params) |
 | [`src/SourceVault.sol`](src/SourceVault.sol) | Sepolia | RWA collateral escrow; `Locked` tx is the proof payload; cumulative FIFO unlocks |
 | [`src/CoreVault.sol`](src/CoreVault.sol) | Creditcoin | ASC verifier + Morpho facade + liquidation claims ledger |
-| [`src/libraries/RLPReader.sol`](src/libraries/RLPReader.sol) | — | Minimal RLP decoder for on-chain tx/receipt parsing |
 
 ### Usage
 

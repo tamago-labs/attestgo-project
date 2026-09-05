@@ -185,8 +185,9 @@ contract GOPassTest is Test {
 
     function test_registry_tx_proof_failed_tx_reverts() public {
         uint64 exp = uint64(block.timestamp + 1 days);
-        (GOPassRegistry.Record memory r, bytes memory txBytes) = _mintAndProof(10, alice, exp, 0); // receipt status = 0
-        vm.expectRevert(bytes("tx failed"));
+        // receipt status = 0: a reverted mint emits no PassMinted log — nothing to decode
+        (GOPassRegistry.Record memory r, bytes memory txBytes) = _mintAndProof(10, alice, exp, 0);
+        vm.expectRevert(bytes("PassMinted not found"));
         registry.syncPassWithTxProof(alice, r, 100, txBytes, bytes32(uint256(1)), _one(bytes32(0)), bytes32(uint256(2)), _one(bytes32(0)));
     }
 
