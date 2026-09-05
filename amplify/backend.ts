@@ -3,6 +3,7 @@ import { auth } from './auth/resource.js';
 import { data } from './data/resource.js';
 import { mintPass } from './functions/mintPass/resource.js';
 import { attestPass } from './functions/attestPass/resource.js';
+import { attestLock } from './functions/attestLock/resource.js';
 import { createGToken } from './functions/createGToken/resource.js';
 import { manageIssuerProfile } from './functions/manageIssuerProfile/resource.js';
 import { manageRWATokenProfile } from './functions/manageRWATokenProfile/resource.js';
@@ -18,6 +19,7 @@ const backend = defineBackend({
   data,
   mintPass,
   attestPass,
+  attestLock,
   createGToken,
   manageIssuerProfile,
   manageRWATokenProfile,

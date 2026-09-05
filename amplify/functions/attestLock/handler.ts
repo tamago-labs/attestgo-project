@@ -86,7 +86,7 @@ export const handler: Schema["attestLock"]["functionHandler"] = async (event) =>
   const core = new ethers.Contract(env.CORE_VAULT_ADDR as string, CORE_ABI, cc);
   const used = await (core as unknown as { isProofUsed: (a: string) => Promise<boolean> }).isProofUsed(lockId);
   if (used) {
-    await client.models.LockRecord.update({ id: rec.id, status: "attested" } as unknown as { id: string; status: string });
+    await client.models.LockRecord.update({ id: rec.id, status: "attested" });
     return JSON.stringify({ status: "attested", lockId, alreadyUsed: true });
   }
 
@@ -120,7 +120,7 @@ export const handler: Schema["attestLock"]["functionHandler"] = async (event) =>
     roots: d.continuityProof.roots,
   };
 
-  await client.models.LockRecord.update({ id: rec.id, status: "attesting" } as unknown as { id: string; status: string });
+  await client.models.LockRecord.update({ id: rec.id, status: "attesting" });
 
   const pk = env.OWNER_PK as string;
   const owner = new ethers.Wallet(pk, cc);
@@ -137,7 +137,7 @@ export const handler: Schema["attestLock"]["functionHandler"] = async (event) =>
     id: rec.id,
     status: "attested",
     attestTxHash: tx.hash,
-  } as unknown as { id: string; status: string; attestTxHash: string });
+  });
 
   return JSON.stringify({ status: "attested", lockId, txHash: tx.hash });
 };
