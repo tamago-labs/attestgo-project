@@ -15,6 +15,7 @@ export const LOAN_TOKENS = {
     decimals: 6,
     isMock: true,
     name: "Mock CUSDT",
+    icon: "/attestcoin-icon.png",
   },
   ATC: {
     symbol: "ATC",
@@ -22,6 +23,7 @@ export const LOAN_TOKENS = {
     decimals: 18,
     isMock: true,
     name: "Mock ATC",
+    icon: "/attestcoin-icon.png",
   },
 } as const;
 
@@ -31,12 +33,14 @@ export const SOURCE_TOKENS = {
     address: process.env.NEXT_PUBLIC_GTOKEN_AN225 || "0xc55D7821b6e0D8AC162e5b672aa9eA87A066B5a8",
     decimals: 18,
     name: "Nikkei 225 RWA",
+    icon: "/nekkei-token-icon.png",
   },
   ATBILL: {
     symbol: "aTBILL",
     address: process.env.NEXT_PUBLIC_GTOKEN_ATBILL || "0x266F1BA9Cd984D8DC9cb7029A7c69e9d216283Db",
     decimals: 18,
     name: "USD T-Bill RWA",
+    icon: "/t-bill-token-icon.png",
   },
 } as const;
 
@@ -54,8 +58,8 @@ export type DefiMarket = {
   slug: string;
   name: string;
   sub: string;
-  loan: { symbol: string; address: string; decimals: number; isMock: boolean; name: string };
-  collateral: { symbol: string; address: string; decimals: number; name: string };
+  loan: { symbol: string; address: string; decimals: number; isMock: boolean; name: string; icon?: string };
+  collateral: { symbol: string; address: string; decimals: number; name: string; icon?: string };
   oracle: string;
   lltv: bigint;
   mp: MarketParamsStruct;
