@@ -86,10 +86,14 @@ export default function StepAttest({ market, records, onAttested }: { market: De
       )}
 
       {msg && (
-        <div className={`text-xs rounded-lg px-3 py-2 border break-all ${msg.kind === "ok" ? "text-emerald-300 bg-emerald-500/10 border-emerald-500/20" : msg.kind === "warn" ? "text-amber bg-amber/10 border-amber/20" : "text-red-300 bg-red-500/10 border-red-500/20"}`}>
-          {msg.kind === "err" && <AlertTriangle size={11} className="inline mr-1" />}
-          {msg.kind === "ok" && <CheckCircle2 size={11} className="inline mr-1" />}
-          {msg.text}
+        <div className={`rounded-xl px-4 py-3 border flex items-start gap-2.5 ${msg.kind === "ok" ? "text-emerald-200 bg-emerald-500/15 border-emerald-500/30" : msg.kind === "warn" ? "text-amber-200 bg-amber-500/15 border-amber-500/30" : "text-red-200 bg-red-500/15 border-red-500/30"}`}>
+          {msg.kind === "err" && <AlertTriangle size={15} className="shrink-0 mt-0.5" />}
+          {msg.kind === "ok" && <CheckCircle2 size={15} className="shrink-0 mt-0.5" />}
+          {msg.kind === "warn" && <Hourglass size={15} className="shrink-0 mt-0.5" />}
+          <div className="min-w-0">
+            <div className="text-sm font-medium">{msg.kind === "ok" ? "Proof verified" : msg.kind === "warn" ? "Not attested yet" : "Attestation failed"}</div>
+            <div className="text-xs mt-0.5 opacity-80 break-all">{msg.text}</div>
+          </div>
         </div>
       )}
     </div>
