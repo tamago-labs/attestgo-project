@@ -60,7 +60,6 @@ contract DeployOracle is Script {
 
         console.log("ORACLE_ADDR=%s", address(oracle));
         console.log("Oracle price", IOracle(address(oracle)).price());
-        console.log("Next: update prices via oracle.setPrice(collateralUsd, loanUsd) as prices move, or attach feeds via setBkcFeed");
     }
 
     function _parse(string memory s) internal pure returns (uint256) {

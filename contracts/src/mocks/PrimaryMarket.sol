@@ -27,6 +27,7 @@ contract PrimaryMarket is Ownable {
     event Deposited(address indexed issuer, uint256 amount);
     event PriceUpdated(uint256 oldPrice, uint256 newPrice);
     event Bought(address indexed buyer, uint256 rwaAmount, uint256 payAmount);
+    event Sold(address indexed seller, uint256 rwaAmount, uint256 payAmount);
     event WithdrawnPayment(address indexed to, uint256 amount);
     event WithdrawnRWA(address indexed to, uint256 amount);
 
@@ -67,6 +68,15 @@ contract PrimaryMarket is Ownable {
         paymentToken.safeTransferFrom(msg.sender, address(this), payAmount);
         rwaToken.safeTransfer(msg.sender, rwaAmount);
         emit Bought(msg.sender, rwaAmount, payAmount);
+    }
+
+    function sell(uint256 rwaAmount) external {
+        require(rwaAmount > 0, "amount zero");
+        uint256 payAmount = payFor(rwaAmount);
+        require(paymentToken.balanceOf(address(this)) >= payAmount, "insufficient payment liquidity");
+        rwaToken.safeTransferFrom(msg.sender, address(this), rwaAmount);
+        paymentToken.safeTransfer(msg.sender, payAmount);
+        emit Sold(msg.sender, rwaAmount, payAmount);
     }
 
     function withdrawPayment(uint256 amount, address to) external onlyOwner {
