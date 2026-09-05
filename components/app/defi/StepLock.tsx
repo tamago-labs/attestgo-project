@@ -46,15 +46,14 @@ export default function StepLock({ market, address, onLocked }: { market: DefiMa
         return;
       }
       const s = signer as never;
-      const g = new Contract(market.collateral.address, ["function approve(address,uint256) returns (bool)"], s);
+      const g = new Contract(market.collateral.address, ERC20_ABI, s);
       const vault = new Contract(SOURCE_VAULT, SOURCE_VAULT_ABI, s);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const v = vault as any;
       setStage("approving");
-      const gAny = g as any;
-      const allowance: bigint = await gAny.allowance(address, SOURCE_VAULT);
+      const allowance: bigint = await (g as unknown as { allowance: (a: string, b: string) => Promise<bigint> }).allowance(address, SOURCE_VAULT);
       if (allowance < amt) {
-        const atx = await gAny.approve(SOURCE_VAULT, amt);
+        const atx = await (g as unknown as { approve: (a: string, b: bigint) => Promise<{ wait: () => Promise<unknown> }> }).approve(SOURCE_VAULT, amt);
         await atx.wait();
       }
       setStage("locking");
