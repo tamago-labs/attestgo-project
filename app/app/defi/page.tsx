@@ -191,10 +191,6 @@ export default function DeFiPage() {
 
   return (
     <div className="w-full">
-      <div className="mb-6">
-        <h1 className="font-extrabold text-3xl tracking-tight text-white">Earn</h1>
-      </div>
-
       <div className="grid sm:grid-cols-3 gap-4 mb-5">
         <div className="bg-panel border border-border rounded-2xl px-5 py-4">
           <div className="text-muted text-xs uppercase tracking-widest mb-1">Total supplied</div>
