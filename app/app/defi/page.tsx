@@ -20,14 +20,14 @@ function TokenIcon({ src, symbol, size = 28 }: { src?: string; symbol: string; s
         width={size}
         height={size}
         onError={() => setErr(true)}
-        className="rounded-lg object-cover border border-white/10 bg-white shrink-0"
+        className="rounded-lg object-cover shrink-0"
       />
     );
   }
   return (
     <div
       style={{ width: size, height: size }}
-      className="rounded-lg bg-white/10 border border-white/10 flex items-center justify-center text-[10px] font-mono text-white/60 shrink-0"
+      className="rounded-lg bg-white/[0.06] flex items-center justify-center text-[10px] font-mono text-white/60 shrink-0"
     >
       {symbol.slice(0, 4)}
     </div>
@@ -79,8 +79,8 @@ function EarnRow({
       <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-3 items-center px-4 py-3">
         <TokenIcon src={market.loan.icon} symbol={market.loan.symbol} />
         <div className="min-w-0">
-          <div className="text-sm font-medium text-white truncate">{market.name}</div>
-          <div className="text-xs text-muted truncate">{market.loan.symbol} · {market.sub}</div>
+          <div className="text-sm font-medium text-white truncate">{market.loan.symbol}</div>
+          <div className="text-xs text-muted truncate">{market.loan.name}</div>
         </div>
         <div className="text-right">
           <div className="font-mono text-sm text-white">{data ? `${fmtPct(data.supplyApy)}` : "—"}</div>
@@ -195,8 +195,8 @@ export default function DeFiPage() {
           <ListHeader
             accent="amber"
             title="Earn"
-            badge="on Creditcoin"
-            desc="Supply a verified asset and earn yield — attestation verifies the counterparty, not you."
+            badge="earn yield on Creditcoin"
+            desc="Supply liquidity to RWA-backed markets and earn passive yield."
           />
           <div className="border border-border rounded-xl divide-y divide-border overflow-hidden bg-panel">
             {rows.map((r) => (
@@ -216,8 +216,8 @@ export default function DeFiPage() {
           <ListHeader
             accent="violet"
             title="Borrow"
-            badge="collateral stays on source chain"
-            desc="Lock RWA collateral where your assets already live, draw liquidity from Creditcoin."
+            badge="lock on Sepolia · borrow on Creditcoin"
+            desc="Lend across chains with Attestcoin — RWA stays where it is."
           />
           <div className="border border-border rounded-xl divide-y divide-border overflow-hidden bg-panel">
             {rows.map((r) => (

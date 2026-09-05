@@ -15,7 +15,7 @@ export const LOAN_TOKENS = {
     decimals: 6,
     isMock: true,
     name: "Mock CUSDT",
-    icon: "/attestcoin-icon.png",
+    icon: "https://s2.coinmarketcap.com/static/img/coins/64x64/825.png",
   },
   ATC: {
     symbol: "ATC",
@@ -23,7 +23,7 @@ export const LOAN_TOKENS = {
     decimals: 18,
     isMock: true,
     name: "Mock ATC",
-    icon: "/go-asset-logo.png",
+    icon: "/attestcoin-icon.png",
   },
 } as const;
 
