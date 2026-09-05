@@ -80,9 +80,11 @@ export async function updateLockStatus(id: string, status: LockRecord["status"],
 /** Trigger the sponsored proof submission (lambda: getProof -> verify -> verifyAndSupplyCollateral). */
 export async function attestLock(lockTxHash: string, marketSlug: string): Promise<{ status: string; txHash?: string; lockId?: string; reason?: string }> {
   const client = getClient();
+  console.log("[attestLock] invoking mutation", { lockTxHash, marketSlug });
   const res = await (client.mutations as unknown as {
     attestLock: (a: { lockTxHash: string; marketSlug: string }) => Promise<{ data: unknown; errors?: { message: string }[] }>;
   }).attestLock({ lockTxHash, marketSlug });
+  console.log("[attestLock] mutation response", JSON.stringify(res));
   if (res.errors) throw new Error(res.errors.map((e) => e.message).join(", "));
   let raw = res.data as unknown;
   if (typeof raw === "string") {
@@ -94,5 +96,6 @@ export async function attestLock(lockTxHash: string, marketSlug: string): Promis
       }
     }
   }
+  console.log("[attestLock] parsed result", JSON.stringify(raw));
   return (raw as { status: string; txHash?: string; lockId?: string; reason?: string }) || { status: "unknown" };
 }

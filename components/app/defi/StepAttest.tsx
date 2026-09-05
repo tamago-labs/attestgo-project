@@ -14,9 +14,13 @@ export default function StepAttest({ market, records, onAttested }: { market: De
   const sendProof = async (rec: LockRecord) => {
     setBusyTx(rec.lockTxHash);
     setMsg(null);
+    console.log("[StepAttest] sendProof start", { lockTxHash: rec.lockTxHash, marketSlug: market.slug, recordId: rec.id });
     try {
+      console.log("[StepAttest] updateLockStatus -> attesting");
       await updateLockStatus(rec.id, "attesting");
+      console.log("[StepAttest] attestLock calling mutation");
       const res = await attestLock(rec.lockTxHash, market.slug);
+      console.log("[StepAttest] attestLock result", JSON.stringify(res));
       if (res.status === "attested") {
         await updateLockStatus(rec.id, "attested", res.txHash);
         setMsg({ tx: rec.lockTxHash, text: "Proof verified — collateral credited on Creditcoin.", kind: "ok" });
@@ -30,6 +34,7 @@ export default function StepAttest({ market, records, onAttested }: { market: De
       }
     } catch (e: unknown) {
       const text = e instanceof Error ? e.message : String(e);
+      console.error("[StepAttest] sendProof error", text);
       setMsg({ tx: rec.lockTxHash, text, kind: "err" });
       try {
         await updateLockStatus(rec.id, "failed");
