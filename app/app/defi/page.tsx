@@ -191,17 +191,22 @@ export default function DeFiPage() {
 
   return (
     <div className="w-full">
-      <div className="mb-5 flex items-end justify-between gap-4">
+      <div className="mb-6">
         <h1 className="font-extrabold text-3xl tracking-tight text-white">Earn</h1>
-        <div className="flex items-center gap-5">
-          <div className="text-right">
-            <div className="text-[10px] uppercase tracking-widest text-muted">Supplied</div>
-            <div className="font-mono text-sm font-semibold text-violet-300">{loaded === rows.length ? fmtUsd(totalSupplied) : "—"}</div>
-          </div>
-          <div className="text-right">
-            <div className="text-[10px] uppercase tracking-widest text-muted">Borrowed</div>
-            <div className="font-mono text-sm font-semibold text-amber">{loaded === rows.length ? fmtUsd(totalBorrowed) : "—"}</div>
-          </div>
+      </div>
+
+      <div className="grid sm:grid-cols-3 gap-4 mb-5">
+        <div className="bg-panel border border-border rounded-2xl px-5 py-4">
+          <div className="text-muted text-xs uppercase tracking-widest mb-1">Total supplied</div>
+          <div className="font-mono text-lg font-semibold text-white">{loaded === rows.length ? fmtUsd(totalSupplied) : "—"}</div>
+        </div>
+        <div className="bg-panel border border-border rounded-2xl px-5 py-4">
+          <div className="text-muted text-xs uppercase tracking-widest mb-1">Total borrowed</div>
+          <div className="font-mono text-lg font-semibold text-white">{loaded === rows.length ? fmtUsd(totalBorrowed) : "—"}</div>
+        </div>
+        <div className="bg-panel border border-border rounded-2xl px-5 py-4">
+          <div className="text-muted text-xs uppercase tracking-widest mb-1">Markets</div>
+          <div className="font-mono text-lg font-semibold text-white">{MARKETS.length}</div>
         </div>
       </div>
 
@@ -258,11 +263,6 @@ export default function DeFiPage() {
           </div>
         </div>
       </div>
-
-      <p className="text-[11px] text-muted max-w-2xl leading-relaxed mt-5">
-        CUSDT and ATC are mock testnet tokens available from the faucet. Collateral for borrowing stays on Sepolia — only its verified state is attested to
-        Creditcoin.
-      </p>
     </div>
   );
 }
