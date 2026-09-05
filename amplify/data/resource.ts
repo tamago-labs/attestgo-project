@@ -57,7 +57,7 @@ const schema = a.schema({
     })
     .authorization((allow) => [allow.publicApiKey().to(["read", "create", "update", "delete"])])
     .secondaryIndexes((index) => [
-      index("ownerWallet").queryField("byOwnerWallet"),
+      index("ownerWallet").queryField("byLockOwner"),
       index("lockId").queryField("byLockId"),
     ]),
 

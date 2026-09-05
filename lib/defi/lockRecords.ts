@@ -33,8 +33,8 @@ export async function listLockRecords(ownerWallet: string, marketSlug: string): 
   const client = getClient();
   try {
     const res = await (client.models.LockRecord as unknown as {
-      byOwnerWallet: (a: { ownerWallet: string }) => Promise<{ data: LockRecord[] }>;
-    }).byOwnerWallet({ ownerWallet: ownerWallet.toLowerCase() });
+      byLockOwner: (a: { ownerWallet: string }) => Promise<{ data: LockRecord[] }>;
+    }).byLockOwner({ ownerWallet: ownerWallet.toLowerCase() });
     return (res.data || []).filter((r) => r.marketSlug === marketSlug);
   } catch {
     const res = await (client.models.LockRecord as unknown as {
