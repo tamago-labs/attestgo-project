@@ -26,7 +26,7 @@ Compliance layer for onchain finance — verified identity, compliant RWAs and c
 
 ## Architecture / How it Works
 
-Source chains hold RWA and passes; Creditcoin is the verification hub and lending venue. Attestor network finalizes source blocks → ProofBuilder proves the source tx → Creditcoin `0x0FD2` verifies → contract decodes receipt/events and acts. ETH→CC is permissionless/trustless; CC→ETH settlement is via a trusted worker.
+Source chains hold RWA and passes; Creditcoin is the verification hub and lending venue. Attestor network finalizes source blocks → ProofBuilder proves the source tx → Creditcoin `0x0FD2` verifies → contract decodes receipt/events and acts. ETH→CC is permissionless/trustless; CC→ETH settlement is via a trusted worker. The shipped app drives both flows end to end: suppliers use the Earn tab (supply/withdraw on Creditcoin), borrowers lock on Sepolia and a sponsored Amplify lambda submits the proof (`attestLock`) — anyone can submit a proof, permissionlessly.
 
 ![Architecture](https://docs.attestcoin.org/_next/image?url=%2Fimg%2Fattestcoin-readability.png&w=1200&q=75)
 
@@ -83,15 +83,16 @@ See [`contracts/CROSS_CHAIN_LENDING_PLAN.md`](contracts/CROSS_CHAIN_LENDING_PLAN
 
 ## Smart contracts
 
-Foundry project in [`contracts/`](contracts). Solc 0.8.19, tested with `forge test` (40 tests).
+Foundry project in [`contracts/`](contracts). Solc 0.8.19, tested with `forge test` (46 tests). Deployed testnet addresses: [`deployment.txt`](deployment.txt).
 
 | Feature | Chain | Contract | Source |
 |---|---|---|---|
-| GO Pass hub (soulbound KYC NFT, pending→verified 2-phase mint) | Sepolia (chainKey 1) | pending until Creditcoin approves | [`contracts/src/GOPass.sol`](contracts/src/GOPass.sol) |
+| GO Pass hub (soulbound KYC NFT, Sumsub-backed register→KYC→mint + activation) | Sepolia 11155111 (chainKey 1) | deployed on testnet, activation synced via proof | [`contracts/src/GOPass.sol`](contracts/src/GOPass.sol) |
 | Pass verifier — Attestcoin Smart Contract | Creditcoin 102031 | trustless tx-proof sync with on-chain Phase 4 decode | [`contracts/src/GOPassRegistry.sol`](contracts/src/GOPassRegistry.sol) |
 | Pass mirror cache for any EVM chain | Base / any EVM | worker-synced, ~5k-gas local eligibility checks | [`contracts/src/GOPassMirror.sol`](contracts/src/GOPassMirror.sol) |
 | RWA token with self-enforcing rules | any chain | country bitmap, pause, 1:1 wrapping | [`contracts/src/GToken.sol`](contracts/src/GToken.sol) |
 | RWA issuance factory (native + wrapped) | any chain | operator-paid issuance on behalf of issuers | [`contracts/src/GTokenFactory.sol`](contracts/src/GTokenFactory.sol) |
+| NAV primary issuance (RWA ↔ payment token) | Sepolia | operator-priced `buy`/`sell` at NAV (aN225/JPYC, aTBILL/USDT) | [`contracts/src/mocks/PrimaryMarket.sol`](contracts/src/mocks/PrimaryMarket.sol) |
 | Lending core (Morpho Blue fork) | Creditcoin | + remote-collateral accounting patch | [`contracts/src/Morpho.sol`](contracts/src/Morpho.sol) |
 | Market oracle | Creditcoin | fallback USD price + Chainlink-style feeds, staleness guard | [`contracts/src/PriceOracle.sol`](contracts/src/PriceOracle.sol) |
 | Interest rate model | Creditcoin | Compound-style jump rate curve (immutable params) | [`contracts/src/irm/JumpRateIrm.sol`](contracts/src/irm/JumpRateIrm.sol) |
@@ -102,15 +103,21 @@ Foundry project in [`contracts/`](contracts). Solc 0.8.19, tested with `forge te
 ## Workers & scripts
 
 Scripts are plain TypeScript (`npx tsx`) using `ethers` v6 and `@gluwa/usc-sdk` for proof
-generation. Every cross-chain flow has exactly one trust boundary: the CC→ETH worker.
+generation. The web app performs the same submissions through Amplify lambdas (`attestPass`,
+`attestLock`) — sponsored, but still permissionless submitters. Every cross-chain flow has exactly
+one trust boundary: the CC→ETH worker.
 
 | Script | Role | Trust |
 |---|---|---|
 | [`scripts/gopass/2_mint.ts`](scripts/gopass/2_mint.ts) | Mint pending GO Pass on the hub | — |
 | [`scripts/gopass/3_worker_sync.ts`](scripts/gopass/3_worker_sync.ts) | Oracle Query Worker: proof gen + `syncPassWithTxProof` on Creditcoin | trustless submission |
 | [`scripts/gopass/7_sync_mirror.ts`](scripts/gopass/7_sync_mirror.ts) | Sync verified record to mirrors on new chains | trusted worker |
-| [`scripts/lending/1_lend_setup.ts`](scripts/lending/1_lend_setup.ts) | Market wiring + first USDC supply | — |
-| [`scripts/lending/2_lend_e2e.ts`](scripts/lending/2_lend_e2e.ts) | Borrower E2E: lock → prove → credit → borrow → repay → requestUnlock | trustless submission |
+| [`scripts/lending/1_lend_setup.ts`](scripts/lending/1_lend_setup.ts) | Wire everything (`--all`): worker, oracle↔IRM↔lltv enable, token mappings, create both markets | — |
+| [`scripts/lending/2a_supply_liquidity.ts`](scripts/lending/2a_supply_liquidity.ts) | Supplier: approve + supply loan tokens into a market | — |
+| [`scripts/lending/2b_lock_collateral.ts`](scripts/lending/2b_lock_collateral.ts) | Borrower: lock RWA on Sepolia (records lockId) | — |
+| [`scripts/lending/2c_prove_and_borrow.ts`](scripts/lending/2c_prove_and_borrow.ts) | Submit proof (SDK `txBytes` verbatim) → collateral credited → borrow (`--borrow-only` skips proof) | trustless submission |
+| [`scripts/lending/2d_repay_and_unlock.ts`](scripts/lending/2d_repay_and_unlock.ts) | Repay + `requestUnlock` (worker settles on Sepolia) | — |
+| [`scripts/lending/probe_proof.ts`](scripts/lending/probe_proof.ts) / [`probe2_txbytes.ts`](scripts/lending/probe2_txbytes.ts) | Proof-format diagnostics (Attestcoin precompile ABI-blob format) | — |
 | [`scripts/lending/3_worker_unlock.ts`](scripts/lending/3_worker_unlock.ts) | Settle `UnlockRequested` on Sepolia (borrower exits + liquidator payouts) | trusted worker |
 | [`scripts/cross-chain-bridge/`](scripts/cross-chain-bridge/) | Payment-stream bridge demos + workers (previous iterations) | mixed |
 
@@ -161,11 +168,15 @@ forge script contracts/script/5_DeployMorpho.s.sol --rpc-url $CREDITCOIN_RPC_URL
 COLLATERAL_USD=1000000000000000000 LOAN_USD=1000000000000000000 LOAN_TOKEN=0x.. COLLATERAL_TOKEN=0x.. \
   forge script contracts/script/6_DeployOracle.s.sol --rpc-url $CREDITCOIN_RPC_URL --broadcast --legacy
 forge script contracts/script/7_DeployIrm.s.sol --rpc-url $CREDITCOIN_RPC_URL --broadcast --legacy
-# Creditcoin: validates + wires + creates the market
-MORPHO_ADDR=0x.. ORACLE_ADDR=0x.. IRM_ADDR=0x.. SOURCE_VAULT_ADDR=0x.. USDC_CC=0x.. GTOKEN_CC=0x.. GTOKEN_SOURCE=0x.. \
-  forge script contracts/script/8_DeployCoreVault.s.sol --rpc-url $CREDITCOIN_RPC_URL --broadcast --legacy
 # Sepolia: collateral escrow
-forge script contracts/script/9_DeploySourceVault.s.sol --rpc-url $SEPOLIA_RPC_URL --broadcast --legacy
+forge script contracts/script/8_DeploySourceVault.s.sol --rpc-url $SEPOLIA_RPC_URL --broadcast --legacy
+# Creditcoin: deploy-only (no wiring — 1_lend_setup.ts validates and wires)
+MORPHO_ADDR=0x.. SOURCE_VAULT_ADDR=0x.. forge script contracts/script/9_DeployCoreVault.s.sol --rpc-url $CREDITCOIN_RPC_URL --broadcast --legacy
+# Wire everything: worker, mappings, both markets, lltv/irm enable (plain TS)
+npx tsx scripts/lending/1_lend_setup.ts --all
+# Optional: NAV primary markets + mint test GTokens (Sepolia)
+forge script contracts/script/10_DeployPrimaryMarket.s.sol --rpc-url $SEPOLIA_RPC_URL --broadcast --legacy
+forge script contracts/script/4_MintGToken.s.sol --rpc-url $SEPOLIA_RPC_URL --broadcast --legacy
 ```
 
 ### Environment variables
@@ -198,7 +209,7 @@ scripts/              Operational TypeScript: gopass / lending / cross-chain-bri
 npm run dev          # app
 cd contracts
 forge build
-forge test -v        # ~40 tests including morpho + vaults
+forge test -v        # 46 tests including morpho + vaults
 ```
 
 Contributing: see [CONTRIBUTING.md](CONTRIBUTING.md). Security disclosures: [CONTRIBUTING.md#security-issue-notifications](CONTRIBUTING.md#security-issue-notifications).
