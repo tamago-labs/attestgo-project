@@ -38,6 +38,11 @@ export default function StepLock({ market, address, onLocked }: { market: DefiMa
 
   const lock = async () => {
     if (!signer || !address) return;
+    if (!valid) {
+      setErr(amt === 0n ? "Enter an amount to lock" : "Amount exceeds wallet balance");
+      setStage("error");
+      return;
+    }
     setErr(null);
     try {
       if (wrongChain) {
@@ -142,10 +147,8 @@ export default function StepLock({ market, address, onLocked }: { market: DefiMa
             </a>
           )}
         </div>
-      ) : !isConnected ? (
-        <div className="w-full py-2.5 rounded-lg border border-border text-muted text-sm text-center">Connect wallet to continue</div>
       ) : (
-        <button onClick={lock} disabled={!valid && !wrongChain || busy} className="w-full py-2.5 rounded-lg bg-violet-400 text-canvas text-sm font-semibold hover:bg-violet-300 disabled:opacity-40 inline-flex justify-center items-center gap-2">
+        <button onClick={lock} disabled={busy} className="w-full py-2.5 rounded-lg bg-violet-400 text-canvas text-sm font-semibold hover:bg-violet-300 disabled:opacity-60 inline-flex justify-center items-center gap-2">
           {busy && <Loader2 size={15} className="animate-spin" />} {busy && <Lock size={14} />} {label}
         </button>
       )}
