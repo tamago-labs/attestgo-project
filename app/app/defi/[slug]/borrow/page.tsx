@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
 import { useWallet } from "@/components/app/WalletContext";
 import StepLock from "@/components/app/defi/StepLock";
 import StepAttest from "@/components/app/defi/StepAttest";
@@ -83,13 +83,7 @@ export default function BorrowPage() {
       <div className="grid lg:grid-cols-2 gap-5 items-start">
         <div className="space-y-5">
           <StepLock market={market} address={address} onLocked={refreshAll} />
-          {recordsLoading ? (
-            <div className="border border-border rounded-xl bg-panel p-4 flex items-center gap-2 text-xs text-muted">
-              <Loader2 size={13} className="animate-spin" /> Loading your lock records…
-            </div>
-          ) : (
-            <StepAttest market={market} records={records} onAttested={refreshAll} />
-          )}
+          <StepAttest market={market} records={recordsLoading ? [] : records} onAttested={refreshAll} />
         </div>
         <div className="space-y-5">
           <StepBorrow market={market} marketData={marketData} userData={userData} onDone={refreshAll} />
