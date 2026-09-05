@@ -44,6 +44,7 @@ export default function Navbar() {
             </button>
             <div className="absolute right-0 top-full pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
               <div className="bg-panel border border-border rounded-xl p-2 min-w-[160px] shadow-xl space-y-0.5">
+                <a href="/demo-products" className="block px-3 py-2 rounded-lg text-sm text-white hover:bg-canvas transition-colors">Demo Products</a>
                 <a href="/docs" className="block px-3 py-2 rounded-lg text-sm text-white hover:bg-canvas transition-colors">API for Issuers</a>
                 <a href="https://github.com/tamago-labs/attestgo-project" target="_blank" rel="noopener" className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white hover:bg-canvas transition-colors">GitHub <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden><path d="M2 8L8 2M8 2H4M8 2V6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></a>
               </div>
@@ -77,6 +78,7 @@ export default function Navbar() {
             <a onClick={() => setOpen(false)} href="/app/defi" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">Earn</a>
             <a onClick={() => setOpen(false)} href="/app/discover" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">Discover</a>
             <div className="border-t border-border my-2 pt-2">
+              <a onClick={() => setOpen(false)} href="/demo-products" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">Demo Products</a>
               <a onClick={() => setOpen(false)} href="/docs" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">API for Issuers</a>
               <a onClick={() => setOpen(false)} href="https://github.com/tamago-labs/attestgo-project" target="_blank" rel="noopener" className="flex items-center min-h-[44px] px-3 rounded-lg text-sm text-white hover:bg-panel transition-colors">GitHub →</a>
             </div>

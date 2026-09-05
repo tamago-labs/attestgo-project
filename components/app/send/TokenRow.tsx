@@ -2,7 +2,7 @@
 
 import { ExternalLink, ChevronDown } from "lucide-react";
 import { getExplorerAddressUrl } from "@/lib/chains";
-import { bitmapToCountries, formatUnits, fmtUsd, shortAddr, type UnifiedRow } from "@/lib/send";
+import { bitmapToCountries, formatUnits, fmtUsd, type UnifiedRow } from "@/lib/send";
 import { DEFAULT_TOKENS } from "@/lib/defaultTokens";
 import TokenIcon from "./TokenIcon";
 
@@ -35,13 +35,8 @@ export default function TokenRow({
           <p className="font-medium text-white text-sm truncate">{row.name}</p>
           <p className="text-white/30 text-xs font-mono truncate flex items-center gap-1.5 flex-wrap">
             {balText}
-            {row.source !== "default" && (row.ruleMinTier !== undefined || row.ruleBitmap !== undefined || row.isWrapped !== undefined) && (
+            {row.source !== "default" && (row.ruleMinTier !== undefined || row.ruleBitmap !== undefined) && (
               <>
-                {row.isWrapped !== undefined && (
-                  <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] font-mono border ${row.isWrapped ? "bg-violet-500/10 border-violet-500/20 text-violet-300" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-300"}`}>
-                    {row.isWrapped ? `Wrapped · ${shortAddr(row.underlying || "")}` : "Native"}
-                  </span>
-                )}
                 {row.ruleMinTier !== undefined && <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-white/5 border border-white/10 text-white/60">Tier ≥{row.ruleMinTier}</span>}
                 {row.ruleBitmap !== undefined && <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-white/5 border border-white/10 text-white/60">{bitmapToCountries(row.ruleBitmap)}</span>}
               </>

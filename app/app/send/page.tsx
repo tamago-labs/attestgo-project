@@ -169,8 +169,19 @@ export default function SendPage() {
 
   const filtered = useMemo(() => {
     const base = filter === "all" ? unified : unified.filter((r) => r.chainId === filter);
-    return [...base].sort((a, b) => a.chainId - b.chainId || a.symbol.localeCompare(b.symbol));
-  }, [unified, filter]);
+    const val = (r: UnifiedRow) => {
+      const bal = balances[r.key];
+      if (bal === undefined) return -1;
+      const p = getPriceUsd(r.symbol, priceMap) ?? 0;
+      if (!p || bal === BigInt(0)) return 0;
+      try {
+        return Number(ethers.formatUnits(bal, r.decimals)) * p;
+      } catch {
+        return 0;
+      }
+    };
+    return [...base].sort((a, b) => val(b) - val(a) || a.symbol.localeCompare(b.symbol));
+  }, [unified, filter, balances, priceMap]);
 
   const fetchPrices = useCallback(async () => {
     try {
