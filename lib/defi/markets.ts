@@ -23,7 +23,7 @@ export const LOAN_TOKENS = {
     decimals: 18,
     isMock: true,
     name: "Mock ATC",
-    icon: "/attestcoin-icon.png",
+    icon: "/go-asset-logo.png",
   },
 } as const;
 
