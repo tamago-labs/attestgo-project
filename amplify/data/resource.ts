@@ -1,6 +1,7 @@
 import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
 import { mintPass } from "../functions/mintPass/resource";
 import { attestPass } from "../functions/attestPass/resource";
+import { attestLock } from "../functions/attestLock/resource";
 import { createGToken } from "../functions/createGToken/resource";
 import { manageIssuerProfile } from "../functions/manageIssuerProfile/resource";
 import { manageRWATokenProfile } from "../functions/manageRWATokenProfile/resource";
@@ -41,6 +42,31 @@ const schema = a.schema({
     })
     .authorization((allow) => [allow.publicApiKey().to(["read", "create", "update"])])
     .secondaryIndexes((index) => [index("userProfileId").queryField("byUserProfile")]),
+
+  LockRecord: a
+    .model({
+      ownerWallet: a.string().required(),
+      marketSlug: a.string().required(),
+      lockTxHash: a.string().required(),
+      blockNumber: a.integer().required(),
+      lockId: a.string().required(),
+      amount: a.string().required(),
+      nonce: a.integer().required(),
+      status: a.enum(["locked", "attesting", "attested", "failed"]),
+      attestTxHash: a.string(),
+    })
+    .authorization((allow) => [allow.publicApiKey().to(["read", "create", "update", "delete"])])
+    .secondaryIndexes((index) => [
+      index("ownerWallet").queryField("byOwnerWallet"),
+      index("lockId").queryField("byLockId"),
+    ]),
+
+  attestLock: a
+    .mutation()
+    .arguments({ lockTxHash: a.string().required(), marketSlug: a.string().required() })
+    .returns(a.json())
+    .handler(a.handler.function(attestLock))
+    .authorization((allow) => [allow.publicApiKey()]),
 
   AddressBookEntry: a
     .model({
@@ -243,7 +269,7 @@ const schema = a.schema({
     .returns(a.json())
     .handler(a.handler.function(sumsubGetApplicantStatus))
     .authorization((allow) => [allow.publicApiKey()]),
-}).authorization((allow) => [allow.resource(mintPass), allow.resource(attestPass), allow.resource(createGToken), allow.resource(manageIssuerProfile), allow.resource(manageRWATokenProfile), allow.resource(postAnnouncement), allow.resource(sumsubCreateApplicant), allow.resource(sumsubGetAccessToken), allow.resource(sumsubGetApplicantStatus), allow.resource(sumsubWebhook)]);
+}).authorization((allow) => [allow.resource(mintPass), allow.resource(attestPass), allow.resource(attestLock), allow.resource(createGToken), allow.resource(manageIssuerProfile), allow.resource(manageRWATokenProfile), allow.resource(postAnnouncement), allow.resource(sumsubCreateApplicant), allow.resource(sumsubGetAccessToken), allow.resource(sumsubGetApplicantStatus), allow.resource(sumsubWebhook)]);
 
 export type Schema = ClientSchema<typeof schema>;
 
