@@ -101,6 +101,8 @@ export default function StepAttest({ market, records, onAttested }: { market: De
           </div>
         </div>
       )}
+      {/* DEBUG: remove after fix */}
+      <div className="text-[10px] text-muted font-mono px-1">msg state: {msg ? JSON.stringify({ kind: msg.kind, text: msg.text?.slice(0, 60) }) : "null"} | busyTx: {busyTx ? "yes" : "no"}</div>
     </div>
   );
 }
