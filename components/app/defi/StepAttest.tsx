@@ -27,7 +27,7 @@ export default function StepAttest({ market, records, onAttested }: { market: De
         onAttested();
       } else if (res.status === "pending") {
         await updateLockStatus(rec.id, "locked");
-        setMsg({ tx: rec.lockTxHash, text: "Block not attested yet — Creditcoin attests every ~2 min. Try again shortly.", kind: "warn" });
+        setMsg({ tx: rec.lockTxHash, text: "Block not attested yet — try again in a few minutes.", kind: "warn" });
       } else {
         await updateLockStatus(rec.id, "locked");
         setMsg({ tx: rec.lockTxHash, text: `Unexpected status: ${res.status}`, kind: "warn" });
@@ -101,8 +101,6 @@ export default function StepAttest({ market, records, onAttested }: { market: De
           </div>
         </div>
       )}
-      {/* DEBUG: remove after fix */}
-      <div className="text-[10px] text-muted font-mono px-1">msg state: {msg ? JSON.stringify({ kind: msg.kind, text: msg.text?.slice(0, 60) }) : "null"} | busyTx: {busyTx ? "yes" : "no"}</div>
     </div>
   );
 }
