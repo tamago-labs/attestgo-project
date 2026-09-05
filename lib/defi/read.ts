@@ -49,7 +49,8 @@ export const ERC20_ABI = [
 ] as const;
 
 export const SOURCE_VAULT_ABI = [
-  "function lock(address,address,uint256,bytes32,uint64) external",
+  "function lock(address,address,uint256,bytes32,uint256) returns (bytes32)",
+  "function nonce() view returns (uint256)",
   "function available(address,address) view returns (uint256)",
   "function worker() view returns (address)",
 ] as const;
