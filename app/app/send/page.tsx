@@ -40,6 +40,7 @@ export default function SendPage() {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [faucetToken, setFaucetToken] = useState<DefaultToken | null>(null);
   const [sendRow, setSendRow] = useState<UnifiedRow | null>(null);
+  const [ownerId, setOwnerId] = useState<string | null>(null);
   const [balNonce, setBalNonce] = useState(0);
   const [priceMap, setPriceMap] = useState<Record<string, number>>({});
   const [identity, setIdentity] = useState<{ status: "verified" | "pending" | "unverified" | "idle"; tier?: number; country?: string }>({ status: "idle" });
@@ -57,6 +58,7 @@ export default function SendPage() {
           if (!cancelled) setIdentity({ status: "unverified" });
           return;
         }
+        if (!cancelled) setOwnerId(profile.id);
         const countryCode = (profile as unknown as { country?: string }).country || undefined;
         const client = getDataClient();
         let rows: { status: string }[] = [];
@@ -319,7 +321,7 @@ export default function SendPage() {
           <TokenList filtered={filtered} balances={balances} address={address} loadingRegistry={loadingRegistry} filter={filter} openMenu={openMenu} setOpenMenu={setOpenMenu} setFaucetToken={setFaucetToken} setSendRow={setSendRow} priceMap={priceMap} />
         </div>
       </div>
-      <SendDrawer open={!!sendRow} row={sendRow!} balance={sendRow ? balances[sendRow.key] : undefined} onClose={() => setSendRow(null)} onSend={() => { setSendRow(null); setBalNonce((n) => n + 1); }} priceMap={priceMap} />
+      <SendDrawer open={!!sendRow} row={sendRow!} balance={sendRow ? balances[sendRow.key] : undefined} onClose={() => setSendRow(null)} onSend={() => { setSendRow(null); setBalNonce((n) => n + 1); }} priceMap={priceMap} ownerId={ownerId} />
       <FaucetModal open={!!faucetToken} token={faucetToken} onClose={() => setFaucetToken(null)} onMinted={() => setBalNonce((n) => n + 1)} />
     </div>
   );

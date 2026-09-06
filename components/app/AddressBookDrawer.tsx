@@ -20,10 +20,12 @@ export default function AddressBookDrawer({
   open,
   onClose,
   ownerId,
+  onSelect,
 }: {
   open: boolean;
   onClose: () => void;
   ownerId: string | null;
+  onSelect?: (address: string) => void;
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -213,11 +215,11 @@ export default function AddressBookDrawer({
               <p className="text-xs text-white/30 mt-1">Add a wallet to see name and country if they have a GO Pass profile.</p>
             </div>
           ) : (
-            entries.map((e) => {
-              const r = resolved[e.contactAddress];
-              const name = r?.displayName || e.label || shortAddr(e.contactAddress);
-              return (
-                <div key={e.id} className="rounded-xl border border-border bg-panel px-3 py-3 flex items-center gap-3">
+             entries.map((e) => {
+               const r = resolved[e.contactAddress];
+               const name = r?.displayName || e.label || shortAddr(e.contactAddress);
+               return (
+                 <div key={e.id} className={`rounded-xl border border-border bg-panel px-3 py-3 flex items-center gap-3 ${onSelect ? "cursor-pointer hover:bg-white/[0.04]" : ""}`} onClick={() => onSelect?.(e.contactAddress)}>
                   <span className="h-8 w-8 rounded-full border border-white/10 shrink-0" style={{ background: avatarGradient(e.contactAddress) }} />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-white truncate">{name}</div>
