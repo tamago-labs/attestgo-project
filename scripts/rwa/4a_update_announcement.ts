@@ -5,7 +5,7 @@
  * Resolves issuer go_asset + listing via --token, finds existing feed post, updates it.
  */
 import 'dotenv/config';
-import { apiPut, apiGet, apiPost } from './lib/api';
+import { apiGet, apiPost } from './lib/api';
 
 function arg(k: string) { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : undefined; }
 
@@ -31,19 +31,9 @@ async function main() {
   const listing = tok ? (list.items || []).find((l: any) => l.tokenRecordId === tok.id || String(l.tokenRecordId).toLowerCase() === String(tok.id).toLowerCase()) : undefined;
   const tokenProfileId = listing?.id;
   if (!tokenProfileId) { console.error(`could not resolve listing for ${tokenKey}`); process.exit(1); }
-  // find existing feed post for this listing
-  const feed = await apiGet(`/feed?issuerProfileId=${issuerProfileId}&tokenProfileId=${tokenProfileId}`);
-  const existing = (feed.items || [])[0];
-  if (existing) {
-    console.log(`PUT /feed/${existing.id}...`);
-    const res = await apiPut(`/feed/${existing.id}`, { text, issuerProfileId, tokenProfileId });
-    console.log(JSON.stringify(res, null, 2));
-    console.log(`\nupdated announcement id=${res.id}`);
-  } else {
-    console.log(`POST /feed (no existing post found, creating new)...`);
-    const res = await apiPost('/feed', { issuerProfileId, tokenProfileId, text });
-    console.log(JSON.stringify(res, null, 2));
-    console.log(`\ncreated announcement id=${res.id}`);
-  }
+  console.log(`POST /feed issuer=${issuerProfileId} listing=${tokenProfileId}...`);
+  const res = await apiPost('/feed', { issuerProfileId, tokenProfileId, text });
+  console.log(JSON.stringify(res, null, 2));
+  console.log(`\nannouncement id=${res.id}`);
 }
 main().catch((e) => { console.error(e); process.exit(1); });

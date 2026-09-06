@@ -47,6 +47,7 @@ type FeedItem = {
   handle: string;
   logoURI?: string;
   time: string;
+  createdAt: string;
   text: string;
   tokenProfileId?: string;
   likes: number;
@@ -159,11 +160,12 @@ export default function DiscoverPage() {
             text: a.text,
             tokenProfileId: a.tokenProfileId || undefined,
             likes: a.likesCount || 0,
+            createdAt: a.createdAt,
             replies: ((replies as any[]) || []).map((r: any) => ({ author: r.authorWallet.slice(0, 6) + "…" + r.authorWallet.slice(-4), text: r.text, time: timeAgo(r.createdAt) })),
             verified: issuer.status === "verified",
           });
         }
-        feedList.sort((a, b) => b.likes - a.likes);
+        feedList.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
         setFeed(feedList);
       } catch (e) { console.error(e); }
       setLoading(false);
@@ -336,7 +338,7 @@ export default function DiscoverPage() {
                           )}
                           <div className="min-w-0">
                             <p className="text-sm font-medium text-white truncate">{offersById.get(f.tokenProfileId)!.productName}</p>
-                            <p className="text-white/40 text-xs font-mono">{offersById.get(f.tokenProfileId)!.symbol} · rule-verified</p>
+                            <p className="text-white/40 text-xs font-mono">{offersById.get(f.tokenProfileId)!.symbol} · Tier {offersById.get(f.tokenProfileId)!.ruleMinTier}+{offersById.get(f.tokenProfileId)!.countries.length > 0 ? ` · ${offersById.get(f.tokenProfileId)!.countries.join(", ")}` : ""}</p>
                           </div>
                         </div>
                         <p className="font-mono text-sm text-white shrink-0 ml-3">{offersById.get(f.tokenProfileId)!.tvl}</p>
@@ -384,7 +386,7 @@ export default function DiscoverPage() {
                         <span className="text-white/20 text-xs font-mono w-3 shrink-0">{i + 1}</span>
                         <span className="text-white truncate">{o.symbol}</span>
                       </span>
-                      <span className="text-white/25 text-xs font-mono shrink-0 ml-2">{o.tvl}</span>
+                      <span className="text-white/25 text-xs font-mono shrink-0 ml-2">{o.apy === "-" ? "—" : o.apy}</span>
                     </li>
                   ))}
                 </ol>
