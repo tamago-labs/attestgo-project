@@ -177,7 +177,7 @@ export default function DeFiPage() {
     fetchPriceMap().then(setPriceMap);
   }, []);
 
-  const filterLabel = "RWA Lending";
+  const filterLabel = "Lending";
 
   let totalSupplied = 0;
   let totalBorrowed = 0;
@@ -195,6 +195,7 @@ export default function DeFiPage() {
       loaded++;
     }
   }
+ 
 
   return (
     <div className="w-full">
@@ -206,7 +207,7 @@ export default function DeFiPage() {
           </button>
           {filterOpen && (
             <div className="absolute right-0 mt-2 w-40 rounded-lg border border-border bg-panel shadow-lg overflow-hidden z-20">
-              <button onClick={() => { setFilter("rwa"); setFilterOpen(false); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-white/[0.04] ${filter === "rwa" ? "text-white bg-white/[0.04]" : "text-muted"}`}>RWA Lending</button>
+              <button onClick={() => { setFilter("rwa"); setFilterOpen(false); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-white/[0.04] ${filter === "rwa" ? "text-white bg-white/[0.04]" : "text-muted"}`}>Lending</button>
             </div>
           )}
         </div>
@@ -217,8 +218,8 @@ export default function DeFiPage() {
           <div className="font-mono text-lg font-semibold text-white">{loaded === rows.length ? fmtUsd(totalSupplied) : "—"}</div>
         </div>
         <div className="bg-panel border border-border rounded-2xl px-5 py-4">
-          <div className="text-muted text-xs uppercase tracking-widest mb-1">TVL</div>
-          <div className="font-mono text-lg font-semibold text-white">{loaded === rows.length ? fmtUsd(totalSupplied - totalBorrowed) : "—"}</div>
+          <div className="text-muted text-xs uppercase tracking-widest mb-1">Total borrowed</div>
+          <div className="font-mono text-lg font-semibold text-white">{loaded === rows.length ? fmtUsd(totalBorrowed) : "—"}</div>
         </div>
         <div className="bg-panel border border-border rounded-2xl px-5 py-4">
           <div className="text-muted text-xs uppercase tracking-widest mb-1">Best APY</div>
