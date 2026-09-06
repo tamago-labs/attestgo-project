@@ -217,6 +217,25 @@ const schema = a.schema({
     .authorization((allow) => [allow.publicApiKey().to(["read", "create", "delete"])])
     .secondaryIndexes((index) => [index("announcementId").queryField("listByAnnouncement")]),
 
+  TravelRuleData: a
+    .model({
+      txHash: a.string().required(),
+      originatorWallet: a.string().required(),
+      originatorName: a.string().required(),
+      originatorCountry: a.string().required(),
+      beneficiaryWallet: a.string().required(),
+      beneficiaryName: a.string().required(),
+      beneficiaryInstitution: a.string(),
+      beneficiaryCountry: a.string().required(),
+      beneficiaryIsSelfHosted: a.boolean().required(),
+      amount: a.string().required(),
+      asset: a.string().required(),
+      status: a.enum(["pending", "verified", "flagged"]),
+      inboxItemId: a.id(),
+      inboxItem: a.belongsTo("InboxItem", "inboxItemId"),
+    })
+    .authorization((allow) => [allow.publicApiKey().to(["read", "create", "update", "delete"])]),
+
   InboxItem: a
     .model({
       type: a.enum(["send", "receive", "compliance", "kyc", "lending"]),
@@ -237,25 +256,6 @@ const schema = a.schema({
       index("recipientId").queryField("byRecipient"),
       index("senderId").queryField("bySender"),
     ]),
-
-  TravelRuleData: a
-    .model({
-      txHash: a.string().required(),
-      originatorWallet: a.string().required(),
-      originatorName: a.string().required(),
-      originatorCountry: a.string().required(),
-      beneficiaryWallet: a.string().required(),
-      beneficiaryName: a.string().required(),
-      beneficiaryInstitution: a.string(),
-      beneficiaryCountry: a.string().required(),
-      beneficiaryIsSelfHosted: a.boolean().required(),
-      amount: a.string().required(),
-      asset: a.string().required(),
-      status: a.enum(["pending", "verified", "flagged"]),
-      inboxItemId: a.id(),
-      inboxItem: a.belongsTo("InboxItem", "inboxItemId"),
-    })
-    .authorization((allow) => [allow.publicApiKey().to(["read", "create", "update", "delete"])]),
 
   createIssuerProfile: a
     .mutation()
