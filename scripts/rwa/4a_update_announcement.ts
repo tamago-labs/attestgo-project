@@ -1,10 +1,11 @@
 /**
  * 4a_update_announcement.ts — update an existing Discover feed announcement
- * Usage: npx tsx scripts/rwa/4a_update_announcement.ts --id <uuid> --token nikkei  (or --token tbill)
- *        npx tsx scripts/rwa/4a_update_announcement.ts --id <uuid> --text "..."
+ * Usage: npx tsx scripts/rwa/4a_update_announcement.ts --token nikkei  (or --token tbill)
+ *        npx tsx scripts/rwa/4a_update_announcement.ts --token nikkei --text "..."
+ * Resolves issuer go_asset + listing via --token, finds existing feed post, updates it.
  */
 import 'dotenv/config';
-import { apiPut, apiGet } from './lib/api';
+import { apiPut, apiGet, apiPost } from './lib/api';
 
 function arg(k: string) { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : undefined; }
 
@@ -14,22 +15,35 @@ const PRESETS: Record<string, string> = {
 };
 
 async function main() {
-  const id = (arg('--id') || '').trim();
   const tokenKey = (arg('--token') || '').trim().toLowerCase();
   const rawText = arg('--text');
-  if (!id) { console.error('need --id <uuid>'); process.exit(1); }
-  const text = (rawText || (tokenKey ? PRESETS[tokenKey] : '') || '').trim();
+  if (tokenKey !== 'nikkei' && tokenKey !== 'tbill') { console.error('need --token nikkei|tbill'); process.exit(1); }
+  const text = (rawText || PRESETS[tokenKey] || '').trim();
   if (!text) { console.error('need --text "..."  or  --token nikkei|tbill'); process.exit(1); }
-  // fetch existing to preserve issuerProfileId / tokenProfileId
-  let body: any = { text };
-  try {
-    const existing = await apiGet(`/feed/${id}`);
-    if (existing.issuerProfileId) body.issuerProfileId = existing.issuerProfileId;
-    if (existing.tokenProfileId) body.tokenProfileId = existing.tokenProfileId;
-  } catch { /* proceed with text-only */ }
-  console.log(`PUT /feed/${id}...`);
-  const res = await apiPut(`/feed/${id}`, body);
-  console.log(JSON.stringify(res, null, 2));
-  console.log(`\nupdated announcement id=${res.id}`);
+  // resolve issuer + listing
+  const iss = await apiGet(`/issuers?handle=go_asset`);
+  const issuerProfileId = iss.id || '';
+  const list = await apiGet(`/listings?issuerProfileId=${issuerProfileId}`);
+  const sym = tokenKey === 'nikkei' ? 'aN225' : 'aTBILL';
+  const owner = iss.ownerWallet;
+  const tokens = await apiGet(`/tokens?issuer=${owner}`);
+  const tok = (tokens.items || []).find((t: any) => String(t.symbol).toLowerCase() === sym.toLowerCase());
+  const listing = tok ? (list.items || []).find((l: any) => l.tokenRecordId === tok.id || String(l.tokenRecordId).toLowerCase() === String(tok.id).toLowerCase()) : undefined;
+  const tokenProfileId = listing?.id;
+  if (!tokenProfileId) { console.error(`could not resolve listing for ${tokenKey}`); process.exit(1); }
+  // find existing feed post for this listing
+  const feed = await apiGet(`/feed?issuerProfileId=${issuerProfileId}&tokenProfileId=${tokenProfileId}`);
+  const existing = (feed.items || [])[0];
+  if (existing) {
+    console.log(`PUT /feed/${existing.id}...`);
+    const res = await apiPut(`/feed/${existing.id}`, { text, issuerProfileId, tokenProfileId });
+    console.log(JSON.stringify(res, null, 2));
+    console.log(`\nupdated announcement id=${res.id}`);
+  } else {
+    console.log(`POST /feed (no existing post found, creating new)...`);
+    const res = await apiPost('/feed', { issuerProfileId, tokenProfileId, text });
+    console.log(JSON.stringify(res, null, 2));
+    console.log(`\ncreated announcement id=${res.id}`);
+  }
 }
 main().catch((e) => { console.error(e); process.exit(1); });
