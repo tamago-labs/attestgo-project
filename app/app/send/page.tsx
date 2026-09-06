@@ -10,6 +10,7 @@ import { getClient as getDataClient, listMyTokens, type TokenRegistryEntry } fro
 import FaucetModal from "@/components/app/FaucetModal";
 import SendSidebar from "@/components/app/send/SendSidebar";
 import TokenList from "@/components/app/send/TokenList";
+import SendDrawer from "@/components/app/send/SendDrawer";
 import { getPriceUsd, getRpcProvider, type TokenRecordLite, type UnifiedRow } from "@/lib/send";
 
 const ERC20_ABI = ["function balanceOf(address) view returns (uint256)"] as const;
@@ -38,6 +39,7 @@ export default function SendPage() {
   const [balancesLoading, setBalancesLoading] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [faucetToken, setFaucetToken] = useState<DefaultToken | null>(null);
+  const [sendRow, setSendRow] = useState<UnifiedRow | null>(null);
   const [balNonce, setBalNonce] = useState(0);
   const [priceMap, setPriceMap] = useState<Record<string, number>>({});
   const [identity, setIdentity] = useState<{ status: "verified" | "pending" | "unverified" | "idle"; tier?: number; country?: string }>({ status: "idle" });
@@ -314,9 +316,10 @@ export default function SendPage() {
       <div className="rounded-xl border border-border bg-panel overflow-hidden grid md:grid-cols-[260px_1fr] flex-1 min-h-0">
         <SendSidebar address={address} walletChainId={walletChainId} totalUsd={totalUsd} balancesLoading={balancesLoading} balancesCount={Object.keys(balances).length} filter={filter} setFilter={setFilter} alloc={alloc} onRefresh={() => setBalNonce((n) => n + 1)} identity={identity} />
         <div className="divide-y divide-border bg-canvas/30 overflow-y-auto min-h-0">
-          <TokenList filtered={filtered} balances={balances} address={address} loadingRegistry={loadingRegistry} filter={filter} openMenu={openMenu} setOpenMenu={setOpenMenu} setFaucetToken={setFaucetToken} priceMap={priceMap} />
+          <TokenList filtered={filtered} balances={balances} address={address} loadingRegistry={loadingRegistry} filter={filter} openMenu={openMenu} setOpenMenu={setOpenMenu} setFaucetToken={setFaucetToken} setSendRow={setSendRow} priceMap={priceMap} />
         </div>
       </div>
+      <SendDrawer open={!!sendRow} row={sendRow!} balance={sendRow ? balances[sendRow.key] : undefined} onClose={() => setSendRow(null)} onSend={() => { setSendRow(null); setBalNonce((n) => n + 1); }} priceMap={priceMap} />
       <FaucetModal open={!!faucetToken} token={faucetToken} onClose={() => setFaucetToken(null)} onMinted={() => setBalNonce((n) => n + 1)} />
     </div>
   );

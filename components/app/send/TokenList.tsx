@@ -14,6 +14,7 @@ export default function TokenList({
   openMenu,
   setOpenMenu,
   setFaucetToken,
+  setSendRow,
   priceMap,
 }: {
   filtered: UnifiedRow[];
@@ -24,6 +25,7 @@ export default function TokenList({
   openMenu: string | null;
   setOpenMenu: (k: string | null) => void;
   setFaucetToken: (t: DefaultToken | null) => void;
+  setSendRow: (r: UnifiedRow) => void;
   priceMap?: Record<string, number>;
 }) {
   if (loadingRegistry && filtered.length === 0) {
@@ -41,7 +43,7 @@ export default function TokenList({
       {filtered.map((r) => {
         const bal = balances[r.key];
         const loadingBal = !!address && bal === undefined;
-        return <TokenRow key={r.key} row={r} bal={bal} loadingBal={loadingBal} address={address} openMenu={openMenu} setOpenMenu={setOpenMenu} setFaucetToken={setFaucetToken} priceMap={priceMap} />;
+        return <TokenRow key={r.key} row={r} bal={bal} loadingBal={loadingBal} address={address} openMenu={openMenu} setOpenMenu={setOpenMenu} setFaucetToken={setFaucetToken} setSendRow={setSendRow} priceMap={priceMap} />;
       })}
     </>
   );

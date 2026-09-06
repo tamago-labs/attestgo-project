@@ -107,8 +107,8 @@ export default function Hero() {
           <span className="font-mono text-[11px] sm:text-xs uppercase tracking-widest text-amber">
             IDENTITY × RWA × COMPLIANCE
           </span>
-          <h1 className="mt-4 font-display font-semibold text-4xl sm:text-5xl lg:text-6xl leading-[1.05] tracking-tight">
-            AI Infrastructure for Compliant <span className="glow-text">Onchain Finance</span>
+          <h1 className="mt-4 font-display font-semibold text-4xl sm:text-5xl lg:text-6xl leading-[1.05] tracking-tight max-w-2xl">
+            Onchain Finance, Delivered to <span className="glow-text">Your Inbox</span>
           </h1> 
 
           <p className="mt-6 text-sm sm:text-lg text-muted max-w-2xl leading-relaxed">

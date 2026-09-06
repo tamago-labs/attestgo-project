@@ -20,7 +20,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "AttestGO — AI-Powered Infrastructure for Compliant Onchain Finance",
+    default: "AttestGO — AI Compliance Infrastructure for Onchain Finance",
     template: "%s | AttestGO — Powered by Attestcoin",
   },
   description:

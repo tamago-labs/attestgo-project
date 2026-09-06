@@ -86,7 +86,8 @@ export default function DiscoverPage() {
   const [adding, setAdding] = useState(false);
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [err, setErr] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"all" | "US" | "JP" | "SG">("all");
+  const [filter, setFilter] = useState<"all" | "foryou">("all");
+  const [userCountry, setUserCountry] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [openComments, setOpenComments] = useState<Set<string>>(new Set());
   const [liked, setLiked] = useState<Set<string>>(new Set());
@@ -98,7 +99,7 @@ export default function DiscoverPage() {
   useEffect(() => { setTab("overview"); }, [selected?.id]);
 
   useEffect(() => setMounted(true), []);
-  useEffect(() => { if (!address) { setOwnerId(null); return; } loadProfile(address).then((p) => setOwnerId((p as unknown as { id: string } | null)?.id || null)); }, [address]);
+  useEffect(() => { if (!address) { setOwnerId(null); setUserCountry(null); return; } loadProfile(address).then((p) => { setOwnerId((p as unknown as { id: string } | null)?.id || null); setUserCountry((p as unknown as { country?: string } | null)?.country || null); }); }, [address]);
   useEffect(() => { if (!ownerId) { setAddedIds(new Set()); return; } listMyTokens(ownerId).then((rows) => { const s = new Set<string>(); rows.forEach((r) => s.add(`${r.tokenAddress.toLowerCase()}:${r.chainId}`)); setAddedIds(s); }); }, [ownerId]);
 
   useEffect(() => {
@@ -194,9 +195,10 @@ export default function DiscoverPage() {
   const offersById = new Map(filteredOffers.map((o) => [o.id, o]));
   const filteredFeed = feed.filter((f) => {
     if (search) return `${f.issuer} ${f.handle} ${f.text}`.toLowerCase().includes(q);
-    if (filter !== "all") {
+    if (filter === "foryou") {
+      if (!userCountry) return false;
       const o = f.tokenProfileId ? filteredOffers.find((x) => x.id === f.tokenProfileId) : undefined;
-      if (!o || !o.countries.includes(filter)) return false;
+      if (!o || !o.countries.includes(userCountry)) return false;
     }
     return true;
   });
@@ -277,7 +279,7 @@ export default function DiscoverPage() {
     </AnimatePresence>
   ) : null;
 
-  const pills: { id: typeof filter; label: string }[] = [{ id: "all", label: "All Products" }, { id: "US", label: "Verified US" }, { id: "JP", label: "Verified JP" }, { id: "SG", label: "Verified SG" }];
+  const pills: { id: typeof filter; label: string }[] = [{ id: "all", label: "All products" }, { id: "foryou", label: "For you" }];
 
   return (
     <div className="w-full">

@@ -16,7 +16,7 @@ const rows = [
   },
   {
     eyebrow: "Compliant Asset Issuance",
-    title: "GO Assets: RWA + Self-Enforcing Rules",
+    title: "Issue RWAs with Rules Built In",
     subtitle:
       "AttestGO gives issuers the API to create, govern, and distribute digital representations of real-world value with identity-aware controls.",
     bullets: [
