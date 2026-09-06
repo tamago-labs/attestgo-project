@@ -24,6 +24,8 @@ const schema = a.schema({
       kycReviewAnswer: a.string(),
       kycRejectType: a.string(),
       request: a.hasOne("PassRequest", "userProfileId"),
+      sentInboxItems: a.hasMany("InboxItem", "senderId"),
+      receivedInboxItems: a.hasMany("InboxItem", "recipientId"),
       addressBook: a.hasMany("AddressBookEntry", "ownerId"),
       registry: a.hasMany("UserTokenRegistry", "userProfileId"),
     })
@@ -214,6 +216,46 @@ const schema = a.schema({
     })
     .authorization((allow) => [allow.publicApiKey().to(["read", "create", "delete"])])
     .secondaryIndexes((index) => [index("announcementId").queryField("listByAnnouncement")]),
+
+  InboxItem: a
+    .model({
+      type: a.enum(["send", "receive", "compliance", "kyc", "lending"]),
+      title: a.string().required(),
+      body: a.string().required(),
+      read: a.boolean().required(),
+      txHash: a.string(),
+      aiSummary: a.string(),
+      docs: a.string().array(),
+      senderId: a.id(),
+      sender: a.belongsTo("UserProfile", "senderId"),
+      recipientId: a.id().required(),
+      recipient: a.belongsTo("UserProfile", "recipientId"),
+      travelRuleData: a.hasMany("TravelRuleData", "inboxItemId"),
+    })
+    .authorization((allow) => [allow.publicApiKey().to(["read", "create", "update", "delete"])])
+    .secondaryIndexes((index) => [
+      index("recipientId").queryField("byRecipient"),
+      index("senderId").queryField("bySender"),
+    ]),
+
+  TravelRuleData: a
+    .model({
+      txHash: a.string().required(),
+      originatorWallet: a.string().required(),
+      originatorName: a.string().required(),
+      originatorCountry: a.string().required(),
+      beneficiaryWallet: a.string().required(),
+      beneficiaryName: a.string().required(),
+      beneficiaryInstitution: a.string(),
+      beneficiaryCountry: a.string().required(),
+      beneficiaryIsSelfHosted: a.boolean().required(),
+      amount: a.string().required(),
+      asset: a.string().required(),
+      status: a.enum(["pending", "verified", "flagged"]),
+      inboxItemId: a.id(),
+      inboxItem: a.belongsTo("InboxItem", "inboxItemId"),
+    })
+    .authorization((allow) => [allow.publicApiKey().to(["read", "create", "update", "delete"])]),
 
   createIssuerProfile: a
     .mutation()

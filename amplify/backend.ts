@@ -1,6 +1,7 @@
 import { defineBackend } from '@aws-amplify/backend';
 import { auth } from './auth/resource.js';
 import { data } from './data/resource.js';
+import { storage } from './storage/resource.js';
 import { mintPass } from './functions/mintPass/resource.js';
 import { attestPass } from './functions/attestPass/resource.js';
 import { attestLock } from './functions/attestLock/resource.js';
@@ -17,6 +18,7 @@ import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 const backend = defineBackend({
   auth,
   data,
+  storage,
   mintPass,
   attestPass,
   attestLock,
