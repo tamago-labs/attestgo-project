@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, CheckCircle2, ExternalLink, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, ExternalLink, Loader2, Undo2 } from "lucide-react";
 import { useWallet } from "@/components/app/WalletContext";
 import StepLock from "@/components/app/defi/StepLock";
 import StepAttest from "@/components/app/defi/StepAttest";
@@ -11,7 +11,7 @@ import StepBorrow from "@/components/app/defi/StepBorrow";
 import RepayUnlock from "@/components/app/defi/RepayUnlock";
 import PositionCard from "@/components/app/defi/PositionCard";
 import TokenIcon from "@/components/app/defi/TokenIcon";
-import { CREDITCOIN_CHAIN_ID, getMarketBySlug } from "@/lib/defi/markets";
+import { CREDITCOIN_CHAIN_ID, SEPOLIA_CHAIN_ID, getMarketBySlug } from "@/lib/defi/markets";
 import { useMarketData, useUserData } from "@/lib/defi/useDefiData";
 import { listLockRecords, type LockRecord } from "@/lib/defi/lockRecords";
 import { getChainById, getExplorerAddressUrl } from "@/lib/chains";
@@ -124,19 +124,40 @@ export default function BorrowPage() {
       ) : (
         <div className="grid lg:grid-cols-2 gap-5 items-start">
           <PositionCard market={market} marketData={marketData} userData={userData} hideButton />
-          <div className="border border-border rounded-xl bg-panel p-4 space-y-2.5">
-            <h3 className="text-sm font-semibold text-white">Market data</h3>
-            {marketData ? (
-              <>
-                <StatRow label="Total supplied" value={`${Number(formatUnits(marketData.state.totalSupplyAssets, market.loan.decimals)).toFixed(2)} ${market.loan.symbol}`} />
-                <StatRow label="Total borrowed" value={`${Number(formatUnits(marketData.state.totalBorrowAssets, market.loan.decimals)).toFixed(2)} ${market.loan.symbol}`} />
-                <StatRow label="Utilization" value={`${(marketData.utilization * 100).toFixed(1)}%`} />
-                <StatRow label="Market id" value={truncateAddress(marketData.marketId)} mono />
-                <StatRow label="CoreVault" value={truncateAddress("0x51062701163469d30a0c4331BB2FBab215d24434")} mono href={getExplorerAddressUrl(CREDITCOIN_CHAIN_ID, "0x51062701163469d30a0c4331BB2FBab215d24434")} />
-              </>
-            ) : (
-              <div className="flex items-center gap-2 text-xs text-muted py-2"><Loader2 size={13} className="animate-spin" /> Loading on-chain state…</div>
-            )}
+          <div className="space-y-5">
+            <div className="border border-border rounded-xl bg-panel p-4 space-y-3">
+              <h3 className="text-sm font-semibold text-white">How it works</h3>
+              <ul className="text-xs text-muted leading-relaxed space-y-1.5 list-disc pl-4">
+                <li>Deposit RWA to the SourceVault on Sepolia</li>
+                <li>Creditcoin attests the lock via block attestation</li>
+                <li>Borrow against proven collateral, repay anytime</li>
+              </ul>
+              <div className="flex items-center gap-2 pt-1">
+                <div className="flex items-center gap-1.5">
+                  <img src={market.collateral.icon} alt={market.collateral.symbol} width={18} height={18} className="rounded-lg" />
+                  <span className="text-[11px] font-mono text-white/70">{market.collateral.symbol}</span>
+                </div>
+                <Undo2 size={12} className="text-white/25" />
+                <div className="flex items-center gap-1.5">
+                  <img src={getChainById(CREDITCOIN_CHAIN_ID)!.icon} alt="Creditcoin" width={18} height={18} className="rounded-full" />
+                  <span className="text-[11px] font-mono text-white/70">Creditcoin</span>
+                </div>
+              </div>
+            </div>
+            <div className="border border-border rounded-xl bg-panel p-4 space-y-2.5">
+              <h3 className="text-sm font-semibold text-white">Market data</h3>
+              {marketData ? (
+                <>
+                  <StatRow label="Total supplied" value={`${Number(formatUnits(marketData.state.totalSupplyAssets, market.loan.decimals)).toFixed(2)} ${market.loan.symbol}`} />
+                  <StatRow label="Total borrowed" value={`${Number(formatUnits(marketData.state.totalBorrowAssets, market.loan.decimals)).toFixed(2)} ${market.loan.symbol}`} />
+                  <StatRow label="Utilization" value={`${(marketData.utilization * 100).toFixed(1)}%`} />
+                  <StatRow label="Market id" value={truncateAddress(marketData.marketId)} mono />
+                  <StatRow label="CoreVault" value={truncateAddress("0x51062701163469d30a0c4331BB2FBab215d24434")} mono href={getExplorerAddressUrl(CREDITCOIN_CHAIN_ID, "0x51062701163469d30a0c4331BB2FBab215d24434")} />
+                </>
+              ) : (
+                <div className="flex items-center gap-2 text-xs text-muted py-2"><Loader2 size={13} className="animate-spin" /> Loading on-chain state…</div>
+              )}
+            </div>
           </div>
         </div>
       )}
