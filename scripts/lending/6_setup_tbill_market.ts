@@ -42,15 +42,29 @@ async function main() {
 
   const collUsd = parseUnits('1.0', 18);
   const loanUsd = parseUnits('0.15', 18);
-  if (info.collUsd !== collUsd || info.lnUsd !== loanUsd) {
+  const targetPrice = (collUsd * (10n ** (18n + 36n - 18n))) / loanUsd;
+  const curPrice = info.morphoPrice as bigint;
+  const diff = curPrice > targetPrice ? curPrice - targetPrice : targetPrice - curPrice;
+  const pct = Number(diff * 10000n / targetPrice) / 100;
+  console.log(`  target price (1.0/0.15): ${targetPrice.toString()} (${(Number(targetPrice) / 1e36).toFixed(4)}e36)`);
+  console.log(`  deviation: ${pct.toFixed(2)}%`);
+  if (pct > 5) {
     console.log(`\n→ setPrice(collUsd=1.0, loanUsd=0.15)...`);
     const oracleW = new Contract(ORACLE, ORACLE_ABI, w);
-    const tx = await (oracleW as any).setPrice(collUsd, loanUsd);
-    await tx.wait();
-    const after = await (oracle as any).getPriceInfo();
-    console.log(`  new price()=${after.morphoPrice.toString()} (${(Number(after.morphoPrice) / 1e36).toFixed(4)}e36)`);
+    try {
+      const tx = await (oracleW as any).setPrice(collUsd, loanUsd);
+      await tx.wait();
+      const after = await (oracle as any).getPriceInfo();
+      console.log(`  new price()=${after.morphoPrice.toString()} (${(Number(after.morphoPrice) / 1e36).toFixed(4)}e36)`);
+    } catch (e: any) {
+      if (String(e.message).includes('f7d97577') || String(e.message).includes('f7d97577') || String(e.message).includes('TooFrequent') || String(e.data || '').includes('53f7a6ee')) {
+        console.log(`  setPrice locked (1h cooldown since deploy) — constructor price ${pct.toFixed(1)}% off target, using as-is`);
+      } else {
+        throw e;
+      }
+    }
   } else {
-    console.log('\nprice already correct, skipping setPrice');
+    console.log(`\nprice within ${pct.toFixed(1)}% of target, skipping setPrice`);
   }
 
   // create the new tbill market
