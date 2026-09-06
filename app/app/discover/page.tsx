@@ -85,7 +85,7 @@ export default function DiscoverPage() {
   const [adding, setAdding] = useState(false);
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [err, setErr] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"all" | "rwa" | "tbill" | "gold">("all");
+  const [filter, setFilter] = useState<"all" | "US" | "JP" | "SG">("all");
   const [search, setSearch] = useState("");
   const [openComments, setOpenComments] = useState<Set<string>>(new Set());
   const [liked, setLiked] = useState<Set<string>>(new Set());
@@ -194,7 +194,7 @@ export default function DiscoverPage() {
     if (search) return `${f.issuer} ${f.handle} ${f.text}`.toLowerCase().includes(q);
     if (filter !== "all") {
       const o = f.tokenProfileId ? filteredOffers.find((x) => x.id === f.tokenProfileId) : undefined;
-      if (!o) return false;
+      if (!o || !o.countries.includes(filter)) return false;
     }
     return true;
   });
@@ -275,13 +275,13 @@ export default function DiscoverPage() {
     </AnimatePresence>
   ) : null;
 
-  const pills: { id: typeof filter; label: string }[] = [{ id: "all", label: "For you" }, { id: "rwa", label: "RWA" }, { id: "tbill", label: "T-Bill" }, { id: "gold", label: "Gold" }];
+  const pills: { id: typeof filter; label: string }[] = [{ id: "all", label: "All Products" }, { id: "US", label: "Verified US" }, { id: "JP", label: "Verified JP" }, { id: "SG", label: "Verified SG" }];
 
   return (
     <div className="w-full">
       <div className="grid lg:grid-cols-[1fr_280px] gap-6 mb-3 items-center">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2"><span className="w-1 h-4 bg-amber rounded" /><span className="font-mono text-xs font-medium text-white">Discover</span></div>
+          <div className="flex items-center gap-2"><span className="w-1 h-4 bg-amber rounded" /><span className="font-mono text-xs font-medium text-white">Discover RWAs</span></div>
           <div className="relative">
             <button onClick={() => setFilterOpen((v) => !v)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-panel text-xs font-medium text-white hover:bg-white/[0.04]">
               {pills.find((p) => p.id === filter)?.label} <ChevronDown size={12} className={`transition-transform ${filterOpen ? "rotate-180" : ""}`} />

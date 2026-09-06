@@ -1,14 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ArrowRight, ChevronDown } from "lucide-react";
+import { getChainById } from "@/lib/chains";
 import { useWallet } from "@/components/app/WalletContext";
 import { MARKETS, type DefiMarket } from "@/lib/defi/markets";
 import { fmtPct, fmtUsd } from "@/lib/defi/format";
 import { useDefiMarkets, useUserData } from "@/lib/defi/useDefiData";
+import { fetchPriceMap } from "@/lib/defi/prices";
 import { formatUnits } from "ethers";
 
 const WAD = 10n ** 18n;
+
+function fmt2(v: string | null): string {
+  if (v === null) return "—";
+  const n = Number(v);
+  if (Number.isNaN(n)) return "—";
+  return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
 function TokenIcon({ src, symbol, size = 28 }: { src?: string; symbol: string; size?: number }) {
   const [err, setErr] = useState(false);
@@ -34,27 +44,33 @@ function TokenIcon({ src, symbol, size = 28 }: { src?: string; symbol: string; s
   );
 }
 
-function ListHeader({
-  accent,
-  title,
-  badge,
-  desc,
-}: {
-  accent: "amber" | "violet";
-  title: string;
-  badge: string;
-  desc: string;
-}) {
+function ListHeader({ accent, title, badge }: { accent: "amber" | "violet"; title: string; badge: string }) {
+  const color = accent === "violet" ? "bg-[#8B7CF0]" : "bg-amber";
+  const badgeColor = accent === "violet" ? "text-violet-300 bg-[#8B7CF0]/10" : "text-amber bg-amber/10";
+  const ccChain = getChainById(102031)!;
+  const sepChain = getChainById(11155111)!;
   return (
-    <div className="border border-border rounded-xl bg-panel p-5">
-      <div className="flex items-center justify-between mb-1">
+    <div className="pb-2 mb-3 border-b border-border">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="w-1 h-4 rounded" style={{ background: accent === "violet" ? "#8B7CF0" : "#FDB750" }} />
-          <h3 className="text-lg font-semibold text-white">{title}</h3>
+          <h3 className="relative text-base font-semibold text-white">
+            {title}
+            <span className={`absolute bottom-[-9px] left-0 h-0.5 w-10 ${color}`} />
+          </h3>
+          <div className="flex items-center gap-1 ml-1">
+            {accent === "amber" ? (
+              <img src={ccChain.icon} alt={ccChain.shortName} width={20} height={20} className="rounded-full" />
+            ) : (
+              <>
+                <img src={sepChain.icon} alt={sepChain.shortName} width={20} height={20} className="rounded-full" />
+                <ArrowRight size={10} className="text-white/25" />
+                <img src={ccChain.icon} alt={ccChain.shortName} width={20} height={20} className="rounded-full" />
+              </>
+            )}
+          </div>
         </div>
-        <span className={`text-xs font-mono ${accent === "violet" ? "text-violet-300" : "text-emerald-300"}`}>{badge}</span>
+        <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${badgeColor}`}>{badge}</span>
       </div>
-      <p className="text-muted text-sm">{desc}</p>
     </div>
   );
 }
@@ -87,13 +103,13 @@ function EarnRow({
           <div className="text-[10px] text-muted uppercase tracking-wide">APY</div>
         </div>
         <div className="text-right hidden sm:block">
-          <div className="font-mono text-sm text-white">{total ? `${total}` : "—"}</div>
+          <div className="font-mono text-sm text-white">{total ? fmt2(total) : "—"}</div>
           <div className="text-[10px] text-muted uppercase tracking-wide">supplied</div>
         </div>
         <div className="text-right w-16">
           {yours ? (
             <>
-              <div className="font-mono text-sm text-violet-300">{yours}</div>
+              <div className="font-mono text-sm text-violet-300">{fmt2(yours)}</div>
               <div className="text-[10px] text-muted uppercase tracking-wide">yours</div>
             </>
           ) : (
@@ -112,12 +128,11 @@ function BorrowRow({
   isConnected,
 }: {
   market: DefiMarket;
-  data: { borrowApy: number; collateralPriceUsd: number } | null;
+  data: { borrowApy: number; collateralPriceUsd: number; utilization: number } | null;
   address: string | null;
   isConnected: boolean;
 }) {
   const { data: user } = useUserData(market, isConnected ? address : null);
-  const ltvPct = Number((market.lltv * 100n) / WAD);
   const borrowable = user && user.borrowableAssets > 0n ? formatUnits(user.borrowableAssets, market.loan.decimals) : null;
 
   return (
@@ -129,8 +144,8 @@ function BorrowRow({
           <div className="text-xs text-muted truncate">{market.collateral.name}</div>
         </div>
         <div className="text-right">
-          <div className="font-mono text-sm text-white">{ltvPct}%</div>
-          <div className="text-[10px] text-muted uppercase tracking-wide">LTV</div>
+          <div className="font-mono text-sm text-white">{data ? fmtPct(data.utilization, 1) : "—"}</div>
+          <div className="text-[10px] text-muted uppercase tracking-wide">Util</div>
         </div>
         <div className="text-right hidden sm:block">
           <div className="font-mono text-sm text-white">{data ? `${fmtPct(data.borrowApy)}` : "—"}</div>
@@ -139,7 +154,7 @@ function BorrowRow({
         <div className="text-right w-16">
           {borrowable ? (
             <>
-              <div className="font-mono text-sm text-amber">{borrowable}</div>
+              <div className="font-mono text-sm text-amber">{fmt2(borrowable)}</div>
               <div className="text-[10px] text-muted uppercase tracking-wide">borrowable</div>
             </>
           ) : (
@@ -154,32 +169,60 @@ function BorrowRow({
 export default function DeFiPage() {
   const { address, isConnected } = useWallet();
   const { rows, error } = useDefiMarkets(MARKETS);
+  const [priceMap, setPriceMap] = useState<Record<string, number>>({});
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filter, setFilter] = useState<"rwa" | "tbill" | "nikkei">("rwa");
+
+  useEffect(() => {
+    fetchPriceMap().then(setPriceMap);
+  }, []);
+
+  const filterLabel = "RWA Lending";
 
   let totalSupplied = 0;
   let totalBorrowed = 0;
+  let bestApy = 0;
   let loaded = 0;
   for (const r of rows) {
     if (r.data) {
-      totalSupplied += Number(formatUnits(r.data.state.totalSupplyAssets, r.market.loan.decimals));
-      totalBorrowed += Number(formatUnits(r.data.state.totalBorrowAssets, r.market.loan.decimals));
+      const loanSym = r.market.loan.symbol;
+      const price = priceMap[loanSym] ?? 0;
+      const supplied = Number(formatUnits(r.data.state.totalSupplyAssets, r.market.loan.decimals));
+      const borrowed = Number(formatUnits(r.data.state.totalBorrowAssets, r.market.loan.decimals));
+      totalSupplied += supplied * price;
+      totalBorrowed += borrowed * price;
+      if (r.data.supplyApy > bestApy) bestApy = r.data.supplyApy;
       loaded++;
     }
   }
 
   return (
     <div className="w-full">
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2"><span className="w-1 h-4 bg-amber rounded" /><span className="font-mono text-xs font-medium text-white">DeFi for Pass Holders</span></div>
+        <div className="relative">
+          <button onClick={() => setFilterOpen((v) => !v)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-panel text-xs font-medium text-white hover:bg-white/[0.04]">
+            {filterLabel} <ChevronDown size={12} className={`transition-transform ${filterOpen ? "rotate-180" : ""}`} />
+          </button>
+          {filterOpen && (
+            <div className="absolute right-0 mt-2 w-40 rounded-lg border border-border bg-panel shadow-lg overflow-hidden z-20">
+              <button onClick={() => { setFilter("rwa"); setFilterOpen(false); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-white/[0.04] ${filter === "rwa" ? "text-white bg-white/[0.04]" : "text-muted"}`}>RWA Lending</button>
+            </div>
+          )}
+        </div>
+      </div>
       <div className="grid sm:grid-cols-3 gap-4 mb-5">
         <div className="bg-panel border border-border rounded-2xl px-5 py-4">
           <div className="text-muted text-xs uppercase tracking-widest mb-1">Total supplied</div>
           <div className="font-mono text-lg font-semibold text-white">{loaded === rows.length ? fmtUsd(totalSupplied) : "—"}</div>
         </div>
         <div className="bg-panel border border-border rounded-2xl px-5 py-4">
-          <div className="text-muted text-xs uppercase tracking-widest mb-1">Total borrowed</div>
-          <div className="font-mono text-lg font-semibold text-white">{loaded === rows.length ? fmtUsd(totalBorrowed) : "—"}</div>
+          <div className="text-muted text-xs uppercase tracking-widest mb-1">TVL</div>
+          <div className="font-mono text-lg font-semibold text-white">{loaded === rows.length ? fmtUsd(totalSupplied - totalBorrowed) : "—"}</div>
         </div>
         <div className="bg-panel border border-border rounded-2xl px-5 py-4">
-          <div className="text-muted text-xs uppercase tracking-widest mb-1">Markets</div>
-          <div className="font-mono text-lg font-semibold text-white">{MARKETS.length}</div>
+          <div className="text-muted text-xs uppercase tracking-widest mb-1">Best APY</div>
+          <div className="font-mono text-lg font-semibold text-white">{loaded === rows.length ? fmtPct(bestApy) : "—"}</div>
         </div>
       </div>
 
@@ -196,7 +239,6 @@ export default function DeFiPage() {
             accent="amber"
             title="Earn"
             badge="earn yield on Creditcoin"
-            desc="Supply liquidity to RWA-backed markets and earn passive yield."
           />
           <div className="border border-border rounded-xl divide-y divide-border overflow-hidden bg-panel">
             {rows.map((r) => (
@@ -217,14 +259,13 @@ export default function DeFiPage() {
             accent="violet"
             title="Borrow"
             badge="lock on Sepolia · borrow on Creditcoin"
-            desc="Lend across chains with Attestcoin — RWA stays where it is."
           />
           <div className="border border-border rounded-xl divide-y divide-border overflow-hidden bg-panel">
             {rows.map((r) => (
               <BorrowRow
                 key={`borrow-${r.market.slug}`}
                 market={r.market}
-                data={r.data ? { borrowApy: r.data.borrowApy, collateralPriceUsd: r.data.collateralPriceUsd } : null}
+                data={r.data ? { borrowApy: r.data.borrowApy, collateralPriceUsd: r.data.collateralPriceUsd, utilization: r.data.utilization } : null}
                 address={address}
                 isConnected={isConnected}
               />

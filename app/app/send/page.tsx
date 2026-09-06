@@ -199,7 +199,7 @@ export default function SendPage() {
   const priceDelay = useMemo(() => {
     if (!address || unified.length === 0) return null;
     if (!hasPriceValue) return 5000;
-    return 30000;
+    return 60000;
   }, [address, unified.length, hasPriceValue]);
   useInterval(fetchPrices, priceDelay);
   useEffect(() => {
