@@ -114,7 +114,7 @@ export default function StepLock({ market, address, onLocked }: { market: DefiMa
         <span className="ml-auto text-[11px] text-muted font-mono">{balance !== null ? `${formatUnits(balance, 18)} ${market.collateral.symbol}` : "—"}</span>
       </div>
       <p className="text-[11px] text-muted">
-        Your {market.collateral.symbol} stays in the vault on Sepolia. Creditcoin verifies the lock via block attestation — nothing moves cross-chain.
+        Your {market.collateral.symbol} stays on Sepolia. Creditcoin's attestation proves your lock — no bridges, no wrapping.
       </p>
 
       <div className="rounded-lg bg-canvas border border-border p-3 space-y-2">

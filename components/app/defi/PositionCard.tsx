@@ -6,7 +6,7 @@ import { formatUnits } from "ethers";
 import type { DefiMarket } from "@/lib/defi/markets";
 import type { MarketData, UserData } from "@/lib/defi/read";
 
-export default function PositionCard({ market, marketData, userData }: { market: DefiMarket; marketData: MarketData | null; userData: UserData | null }) {
+export default function PositionCard({ market, marketData, userData, hideButton }: { market: DefiMarket; marketData: MarketData | null; userData: UserData | null; hideButton?: boolean }) {
   const dec = market.loan.decimals;
   const fmt = (v: string) => Number(v).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const supplied = userData ? fmt(formatUnits(userData.suppliedAssets, dec)) : "—";
@@ -68,13 +68,15 @@ export default function PositionCard({ market, marketData, userData }: { market:
         </div>
       )}
 
-      <Link
-        href={collateral ? `/app/defi/${market.slug}/borrow` : `/app/defi/${market.slug}/borrow`}
-        className="w-full py-2.5 rounded-lg bg-violet-400/15 border border-violet-400/30 text-violet-200 text-sm font-medium hover:bg-violet-400/25 inline-flex justify-center items-center gap-2 group"
-      >
-        {collateral ? "Manage borrow" : "Borrow with locked RWA"}
-        <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-      </Link>
+      {!hideButton && (
+        <Link
+          href={collateral ? `/app/defi/${market.slug}/borrow` : `/app/defi/${market.slug}/borrow`}
+          className="w-full py-2.5 rounded-lg bg-violet-400/15 border border-violet-400/30 text-violet-200 text-sm font-medium hover:bg-violet-400/25 inline-flex justify-center items-center gap-2 group"
+        >
+          {collateral ? "Manage borrow" : "Borrow with locked RWA"}
+          <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+        </Link>
+      )}
     </div>
   );
 }

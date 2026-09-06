@@ -127,7 +127,7 @@ export default function StepBorrow({ market, marketData, userData, onDone }: { m
       )}
 
       <p className="text-[11px] text-muted">
-        {needsAuth ? "One-time: authorize CoreVault to borrow on your behalf (Morpho authorization)." : "CoreVault borrows on your behalf — your collateral is proven, never moved."}
+        {needsAuth ? "One-time: authorize CoreVault to borrow on your behalf (Morpho authorization)." : "Borrow against proven collateral. Your assets never move."}
       </p>
     </div>
   );
