@@ -8,10 +8,11 @@ import type { MarketData, UserData } from "@/lib/defi/read";
 
 export default function PositionCard({ market, marketData, userData }: { market: DefiMarket; marketData: MarketData | null; userData: UserData | null }) {
   const dec = market.loan.decimals;
-  const supplied = userData ? formatUnits(userData.suppliedAssets, dec) : "—";
-  const collateral = userData && userData.collateral > 0n ? formatUnits(userData.collateral, 18) : null;
-  const borrowed = userData && userData.borrowedAssets > 0n ? formatUnits(userData.borrowedAssets, dec) : null;
-  const borrowable = userData ? formatUnits(userData.borrowableAssets, dec) : "—";
+  const fmt = (v: string) => Number(v).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const supplied = userData ? fmt(formatUnits(userData.suppliedAssets, dec)) : "—";
+  const collateral = userData && userData.collateral > 0n ? fmt(formatUnits(userData.collateral, 18)) : null;
+  const borrowed = userData && userData.borrowedAssets > 0n ? fmt(formatUnits(userData.borrowedAssets, dec)) : null;
+  const borrowable = userData ? fmt(formatUnits(userData.borrowableAssets, dec)) : "—";
   const ratio = userData?.borrowLimitRatio ?? 0;
   const risk = ratio >= 0.9 ? "high" : ratio >= 0.7 ? "elevated" : "safe";
 

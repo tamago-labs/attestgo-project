@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, ChevronDown } from "lucide-react";
 import { getChainById } from "@/lib/chains";
 import { useWallet } from "@/components/app/WalletContext";
+import TokenIcon from "@/components/app/defi/TokenIcon";
 import { MARKETS, type DefiMarket } from "@/lib/defi/markets";
 import { fmtPct, fmtUsd } from "@/lib/defi/format";
 import { useDefiMarkets, useUserData } from "@/lib/defi/useDefiData";
@@ -20,56 +21,28 @@ function fmt2(v: string | null): string {
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function TokenIcon({ src, symbol, size = 28 }: { src?: string; symbol: string; size?: number }) {
-  const [err, setErr] = useState(false);
-  if (src && !err) {
-    return (
-      <img
-        src={src}
-        alt={symbol}
-        width={size}
-        height={size}
-        onError={() => setErr(true)}
-        className="rounded-lg object-cover shrink-0"
-      />
-    );
-  }
-  return (
-    <div
-      style={{ width: size, height: size }}
-      className="rounded-lg bg-white/[0.06] flex items-center justify-center text-[10px] font-mono text-white/60 shrink-0"
-    >
-      {symbol.slice(0, 4)}
-    </div>
-  );
-}
-
-function ListHeader({ accent, title, badge }: { accent: "amber" | "violet"; title: string; badge: string }) {
+function ListHeader({ accent, title }: { accent: "amber" | "violet"; title: string }) {
   const color = accent === "violet" ? "bg-[#8B7CF0]" : "bg-amber";
-  const badgeColor = accent === "violet" ? "text-violet-300 bg-[#8B7CF0]/10" : "text-amber bg-amber/10";
   const ccChain = getChainById(102031)!;
   const sepChain = getChainById(11155111)!;
   return (
     <div className="pb-2 mb-3 border-b border-border">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h3 className="relative text-base font-semibold text-white">
-            {title}
-            <span className={`absolute bottom-[-9px] left-0 h-0.5 w-10 ${color}`} />
-          </h3>
-          <div className="flex items-center gap-1 ml-1">
-            {accent === "amber" ? (
+        <h3 className="relative text-base font-semibold text-white">
+          {title}
+          <span className={`absolute bottom-[-9px] left-0 h-0.5 w-10 ${color}`} />
+        </h3>
+        <div className="flex items-center gap-1">
+          {accent === "amber" ? (
+            <img src={ccChain.icon} alt={ccChain.shortName} width={20} height={20} className="rounded-full" />
+          ) : (
+            <>
+              <img src={sepChain.icon} alt={sepChain.shortName} width={20} height={20} className="rounded-full" />
+              <ArrowRight size={10} className="text-white" />
               <img src={ccChain.icon} alt={ccChain.shortName} width={20} height={20} className="rounded-full" />
-            ) : (
-              <>
-                <img src={sepChain.icon} alt={sepChain.shortName} width={20} height={20} className="rounded-full" />
-                <ArrowRight size={10} className="text-white/25" />
-                <img src={ccChain.icon} alt={ccChain.shortName} width={20} height={20} className="rounded-full" />
-              </>
-            )}
-          </div>
+            </>
+          )}
         </div>
-        <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${badgeColor}`}>{badge}</span>
       </div>
     </div>
   );
@@ -186,7 +159,7 @@ export default function DeFiPage() {
   for (const r of rows) {
     if (r.data) {
       const loanSym = r.market.loan.symbol;
-      const price = priceMap[loanSym] ?? 0;
+      const price = Object.entries(priceMap).find(([k]) => k.toLowerCase() === loanSym.toLowerCase())?.[1] ?? 0;
       const supplied = Number(formatUnits(r.data.state.totalSupplyAssets, r.market.loan.decimals));
       const borrowed = Number(formatUnits(r.data.state.totalBorrowAssets, r.market.loan.decimals));
       totalSupplied += supplied * price;
@@ -236,11 +209,7 @@ export default function DeFiPage() {
       <div className="grid md:grid-cols-2 gap-6">
         {/* Earn */}
         <div className="space-y-3">
-          <ListHeader
-            accent="amber"
-            title="Earn"
-            badge="earn yield on Creditcoin"
-          />
+          <ListHeader accent="amber" title="Earn" />
           <div className="border border-border rounded-xl divide-y divide-border overflow-hidden bg-panel">
             {rows.map((r) => (
               <EarnRow
@@ -256,11 +225,7 @@ export default function DeFiPage() {
 
         {/* Borrow — RWA collateral */}
         <div className="space-y-3">
-          <ListHeader
-            accent="violet"
-            title="Borrow"
-            badge="lock on Sepolia · borrow on Creditcoin"
-          />
+          <ListHeader accent="violet" title="Borrow" />
           <div className="border border-border rounded-xl divide-y divide-border overflow-hidden bg-panel">
             {rows.map((r) => (
               <BorrowRow

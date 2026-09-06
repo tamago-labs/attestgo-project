@@ -92,7 +92,6 @@ export default function SupplyPanel({ market, marketData, userData, onDone }: { 
       <div className="grid grid-cols-2 border-b border-border">
         {(["deposit", "withdraw"] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`py-3 text-sm font-medium inline-flex items-center justify-center gap-1.5 transition-colors ${tab === t ? "text-white bg-white/[0.04] border-b-2 border-amber -mb-px" : "text-muted hover:text-white"}`}>
-            {t === "deposit" ? <Lock size={13} /> : <Unlock size={13} />}
             {t === "deposit" ? "Deposit" : "Withdraw"}
           </button>
         ))}
@@ -101,11 +100,6 @@ export default function SupplyPanel({ market, marketData, userData, onDone }: { 
       <div className="p-4 space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted">{tab === "deposit" ? "Supply" : "Withdraw"} {market.loan.symbol}</span>
-          {market.loan.isMock && tab === "deposit" && (
-            <button onClick={() => setFaucetOpen(true)} className="text-[11px] text-amber hover:text-white inline-flex items-center gap-1">
-              <Droplets size={11} /> Faucet
-            </button>
-          )}
         </div>
 
         <div className="rounded-lg bg-canvas border border-border p-3 space-y-2">
@@ -159,7 +153,7 @@ export default function SupplyPanel({ market, marketData, userData, onDone }: { 
 
         <p className="text-[11px] text-muted">
           {tab === "deposit"
-            ? `Funds are supplied to the ${market.name} market on Creditcoin and start earning immediately.`
+             ? `Funds are supplied to the ${market.name} market and start earning immediately.`
             : "Withdrawals are instant while the market has available liquidity."}
         </p>
       </div>
