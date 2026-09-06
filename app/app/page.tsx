@@ -137,9 +137,9 @@ export default function InboxPage() {
                     </span>
                   </div>
                   <h3 className="font-display font-semibold text-xl sm:text-2xl leading-tight tracking-tight text-white">
-                    The First AI Command Center
+                   AI-Powered Infrastructure
                     <br />
-                    for <span className="glow-text">Onchain Finance</span>
+                    for Compliant <span className="glow-text">Onchain Finance</span>
                   </h3>
                   <p className="mt-3 text-sm text-muted max-w-xs mx-auto leading-relaxed">AI simplifies every compliance workflow</p>
                   <div className="mt-5 flex items-center justify-center gap-2 text-xs font-mono text-white/60 flex-wrap">

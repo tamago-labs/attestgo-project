@@ -1,8 +1,8 @@
 const stats = [
-  { value: "<400ms", label: "Proof attach time" },
-  { value: "IVMS101", label: "Data standard" },
+  { value: "FATF R.16", label: "Travel Rule compatible" },
+  { value: "Zero-threshold", label: "Applies to any transfer amount" },
+  { value: "Auto-attach", label: "Originator from GO Pass identity" },
   { value: "Hash-only", label: "On-chain footprint" },
-  { value: "3 layers", label: "Independently swappable" },
 ];
 
 export default function Stats() {
