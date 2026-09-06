@@ -94,7 +94,7 @@ function mk(
 
 export const MARKETS: DefiMarket[] = [
   mk("nikkei", "GO-NIKKEI", "Nikkei 225 RWA · JP", LOAN_TOKENS.CUSDT, SOURCE_TOKENS.AN225, process.env.NEXT_PUBLIC_ORACLE_AN225 || "0x4865dc0C4A3B11CF6FB57Dec180577f4824bB082"),
-  mk("tbill", "GO-TBILL", "USD T-Bill RWA · US, SG", LOAN_TOKENS.ATC, SOURCE_TOKENS.ATBILL, process.env.NEXT_PUBLIC_ORACLE_ATBILL || "0xc1D218017533dA1F61ba28125bcCcEC0FB3874B2"),
+  mk("tbill", "GO-TBILL", "USD T-Bill RWA · US, SG", LOAN_TOKENS.ATC, SOURCE_TOKENS.ATBILL, process.env.NEXT_PUBLIC_ORACLE_ATBILL || "0xC78D2b542Ef075c0753332ab2aA63b8C3f3793cd"),
 ];
 
 export function getMarketBySlug(slug: string): DefiMarket | undefined {
