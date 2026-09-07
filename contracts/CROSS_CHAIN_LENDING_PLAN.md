@@ -40,12 +40,17 @@ Market = one supply token (USDC_CC) + one collateral token (GToken mirror, ident
 
 ## Worker Scripts (`scripts/lending/`)
 - `1_lend_setup.ts` — deploy checks, setSourceTokenMapping, createMarket, fund/supply USDC.
-- `2_lend_e2e.ts` — `lock` on Sepolia → ProofBuilder proof (reuse `3_worker_sync.ts:86-113`) → verify tx content off-chain → `verifyAndSupplyCollateral` → `borrow` → `repay` → `requestUnlock`.
-- `3_worker_unlock.ts` — trusted worker (adapted from `8_worker_vault.ts:77-155` poll loop): poll `UnlockRequested` on CC → call `SourceVault.unlock(recipient, token, amount)` on Sepolia. Handles both borrower unlocks and liquidation payouts.
-- Liquidation demo: unhealthy position → anyone `liquidate` on CC → `onRemoteSeized` credits claims → liquidator `requestLiquidationPayout` → worker unlocks real RWA on Sepolia to liquidator.
+- `2a_supply_liquidity.ts` — supplier: approve + supply USDC into a market.
+- `2b_lock_collateral.ts` — borrower: lock RWA on Sepolia (records lockId).
+- `2c_prove_and_borrow.ts` — submit proof (SDK `txBytes` verbatim) → collateral credited → borrow (`--borrow-only` skips proof).
+- `2d_repay_and_unlock.ts` — repay + `requestUnlock` (worker settles on Sepolia).
+- `3_worker_unlock.ts` — trusted worker: poll `UnlockRequested` on CC → call `SourceVault.unlock(recipient, token, amount)` on Sepolia. Handles both borrower unlocks and liquidation payouts.
+- `probe_proof.ts` / `probe2_txbytes.ts` — proof-format diagnostics (Attestcoin precompile ABI-blob format).
+- `4_check_borrow_power.ts` — check borrow power for a given position.
+- `5_fix_tbill_oracle.ts` / `6_setup_tbill_market.ts` — TBill market oracle setup.
 
 ## Files to Create
-`src/Morpho.sol` (vendored + 4 patches) · `src/SourceVault.sol` · `src/CoreVault.sol` · `src/irm/JumpRateIrm.sol` + `src/PriceOracle.sol` (promoted from kilolend-v2) · `script/{5_DeployMorpho,6_DeployOracle,7_DeployIrm,8_DeployCoreVault,9_DeploySourceVault}.s.sol` · `test/CrossChainLending.t.sol` — 13 tests: lock escrow + nonce, verifySupply credits remote position, replay reverts, supply USDC, borrow healthy/unhealthy, repay + requestUnlock, worker unlock FIFO, liquidate credits claims (no token transfer), onlyWorkerOrOwner/onlyMorpho reverts, pause semantics, access control · `scripts/lending/{1_lend_setup,2_lend_e2e,3_worker_unlock}.ts`.
+`src/Morpho.sol` (vendored + 4 patches) · `src/SourceVault.sol` · `src/CoreVault.sol` · `src/irm/JumpRateIrm.sol` + `src/PriceOracle.sol` (promoted from kilolend-v2) · `script/{5_DeployMorpho,6_DeployOracle,7_DeployIrm,8_DeployCoreVault,9_DeploySourceVault}.s.sol` · `test/CrossChainLending.t.sol` · `scripts/lending/{1_lend_setup,2a_supply_liquidity,2b_lock_collateral,2c_prove_and_borrow,2d_repay_and_unlock,3_worker_unlock,probe_proof,probe2_txbytes}.ts`.
 
 ## Deploy Order (scripts are granular + idempotent; unset ADDR env = deploy, set = reuse)
 1. CC `5_DeployMorpho` — Morpho core (owner = deployer).
