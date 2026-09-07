@@ -24,6 +24,7 @@ export const MORPHO_ABI = [
   `function idToMarketParams(bytes32) view returns (${TUP})`,
   `function position(bytes32,address) view returns (${POS_TUP})`,
   "function isAuthorized(address,address) view returns (bool)",
+  "function setAuthorization(address,bool) returns (bool)",
 ] as const;
 
 export const CORE_ABI = [

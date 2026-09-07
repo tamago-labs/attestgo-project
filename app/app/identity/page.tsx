@@ -329,13 +329,7 @@ export default function IdentityPage() {
                   <span className="text-sm text-white">Expires</span>
                   <span className="text-sm text-muted">{expiryLabel || verifiedUntil}</span>
                 </div>
-                <button
-                  onClick={() => setAttestNote((v) => (v ? null : "Support coming soon — placeholder"))}
-                  className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/[0.03] transition-colors text-left"
-                >
-                  <span className="text-sm text-white">Help</span>
-                  <span className="text-white/25">›</span>
-                </button>
+
               </div>
               {attestNote && <p className="text-xs text-muted px-1">{attestNote}</p>}
             </>
