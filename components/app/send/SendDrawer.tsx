@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Contract, parseUnits, type Signer } from "ethers";
 import { uploadData } from "aws-amplify/storage";
 import { formatUnits, chainName, type UnifiedRow } from "@/lib/send";
-import { buildEmailSubject, buildEmailBody, CAUSES, type CauseId } from "@/lib/send/emailTemplates";
+import { buildEmailSubject, DEFAULT_TEMPLATES, fillTemplate, CAUSES, type CauseId } from "@/lib/send/emailTemplates";
 import { truncateAddr } from "@/lib/send/constants";
 import TokenIcon from "./TokenIcon";
 import AddressBookDrawer from "@/components/app/AddressBookDrawer";
@@ -145,14 +145,29 @@ export default function SendDrawer({
       const senderName = ownerProfile?.displayName || (walletAddress ? truncateAddr(walletAddress) : "Unknown");
       const recipientName = beneName || truncateAddr(recipient);
       const subject = buildEmailSubject(cause, row.symbol, amount);
-      const emailBody = buildEmailBody({
-        cause,
-        customNote: customNote || undefined,
+
+      // Fetch user template or use default
+      let template = DEFAULT_TEMPLATES[cause];
+      try {
+        if (ownerId) {
+          const tplRes = await fetch(`/api/templates?userProfileId=${ownerId}`);
+          if (tplRes.ok) {
+            const tplData = await tplRes.json();
+            const found = (tplData.templates || []).find((t: { cause: string }) => t.cause === cause);
+            if (found) template = found.template;
+          }
+        }
+      } catch {}
+
+      const emailBody = fillTemplate(template, {
         senderName,
+        senderAddress: walletAddress ? truncateAddr(walletAddress) : "",
         recipientName,
+        recipientAddress: truncateAddr(recipient),
         amount,
         asset: row.symbol,
-        hasDoc: !!uploadedPath,
+        cause: CAUSES.find((c) => c.id === cause)?.label || cause,
+        txHash: tx.hash,
       });
 
       const res = await fetch("/api/send", {

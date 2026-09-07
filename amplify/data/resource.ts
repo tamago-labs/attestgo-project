@@ -257,6 +257,17 @@ const schema = a.schema({
       index("senderId").queryField("bySender"),
     ]),
 
+  EmailTemplate: a
+    .model({
+      userProfileId: a.string().required(),
+      cause: a.enum(["gift", "payment", "investment", "loan", "other"]),
+      template: a.string().required(),
+    })
+    .authorization((allow) => [allow.publicApiKey().to(["read", "create", "update", "delete"])])
+    .secondaryIndexes((index) => [
+      index("userProfileId").queryField("byUserProfile"),
+    ]),
+
   createIssuerProfile: a
     .mutation()
     .arguments({ issuerName: a.string().required(), handle: a.string().required(), website: a.string(), description: a.string(), logoURI: a.string(), ownerWallet: a.string().required() })

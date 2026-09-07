@@ -65,3 +65,44 @@ export function buildEmailBody(params: {
 
   return `${greeting}\n\n${body}\n\n${closing}`;
 }
+
+export const DEFAULT_TEMPLATES: Record<CauseId, string> = {
+  gift: `Hi {{recipientName}},
+
+{{senderName}} sent you {{amount}} {{asset}} as a gift.
+
+Best,
+AttestGO Protocol`,
+  payment: `Hi {{recipientName}},
+
+{{senderName}} sent you {{amount}} {{asset}} as a payment.
+
+Best,
+AttestGO Protocol`,
+  investment: `Hi {{recipientName}},
+
+{{senderName}} transferred {{amount}} {{asset}} as an investment.
+
+Best,
+AttestGO Protocol`,
+  loan: `Hi {{recipientName}},
+
+{{senderName}} sent {{amount}} {{asset}} as a loan repayment.
+
+Best,
+AttestGO Protocol`,
+  other: `Hi {{recipientName}},
+
+{{senderName}} sent you {{amount}} {{asset}}.
+
+Best,
+AttestGO Protocol`,
+};
+
+export function fillTemplate(template: string, vars: Record<string, string>): string {
+  let result = template;
+  for (const [key, value] of Object.entries(vars)) {
+    result = result.replaceAll(`{{${key}}}`, value);
+  }
+  return result;
+}

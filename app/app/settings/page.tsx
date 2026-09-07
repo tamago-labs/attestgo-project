@@ -8,6 +8,7 @@ import EditProfileModal from "@/components/app/EditProfileModal";
 import AddressBookDrawer from "@/components/app/AddressBookDrawer";
 import TokenRegistryDrawer from "@/components/app/TokenRegistryDrawer";
 import KYCStatusModal from "@/components/app/KYCStatusModal";
+import EmailTemplateEditor from "@/components/app/settings/EmailTemplateEditor";
 
 function shortAddr(a: string) {
   return a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "—";
@@ -137,6 +138,9 @@ export default function SettingsPage() {
               <span className="text-white/25">›</span>
             </button>
           </div>
+
+          {/* email templates */}
+          <EmailTemplateEditor userProfileId={(profile as unknown as { id: string } | null)?.id || null} />
         </>
       ) : (
         <div className="rounded-xl border border-dashed border-white/15 bg-panel/40 p-6 text-center">
