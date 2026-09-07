@@ -1,100 +1,173 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
+import { getUrl } from "aws-amplify/storage";
 import { useWallet } from "@/components/app/WalletContext";
+import { loadProfile } from "@/lib/userProfile";
+import { getClient } from "@/lib/tokenRegistry";
+import { truncateAddr } from "@/lib/send/constants";
+import type { Schema } from "@/amplify/data/resource";
 
-type Msg = {
-  title: string;
-  time: string;
-  preview: string;
-  body: string;
-  tags: { label: string; cls: string }[];
-  unread: boolean;
-};
+type InboxItem = NonNullable<Schema["InboxItem"]["type"]>;
 
-const msgs: Msg[] = [
-  {
-    title: "Signature verified",
-    time: "2m",
-    preview: "Sumsub confirmed your identity check. GO Pass upgraded to Tier 10.",
-    body: "Sumsub confirmed your identity check. Your GO Pass has been upgraded to Tier 10, unlocking transfers and borrowing against restricted assets such as USD T-Bill in the US and SG.",
-    tags: [
-      { label: "Tier 10", cls: "bg-emerald-500/10 border-emerald-500/20 text-emerald-300" },
-      { label: "Sumsub", cls: "bg-white/5 border-white/10 text-white/60" },
-    ],
-    unread: true,
-  },
-  {
-    title: "Transfer blocked",
-    time: "1h",
-    preview: "8,000 GO-TBILL send to 0x4E2…9c1 rejected — recipient not verified for US, SG.",
-    body: "8,000 GO-TBILL send to 0x4E2…9c1 rejected — recipient not verified for US, SG. The recipient needs a GO Pass with Tier 10 and US eligibility before you can send this restricted asset.",
-    tags: [
-      { label: "US, SG", cls: "bg-amber-500/10 border-amber-500/20 text-amber-300" },
-      { label: "Blocked", cls: "bg-red-500/10 border-red-500/20 text-red-300" },
-    ],
-    unread: true,
-  },
-  {
-    title: "Attestation issued",
-    time: "3h",
-    preview: "New proof anchored on Creditcoin for wallet 0x971F…a64e.",
-    body: "New proof anchored on Creditcoin for wallet 0x971F…a64e via Attestcoin Protocol. Your GO Pass is now verifiable on any chain in ~1 block with Merkle + continuity proof.",
-    tags: [
-      { label: "Creditcoin", cls: "bg-violet-500/10 border-violet-500/20 text-violet-300" },
-      { label: "Attestcoin", cls: "bg-white/5 border-white/10 text-white/60" },
-    ],
-    unread: true,
-  },
-  {
-    title: "Rule updated",
-    time: "Yesterday",
-    preview: "USD T-Bill min_tier raised from 5 to 10.",
-    body: "USD T-Bill rule updated: min_tier raised from 5 to 10. Holders below Tier 10 can no longer receive this asset. Your Tier 10 remains eligible.",
-    tags: [
-      { label: "min_tier 10", cls: "bg-white/5 border-white/10 text-white/60" },
-      { label: "GO-TBILL", cls: "bg-white/5 border-white/10 text-white/60" },
-    ],
-    unread: false,
-  },
-];
+function smartTime(iso?: string | null): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "now";
+  if (diffMin < 60) return `${diffMin}m`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24 && d.getDate() === now.getDate()) return `${diffHr}h`;
+  return d.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+function DownloadLink({ path }: { path: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { url } = await getUrl({ path });
+        if (!cancelled) setUrl(url.toString());
+      } catch {
+        // fallback to path name
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [path]);
+
+  const fileName = path.split("/").pop() || path;
+
+  if (loading) {
+    return <span className="text-xs text-muted">Loading…</span>;
+  }
+
+  return (
+    <a
+      href={url || "#"}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-2 text-xs text-amber hover:text-white"
+    >
+      <span className="truncate">{fileName}</span>
+      <ArrowUpRight size={10} />
+    </a>
+  );
+}
 
 export default function InboxPage() {
-  const { isConnected } = useWallet();
+  const { isConnected, address } = useWallet();
+  const [items, setItems] = useState<InboxItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(0);
-  const active = msgs[selected];
+
+  useEffect(() => {
+    let cancelled = false;
+    async function run() {
+      if (!address) {
+        setLoading(false);
+        return;
+      }
+      const p = await loadProfile(address);
+      if (!p) {
+        if (!cancelled) setLoading(false);
+        return;
+      }
+      try {
+        const client = getClient();
+        const res = await (client.models.InboxItem as unknown as {
+          byRecipient: (a: { recipientId: string }) => Promise<{ data: InboxItem[] }>;
+        }).byRecipient({ recipientId: p.id });
+        const sorted = (res.data || []).sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+        if (!cancelled) setItems(sorted);
+      } catch {
+        if (!cancelled) setItems([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    run();
+    return () => { cancelled = true; };
+  }, [address]);
+
+  const markRead = async (id: string) => {
+    try {
+      const client = getClient();
+      await client.models.InboxItem.update({ id, read: true });
+      setItems((prev) => prev.map((it) => (it.id === id ? { ...it, read: true } : it)));
+    } catch {}
+  };
+
+  const active = items[selected];
+  const unreadCount = items.filter((it) => !it.read).length;
+
+function smartTime(iso?: string | null): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "now";
+  if (diffMin < 60) return `${diffMin}m`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24 && d.getDate() === now.getDate()) return `${diffHr}h`;
+  return d.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+  const TYPE_TAGS: Record<string, string> = {
+    send: "bg-amber-500/10 border-amber-500/20 text-amber-300",
+    receive: "bg-emerald-500/10 border-emerald-500/20 text-emerald-300",
+    compliance: "bg-red-500/10 border-red-500/20 text-red-300",
+    kyc: "bg-violet-500/10 border-violet-500/20 text-violet-300",
+    lending: "bg-blue-500/10 border-blue-500/20 text-blue-300",
+  };
 
   return (
     <div className="w-full h-[calc(100vh-7rem)] flex flex-col">
       <div className="rounded-xl border border-border overflow-hidden grid md:grid-cols-[320px_1fr] flex-1 min-h-0 bg-panel">
-        {/* left — unread list l1 inside l3 shell */}
+        {/* left — inbox list */}
         <div className="border-b md:border-b-0 md:border-r border-border flex flex-col min-h-0">
           <div className="px-5 py-4 border-b border-border flex items-center justify-between bg-panel">
             <div className="flex items-center gap-2">
               <span className="w-1 h-4 bg-amber rounded" />
               <h3 className="font-medium text-white text-sm">Inbox</h3>
             </div>
-            <span className="text-white/30 text-xs font-mono">{isConnected ? "3 new" : "—"}</span>
+            <span className="text-white/30 text-xs font-mono">{isConnected && unreadCount > 0 ? `${unreadCount} new` : "—"}</span>
           </div>
           <div className="divide-y divide-border overflow-y-auto min-h-0 flex-1">
-            {isConnected ? (
-              msgs.map((m, i) => (
+            {isConnected && items.length > 0 ? (
+              items.map((m, i) => (
                 <button
-                  key={m.title}
-                  onClick={() => setSelected(i)}
-                  className={`w-full text-left flex items-start gap-3 px-5 py-4 hover:bg-white/[0.03] transition-colors ${i === selected ? "bg-white/[0.04]" : ""} ${!m.unread ? "opacity-60" : ""}`}
+                  key={m.id}
+                  onClick={() => { setSelected(i); if (!m.read) markRead(m.id); }}
+                  className={`w-full text-left flex items-start gap-3 px-5 py-4 hover:bg-white/[0.03] transition-colors ${i === selected ? "bg-white/[0.04]" : ""} ${!m.read ? "bg-amber/[0.03]" : "opacity-60"}`}
                 >
-                  <span className={`w-2 h-2 rounded-full mt-2 shrink-0 ${m.unread ? "bg-amber-400" : "bg-border"}`} />
+                  <span className={`w-2 h-2 rounded-full mt-2 shrink-0 ${m.read ? "bg-border" : "bg-amber"}`} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <p className="font-medium text-sm text-white truncate">{m.title}</p>
-                      <span className="text-white/30 text-xs font-mono shrink-0 ml-2">{m.time}</span>
+                      <span className="text-white/30 text-xs font-mono shrink-0 ml-2">{smartTime(m.createdAt)}</span>
                     </div>
-                    <p className="text-muted text-sm mt-0.5 truncate">{m.preview}</p>
+                    <p className="text-muted text-sm mt-0.5 truncate">{m.body.split("\n")[0]}</p>
                   </div>
                 </button>
               ))
+            ) : isConnected && !loading ? (
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                <p className="text-sm text-white font-medium">No notifications yet</p>
+                <p className="text-xs text-white/30 mt-1">Transfer updates will appear here</p>
+              </div>
+            ) : isConnected && loading ? (
+              <div className="flex-1 flex items-center justify-center p-8">
+                <span className="text-xs text-muted">Loading…</span>
+              </div>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
                 <p className="text-sm text-white font-medium">Welcome to your inbox</p>
@@ -107,20 +180,38 @@ export default function InboxPage() {
           </div>
         </div>
 
-        {/* right — preview l3 */}
+        {/* right — preview */}
         <div className="p-8 bg-canvas/30 overflow-y-auto min-h-0 flex flex-col">
-          {isConnected ? (
+          {isConnected && active ? (
             <>
-              <p className="text-white/30 text-xs font-mono mb-2">TODAY · 09:41</p>
+              <p className="text-white/30 text-xs font-mono mb-2">TODAY · {active.createdAt ? new Date(active.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}</p>
               <h3 className="text-xl font-semibold text-white mb-4">{active.title}</h3>
-              <p className="text-muted text-sm leading-relaxed max-w-md">{active.body}</p>
-              <div className="mt-6 flex flex-wrap gap-2">
-                {active.tags.map((t) => (
-                  <span key={t.label} className={`px-2.5 py-1 rounded-full text-xs font-mono border ${t.cls}`}>
-                    {t.label}
-                  </span>
-                ))}
+              <p className="text-muted text-sm leading-relaxed max-w-md whitespace-pre-wrap">{active.body}</p>
+              <div className="mt-6 flex flex-wrap items-center gap-2">
+                {active.txHash && (
+                  <span className="text-[10px] uppercase tracking-widest text-muted">Tx</span>
+                )}
+                {active.txHash && (
+                  <a
+                    href={`https://sepolia.etherscan.io/tx/${active.txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2.5 py-1 rounded-full text-xs font-mono border bg-white/5 border-white/10 text-amber inline-flex items-center gap-1"
+                  >
+                    {truncateAddr(active.txHash)} <ArrowUpRight size={10} />
+                  </a>
+                )}
               </div>
+
+              {/* Documents */}
+              {active.docs && active.docs.length > 0 && (
+                <div className="mt-6 space-y-1.5">
+                  <p className="text-[10px] uppercase tracking-widest text-muted">Documents</p>
+                  {active.docs.filter(Boolean).map((doc, i) => (
+                    <DownloadLink key={i} path={doc!} />
+                  ))}
+                </div>
+              )}
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center">
