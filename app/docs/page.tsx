@@ -3,7 +3,7 @@ import CodeBlock from "@/components/docs/CodeBlock";
 const BASE = "https://9aozj1j64j.execute-api.ap-southeast-1.amazonaws.com/prod";
 const FACTORY = "0x7843c062939FCBfA150c962a4214d2e14714A820";
 const GOPASS = "0x0a6aD3b8B8D1A69Ba44002983e64e4824cB63334";
-const REGISTRY = "0x6354C59497Ba87F1c05b5B56C7c45283187BD09E";
+const REGISTRY = "0x317BeB1889C65AC1e6661d0D7307de861dA0db8d";
 const MIRROR = "0xcB70ed13F8390e6e0d63B7664c3444C8E5C3DAd2";
 const MORPHO = "0xb5884B232978011E1CD59e3dcb29213DcEEb46b5";
 

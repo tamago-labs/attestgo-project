@@ -16,7 +16,7 @@ const GOPASS_ABI = [
 ] as const;
 
 const REGISTRY_ABI = [
-  "function syncPassWithTxProof(address wallet, tuple(uint8 tier,uint8 subTier,bytes2 group,bytes2 subGroup,uint256 countryBitmap,uint64 expiry,bool frozen,bool active,bytes32 customerIdHash,string kycSource) r, uint64 headerNumber, bytes txBytes, bytes32 merkleRoot, bytes32[] siblings, bytes32 lowerDigest, bytes32[] roots) external",
+  "function syncPassWithTxProof(address wallet, tuple(uint8 tier,uint8 subTier,bytes2 group,bytes2 subGroup,uint256 countryBitmap,uint64 expiry,bool frozen,bool active,bytes32 customerIdHash,string kycSource) r, uint64 headerNumber, bytes txBytes, bytes32 merkleRoot, tuple(bytes32 hash,bool isLeft)[] siblings, bytes32 lowerDigest, bytes32[] roots) external",
 ] as const;
 
 export const handler: Schema["attestPass"]["functionHandler"] = async (event) => {
@@ -82,7 +82,7 @@ export const handler: Schema["attestPass"]["functionHandler"] = async (event) =>
     d.headerNumber,
     d.txBytes,
     d.merkleProof.root,
-    d.merkleProof.siblings.map((s: any) => s.hash ?? s),
+    d.merkleProof.siblings.map((s: any) => ({ hash: s.hash ?? s, isLeft: s.isLeft ?? false })),
     d.continuityProof.lowerEndpointDigest,
     d.continuityProof.roots
   );

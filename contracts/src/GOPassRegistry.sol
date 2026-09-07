@@ -7,16 +7,32 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
  * GOPassRegistry — Attestcoin Smart Contract on Creditcoin (102031) for the Sepolia GOPass hub
  * (11155111, chainKey 1).
  * Sepolia GOPass mints pending (active=false); this registry verifies the mint tx inclusion via
- * 0x0FD2 `verifySingle` (trustless), then decodes the verified encodedTransaction on-chain
+ * 0x0FD2 `verifyAndEmit` (trustless), then decodes the verified encodedTransaction on-chain
  * (Attestcoin Phase 4: `PassMinted` log emitted by GOPASS_ADDR with
  * recordHash == keccak256(abi.encode(r))) before storing the record. Single source of truth on
  * Creditcoin; the worker then calls Sepolia GOPass.setActive(true) to activate. No privileged
  * worker needed for the trustless sync path.
  */
-interface IBlockProver {
-    // Creditcoin CC3 precompile 0x0FD2 — view verify. Exact signature varies by network fork;
-    // keep as low-level staticcall fallback for A path. Worker B skips this.
-    function verifyStorageProof(bytes calldata proof) external view returns (bool);
+interface INativeQueryVerifier {
+    struct MerkleProofEntry {
+        bytes32 hash;
+        bool isLeft;
+    }
+    struct MerkleProof {
+        bytes32 root;
+        MerkleProofEntry[] siblings;
+    }
+    struct ContinuityProof {
+        bytes32 lowerEndpointDigest;
+        bytes32[] roots;
+    }
+    function verifyAndEmit(
+        uint64 chainKey,
+        uint64 height,
+        bytes calldata encodedTransaction,
+        MerkleProof calldata merkleProof,
+        ContinuityProof calldata continuityProof
+    ) external returns (bool);
 }
 
 contract GOPassRegistry is Ownable {
@@ -49,7 +65,7 @@ contract GOPassRegistry is Ownable {
     address public immutable GOPASS_ADDR; // on Sepolia (the hub whose txs are proven)
     uint64 public immutable SOURCE_CHAIN_KEY; // chainKey of the source chain for 0x0FD2 (1 = Sepolia)
     uint64 public cacheTTL = 24 hours;
-    address public constant BLOCK_PROVER = address(0x0FD2);
+    INativeQueryVerifier public constant VERIFIER = INativeQueryVerifier(address(0x0FD2));
     address public worker; // trusted fallback path only (syncPass); see below
 
     /// @notice keccak256("PassMinted(address,uint256,bytes32,uint64)")
@@ -89,7 +105,7 @@ contract GOPassRegistry is Ownable {
         bytes32 expected = keccak256(abi.encode(r));
         require(proof.length > 0, "proof empty");
         if (block.chainid != 31337) {
-            (bool ok,) = BLOCK_PROVER.staticcall(proof);
+            (bool ok,) = address(0x0FD2).staticcall(proof);
             require(ok, "proof verify failed");
         }
         cached[wallet] = r;
@@ -99,7 +115,7 @@ contract GOPassRegistry is Ownable {
     }
 
     // Real tx-inclusion path (available now on CC3 102031): prove the GOPass mint tx via ProofBuilder +
-    // 0x0FD2 verifySingle, then decode the verified encodedTransaction on-chain (Attestcoin Phase 4):
+    // 0x0FD2 verifyAndEmit, then decode the verified encodedTransaction on-chain (Attestcoin Phase 4):
     // receipt status must be success and the PassMinted log emitted by GOPASS_ADDR must carry the
     // record hash of the submitted record. Anyone can call — the record fields are cryptographically
     // bound to the proven tx, no privileged worker needed.
@@ -109,7 +125,7 @@ contract GOPassRegistry is Ownable {
         uint64 headerNumber,
         bytes calldata txBytes,
         bytes32 merkleRoot,
-        bytes32[] calldata siblings,
+        INativeQueryVerifier.MerkleProofEntry[] calldata siblings,
         bytes32 lowerDigest,
         bytes32[] calldata roots
     ) external {
@@ -117,21 +133,11 @@ contract GOPassRegistry is Ownable {
         require(r.expiry > block.timestamp, "expiry past");
         bytes32 expected = keccak256(abi.encode(r));
         if (block.chainid != 31337) {
-            // call PrecompileBlockProver.verifySingle(chainKey, headerNumber, txBytes, merkleRoot, siblings, lowerDigest, roots)
-            bytes memory callData = abi.encodeWithSignature(
-                "verifySingle(uint64,uint64,bytes,bytes32,bytes32[],bytes32,bytes32[])",
-                SOURCE_CHAIN_KEY,
-                headerNumber,
-                txBytes,
-                merkleRoot,
-                siblings,
-                lowerDigest,
-                roots
-            );
-            (bool ok, bytes memory ret) = BLOCK_PROVER.staticcall(callData);
-            require(ok && abi.decode(ret, (bool)), "tx proof verify failed");
+            INativeQueryVerifier.MerkleProof memory merkleProof = INativeQueryVerifier.MerkleProof({root: merkleRoot, siblings: siblings});
+            INativeQueryVerifier.ContinuityProof memory continuityProof = INativeQueryVerifier.ContinuityProof({lowerEndpointDigest: lowerDigest, roots: roots});
+            bool verified = VERIFIER.verifyAndEmit(SOURCE_CHAIN_KEY, headerNumber, txBytes, merkleProof, continuityProof);
+            require(verified, "tx proof verify failed");
         }
-        // Phase 4: decode verified tx bytes — binds the record to the real mint tx (status + event).
         _decodePassMinted(txBytes, wallet, expected, r.expiry);
         cached[wallet] = r;
         verifiedUntil[wallet] = uint64(block.timestamp) + cacheTTL;

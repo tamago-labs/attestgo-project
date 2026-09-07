@@ -6,9 +6,9 @@ export default function Cta() {
         <h2 className="font-display font-semibold text-3xl sm:text-4xl lg:text-5xl leading-tight tracking-tight">
           Onchain Finance,
           <br />
-          <span className="glow-text">Compliance-Ready</span>
+          <span className="glow-text">Simplifies with AI</span>
         </h2>
-        <p className="mt-5 text-sm sm:text-base text-muted max-w-lg mx-auto leading-relaxed">
+        <p className="mt-5 text-sm sm:text-base text-muted max-w-xl mx-auto leading-relaxed">
           Connect identity, assets and payments with Travel Rule data attached by default. AI generates the documents, you keep the experience simple.
         </p>
         <div className="mt-7 sm:mt-9 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-center gap-3 sm:gap-4">

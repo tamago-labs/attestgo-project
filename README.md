@@ -61,7 +61,7 @@ gives an [Attestcoin Smart Contract (ASC)](https://docs.attestcoin.org/attestcoi
 AttestGO uses this in two ways:
 
 - **Identity**: the GO Pass hub mints on Sepolia (chainKey 1); `GOPassRegistry` on Creditcoin
-  verifies the mint tx via `verifySingle` and decodes the `PassMinted` log on-chain before
+  verifies the mint tx via `verifyAndEmit` and decodes the `PassMinted` log on-chain before
   trusting the record. One pass works everywhere via worker-synced mirrors.
 - **Cross-chain lending**: RWA collateral is locked in `SourceVault` on Sepolia; `CoreVault`
   verifies the lock tx via `0x0FD2` and credits the borrower's position on a Morpho-based market
@@ -156,7 +156,7 @@ forge script contracts/script/4_MintGToken.s.sol --rpc-url $SEPOLIA_RPC_URL --br
 
 | Contract | Address |
 |---|---|
-| GOPassRegistry | [`0x6354C594...BD09E`](https://creditcoin-testnet.blockscout.com/address/0x6354C59497Ba87F1c05b5B56C7c45283187BD09E) |
+| GOPassRegistry | [`0x317BeB18...db8d`](https://creditcoin-testnet.blockscout.com/address/0x317BeB1889C65AC1e6661d0D7307de861dA0db8d) |
 | Morpho | [`0x10FbF147...E67D`](https://creditcoin-testnet.blockscout.com/address/0x10FbF147BfaC591c1756C67b1eAfeaEB11b3E67D) |
 | Mock ATC | [`0x3f0e699A...9DA6a`](https://creditcoin-testnet.blockscout.com/address/0x3f0e699Ad6F14324c93A23Cd57aef60Ffa09DA6a) |
 | Mock CUSDT | [`0x60f6456F...5F8E`](https://creditcoin-testnet.blockscout.com/address/0x60f6456FBE5566e515E63219fC9c0dbb80015F8E) |

@@ -4,12 +4,7 @@
  * Env: CREDITCOIN_RPC_URL, SEPOLIA_RPC_URL, GOPASS_ADDR, VERIFIER_ADDR, PRIVATE_KEY, PROOF_BUILDER_URL
  */
 
-// PS C:\projects\attestgo-project> npx tsx scripts/gopass/2_mint.ts --to 0xB045bbB51f3CE266A506f332EDBDe176C9862Ff3 --country US --kycSource sumsub --tier 10
-// hasPass 0xB045bbB51f3CE266A506f332EDBDe176C9862Ff3: false
-// mint to=0xB045bbB51f3CE266A506f332EDBDe176C9862Ff3 tier=10 countries=US bitmap=1 expiry=1819176071 cid=cust-1787640070840 -> 0x10f4aa7cbc4bd93aad7c0fa1b14efb89afec60faade154531e27f1c5263447f3 kycSource=sumsub (active=false pending CC)
-// tx 0xa14ac9fcd71792977f953877111598359c33e277c542c99480bee4747b50e380 waiting...
-// mined block 11562361 status=1
-// recordHash=0xdccf0bb5635d44df8d48e18e1e9d424fb0c1911cbbd4dd4f34dca4c2b7fb316e
+
 // PS C:\projects\attestgo-project> npx tsx scripts/gopass/3_worker_sync.ts --wallet 0xB045bbB51f3CE266A506f332EDBDe176C9862Ff3 --tx 0xa14ac9fcd71792977f953877111598359c33e277c542c99480bee4747b50e380
 // fetching record for 0xB045bbB51f3CE266A506f332EDBDe176C9862Ff3 on Sepolia hub...
 //   tier=10 bitmap=1 expiry=1819176071 frozen=false active=false kycSource=sumsub hash=0xdccf0bb5635d44df8d48e18e1e9d424fb0c1911cbbd4dd4f34dca4c2b7fb316e
@@ -50,9 +45,9 @@ const HUB_ABI = [
   'function recordHash(address) view returns (bytes32)',
 ] as const;
 const REGISTRY_ABI = [
-  'function syncPass(address wallet, tuple(uint8 tier,uint8 subTier,bytes2 group,bytes2 subGroup,uint256 countryBitmap,uint64 expiry,bool frozen,bool active,bytes32 customerIdHash,string kycSource) r, bytes proof) external',
-  'function syncPassWithTxProof(address wallet, tuple(uint8 tier,uint8 subTier,bytes2 group,bytes2 subGroup,uint256 countryBitmap,uint64 expiry,bool frozen,bool active,bytes32 customerIdHash,string kycSource) r, uint64 headerNumber, bytes txBytes, bytes32 merkleRoot, bytes32[] siblings, bytes32 lowerDigest, bytes32[] roots) external',
-  'function isEligible(address wallet, tuple(bytes2 allowed_group,bytes2 allowed_sub_group,uint8 min_tier,uint8 min_sub_tier,bool is_black_list,uint256 countriesBitmap) rule) view returns (bool)',
+  "function syncPass(address wallet, tuple(uint8 tier,uint8 subTier,bytes2 group,bytes2 subGroup,uint256 countryBitmap,uint64 expiry,bool frozen,bool active,bytes32 customerIdHash,string kycSource) r, bytes proof) external",
+  "function syncPassWithTxProof(address wallet, tuple(uint8 tier,uint8 subTier,bytes2 group,bytes2 subGroup,uint256 countryBitmap,uint64 expiry,bool frozen,bool active,bytes32 customerIdHash,string kycSource) r, uint64 headerNumber, bytes txBytes, bytes32 merkleRoot, tuple(bytes32 hash,bool isLeft)[] siblings, bytes32 lowerDigest, bytes32[] roots) external",
+  "function isEligible(address wallet, tuple(bytes2 allowed_group,bytes2 allowed_sub_group,uint8 min_tier,uint8 min_sub_tier,bool is_black_list,uint256 countriesBitmap) rule) view returns (bool)",
 ] as const;
 
 function arg(k: string) { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : undefined; }
@@ -107,7 +102,7 @@ async function main() {
     d.headerNumber,
     d.txBytes,
     d.merkleProof.root,
-    d.merkleProof.siblings.map((s: any) => s.hash ?? s),
+    d.merkleProof.siblings.map((s: any) => ({ hash: s.hash ?? s, isLeft: s.isLeft ?? false })),
     d.continuityProof.lowerEndpointDigest,
     d.continuityProof.roots,
   );
