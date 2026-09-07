@@ -265,7 +265,7 @@ const schema = a.schema({
     })
     .authorization((allow) => [allow.publicApiKey().to(["read", "create", "update", "delete"])])
     .secondaryIndexes((index) => [
-      index("userProfileId").queryField("byUserProfile"),
+      index("userProfileId").queryField("byOwner"),
     ]),
 
   createIssuerProfile: a
