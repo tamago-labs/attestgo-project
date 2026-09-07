@@ -8,6 +8,7 @@ import { getChainById } from "@/lib/chains";
 import { loadProfile } from "@/lib/userProfile";
 import { getClient as getDataClient, listMyTokens, type TokenRegistryEntry } from "@/lib/tokenRegistry";
 import FaucetModal from "@/components/app/FaucetModal";
+import SendSuccessModal from "@/components/app/send/SuccessModal";
 import SendSidebar from "@/components/app/send/SendSidebar";
 import TokenList from "@/components/app/send/TokenList";
 import SendDrawer from "@/components/app/send/SendDrawer";
@@ -30,7 +31,7 @@ function useInterval(callback: () => void, delay: number | null) {
 }
 
 export default function SendPage() {
-  const { address, provider, chainId: walletChainId } = useWallet();
+  const { address, provider, chainId: walletChainId, signer } = useWallet();
   const [filter, setFilter] = useState<number | "all">("all");
   const [myTokens, setMyTokens] = useState<TokenRegistryEntry[]>([]);
   const [recordMap, setRecordMap] = useState<Record<string, TokenRecordLite>>({});
@@ -40,7 +41,9 @@ export default function SendPage() {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [faucetToken, setFaucetToken] = useState<DefaultToken | null>(null);
   const [sendRow, setSendRow] = useState<UnifiedRow | null>(null);
+  const [successDetails, setSuccessDetails] = useState<{ txHash: string; amount: string; recipient: string; chainId: string; symbol: string } | null>(null);
   const [ownerId, setOwnerId] = useState<string | null>(null);
+  const [ownerProfile, setOwnerProfile] = useState<{ displayName: string; country: string } | null>(null);
   const [balNonce, setBalNonce] = useState(0);
   const [priceMap, setPriceMap] = useState<Record<string, number>>({});
   const [identity, setIdentity] = useState<{ status: "verified" | "pending" | "unverified" | "idle"; tier?: number; country?: string }>({ status: "idle" });
@@ -58,7 +61,10 @@ export default function SendPage() {
           if (!cancelled) setIdentity({ status: "unverified" });
           return;
         }
-        if (!cancelled) setOwnerId(profile.id);
+        if (!cancelled) {
+          setOwnerId(profile.id);
+          setOwnerProfile({ displayName: profile.displayName, country: profile.country });
+        }
         const countryCode = (profile as unknown as { country?: string }).country || undefined;
         const client = getDataClient();
         let rows: { status: string }[] = [];
@@ -321,7 +327,16 @@ export default function SendPage() {
           <TokenList filtered={filtered} balances={balances} address={address} loadingRegistry={loadingRegistry} filter={filter} openMenu={openMenu} setOpenMenu={setOpenMenu} setFaucetToken={setFaucetToken} setSendRow={setSendRow} priceMap={priceMap} />
         </div>
       </div>
-      <SendDrawer open={!!sendRow} row={sendRow!} balance={sendRow ? balances[sendRow.key] : undefined} onClose={() => setSendRow(null)} onSend={() => { setSendRow(null); setBalNonce((n) => n + 1); }} priceMap={priceMap} ownerId={ownerId} />
+      <SendDrawer open={!!sendRow} row={sendRow!} balance={sendRow ? balances[sendRow.key] : undefined} onClose={() => setSendRow(null)} onSend={() => { setBalNonce((n) => n + 1); }} onSuccess={(d) => setSuccessDetails({ ...d, chainId: String(sendRow!.chainId), symbol: sendRow!.symbol })} priceMap={priceMap} ownerId={ownerId} ownerProfile={ownerProfile} walletAddress={address} signer={signer} walletChainId={walletChainId} />
+      <SendSuccessModal
+        open={!!successDetails}
+        onClose={() => setSuccessDetails(null)}
+        amount={successDetails?.amount || ""}
+        symbol={successDetails?.symbol || ""}
+        recipient={successDetails?.recipient || ""}
+        txHash={successDetails?.txHash || null}
+        chainId={Number(successDetails?.chainId) || 11155111}
+      />
       <FaucetModal open={!!faucetToken} token={faucetToken} onClose={() => setFaucetToken(null)} onMinted={() => setBalNonce((n) => n + 1)} />
     </div>
   );
