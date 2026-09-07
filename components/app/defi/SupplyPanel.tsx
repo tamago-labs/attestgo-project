@@ -77,6 +77,18 @@ export default function SupplyPanel({ market, marketData, userData, onDone }: { 
       onDone();
       setAmount("");
       setTimeout(() => setStage("idle"), 2500);
+      const isDeposit = tab === "deposit";
+      await fetch("/api/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: isDeposit ? "Collateral supplied" : "Collateral withdrawn",
+          body: `Hi there,\n\n${isDeposit ? "Deposit" : "Withdrawal"} confirmed. ${amount} ${market.loan.symbol} has been ${isDeposit ? "added to" : "removed from"} your Creditcoin position. Assets are now ${isDeposit ? "productive" : "in your wallet"}.\n\nBest,\nAttestGO Protocol`,
+          txHash: txHash,
+          type: "lending",
+          walletAddress: address,
+        }),
+      }).catch(() => {});
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : String(e));
       setStage("error");

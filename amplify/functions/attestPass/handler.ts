@@ -104,6 +104,22 @@ export const handler: Schema["attestPass"]["functionHandler"] = async (event) =>
 
   // update before return even if waits timed out - frontend will see active on refresh/poll
   await client.models.PassRequest.update({ id: req.id, status: "active" } as unknown as { id: string; status: "active" });
+
+  // Send inbox notification
+  try {
+    await client.models.InboxItem.create({
+      type: "kyc",
+      title: "GO Pass activated",
+      body: `Hi there,\n\nYour GO Pass is now active. You can send, receive, and use restricted assets across supported chains.\n\nBest,\nAttestGO Protocol`,
+      read: false,
+      txHash,
+      recipientId: userProfileId,
+    });
+    console.log("[attestPass] inbox notification created");
+  } catch (e) {
+    console.warn("[attestPass] inbox notification failed", e);
+  }
+
   // also return registry/active hashes so frontend can show without extra fetch
   return JSON.stringify({ status: "active", txHash, registryTx: tx1.hash, activeTx: tx2.hash });
 };

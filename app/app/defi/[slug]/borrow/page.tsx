@@ -113,7 +113,7 @@ export default function BorrowPage() {
           <div className="grid lg:grid-cols-2 gap-5 items-start">
             <div className="space-y-5">
               <StepLock market={market} address={address} onLocked={refreshAll} />
-              <StepAttest market={market} records={recordsLoading ? [] : records} onAttested={refreshAll} />
+              <StepAttest market={market} records={recordsLoading ? [] : records} onAttested={refreshAll} address={address} />
             </div>
             <div className="space-y-5">
               <StepBorrow market={market} marketData={marketData} userData={userData} onDone={refreshAll} />

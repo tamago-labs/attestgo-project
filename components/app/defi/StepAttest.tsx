@@ -7,7 +7,7 @@ import { SEPOLIA_CHAIN_ID } from "@/lib/defi/markets";
 import { attestLock, updateLockStatus, type LockRecord } from "@/lib/defi/lockRecords";
 import { getChainById } from "@/lib/chains";
 
-export default function StepAttest({ market, records, onAttested }: { market: DefiMarket; records: LockRecord[]; onAttested: () => void }) {
+export default function StepAttest({ market, records, onAttested, address }: { market: DefiMarket; records: LockRecord[]; onAttested: () => void; address?: string | null }) {
   const [busyTx, setBusyTx] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ tx: string; text: string; kind: "ok" | "warn" | "err" } | null>(null);
 
@@ -25,6 +25,17 @@ export default function StepAttest({ market, records, onAttested }: { market: De
         await updateLockStatus(rec.id, "attested", res.txHash);
         setMsg({ tx: rec.lockTxHash, text: "Proof verified — collateral credited on Creditcoin.", kind: "ok" });
         onAttested();
+        await fetch("/api/notify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: "Collateral verified",
+            body: `Hi there,\n\nYour ${rec.amount} ${market.collateral.symbol} lock was verified on Creditcoin via Attestcoin Protocol. Collateral is now proven and available to borrow against.\n\nBest,\nAttestGO Protocol`,
+            txHash: res.txHash,
+            type: "lending",
+            walletAddress: address,
+          }),
+        }).catch(() => {});
       } else if (res.status === "pending") {
         await updateLockStatus(rec.id, "locked");
         setMsg({ tx: rec.lockTxHash, text: "Block not attested yet — try again in a few minutes.", kind: "warn" });

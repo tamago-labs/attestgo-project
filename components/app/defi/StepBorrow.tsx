@@ -56,6 +56,17 @@ export default function StepBorrow({ market, marketData, userData, onDone }: { m
       onDone();
       setAmount("");
       setTimeout(() => setStage("idle"), 2500);
+      await fetch("/api/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "Borrow executed",
+          body: `Hi there,\n\nBorrow executed. ${amount} ${market.loan.symbol} has been sent to your wallet from CoreVault. Your collateral stays locked until you repay.\n\nBest,\nAttestGO Protocol`,
+          txHash: tx.hash,
+          type: "lending",
+          walletAddress: address,
+        }),
+      }).catch(() => {});
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : String(e));
       setStage("error");
