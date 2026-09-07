@@ -8,6 +8,7 @@ import { loadProfile } from "@/lib/userProfile";
 import { getClient } from "@/lib/tokenRegistry";
 import { truncateAddr } from "@/lib/send/constants";
 import type { Schema } from "@/amplify/data/resource";
+import type { UserProfile } from "@/lib/userProfile";
 
 type InboxItem = NonNullable<Schema["InboxItem"]["type"]>;
 
@@ -107,6 +108,28 @@ export default function InboxPage() {
 
   const active = items[selected];
   const unreadCount = items.filter((it) => !it.read).length;
+  const [senderProfile, setSenderProfile] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function run() {
+      if (!active?.senderId) {
+        setSenderProfile(null);
+        return;
+      }
+      try {
+        const client = getClient();
+        const res = await (client.models.UserProfile as unknown as {
+          get: (a: { id: string }) => Promise<{ data: UserProfile | null }>;
+        }).get({ id: active.senderId });
+        if (!cancelled) setSenderProfile(res.data);
+      } catch {
+        if (!cancelled) setSenderProfile(null);
+      }
+    }
+    run();
+    return () => { cancelled = true; };
+  }, [active?.senderId]);
 
 function smartTime(iso?: string | null): string {
   if (!iso) return "—";
@@ -182,11 +205,30 @@ function smartTime(iso?: string | null): string {
 
         {/* right — preview */}
         <div className="p-8 bg-canvas/30 overflow-y-auto min-h-0 flex flex-col">
-          {isConnected && active ? (
-            <>
-              <p className="text-white/30 text-xs font-mono mb-2">TODAY · {active.createdAt ? new Date(active.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}</p>
-              <h3 className="text-xl font-semibold text-white mb-4">{active.title}</h3>
-              <p className="text-muted text-sm leading-relaxed max-w-md whitespace-pre-wrap">{active.body}</p>
+           {isConnected && active ? (
+             <>
+               {/* Sender section */}
+               <div className="-mx-8 -mt-8 mb-6 border-b border-border px-8 py-3">
+                 <p className="text-xs font-mono">
+                   <span className="text-white/30">From: </span>
+                   {active.senderId ? (
+                     senderProfile ? (
+                       <a href={`https://sepolia.etherscan.io/address/${senderProfile.walletAddress}`} target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-white">
+                         {truncateAddr(senderProfile.walletAddress)} &lt;{senderProfile.displayName}&gt;
+                       </a>
+                     ) : (
+                       <span className="text-white/30">Loading…</span>
+                     )
+                   ) : (
+                     <span className="text-white/30">—</span>
+                   )}
+                 </p>
+               </div>
+
+               <p className="text-white/30 text-xs font-mono mb-2">TODAY · {active.createdAt ? new Date(active.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}</p>
+               <h3 className="text-xl font-semibold text-white mb-4">{active.title}</h3>
+
+               <p className="text-muted text-sm leading-relaxed max-w-md whitespace-pre-wrap">{active.body}</p>
               <div className="mt-6 flex flex-wrap items-center gap-2">
                 {active.txHash && (
                   <span className="text-[10px] uppercase tracking-widest text-muted">Tx</span>
