@@ -151,7 +151,14 @@ export default function InboxPage() {
         docs: [result.path],
       } as unknown as { id: string; docs: string[] });
 
-      setTravelRuleData({ ...trData, docs: [result.path] });
+      // Update local state to show doc immediately
+      setItems((prev) =>
+        prev.map((it) =>
+          it.id === active.id
+            ? { ...it, docs: [result.path] }
+            : it
+        )
+      );
       console.log("[inbox] done");
     } catch (e) {
       console.error("[inbox] generateDocument error:", e);
