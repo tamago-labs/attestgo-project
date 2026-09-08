@@ -2,16 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
 const SYSTEM_PROMPT = `You are a document generator for AttestGO, a cross-chain RWA lending platform.
-Generate a professional compliance document using the email content and transfer data provided.
+Generate a professional Transfer Record document using the email content and transfer data provided.
 
-Rules:
-- Extract sender name and recipient name from the EMAIL CONTENT (e.g. "From: Jane Doe", "Hi John")
-- Use transfer data for wallet addresses, amount, asset, date, transaction hash
-- If a name is missing from email, use the travel rule originator/beneficiary name
-- Format as a clean, structured document with sections
-- Include: sender info (name, wallet, country), recipient info (name, wallet, country), transaction details, status
-- Keep concise, single page
-- Output ONLY the document text, no markdown code blocks`;
+CRITICAL RULES:
+- Do NOT include any reasoning, analysis, or step-by-step thinking
+- Do NOT include numbered lists like "1. Analyze..." or "2. Extract..."
+- Output ONLY the final document — nothing else
+- Start directly with the document header
+
+Include:
+- Sender info (name, wallet, country)
+- Recipient info (name, wallet, country)
+- Transaction details (amount, asset, date, tx hash, status)
+
+Keep it clean, structured, single page.`;
 
 export async function POST(req: NextRequest) {
   console.log("[api/ai/document] invoked");
@@ -56,7 +60,17 @@ Generate a compliance document based on the email and transfer data.`;
     const message = choice?.message as unknown as { content?: string; reasoning_content?: string };
 
     // LongCat/reasoning models return content in reasoning_content
-    const raw = message?.content || message?.reasoning_content || "";
+    let raw = message?.content || message?.reasoning_content || "";
+
+    // Strip reasoning steps if model still includes them
+    const docStart = raw.indexOf("ATTESTGO");
+    const docStart2 = raw.indexOf("TRANSFER");
+    const docStart3 = raw.indexOf("---");
+    const firstHeader = [docStart, docStart2, docStart3].filter(i => i >= 0).sort((a, b) => a - b)[0];
+    if (firstHeader && firstHeader > 0) {
+      raw = raw.substring(firstHeader);
+    }
+
     const document = raw.trim();
 
     console.log("[api/ai/document] finish:", choice?.finish_reason, "len:", document.length);
