@@ -9,7 +9,6 @@ const PLACEHOLDERS = [
   "{{amount}}",
   "{{asset}}",
   "{{cause}}",
-  "{{txHash}}",
 ];
 
 const SYSTEM_PROMPT = `You are an email template writer for AttestGO, a compliant onchain finance platform.

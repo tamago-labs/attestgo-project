@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { CAUSES, DEFAULT_TEMPLATES, type CauseId } from "@/lib/send/emailTemplates";
 import { Loader2, Sparkles, RotateCcw, Save } from "lucide-react";
 
-const PLACEHOLDERS = ["{{senderName}}", "{{senderAddress}}", "{{recipientName}}", "{{recipientAddress}}", "{{amount}}", "{{asset}}", "{{cause}}", "{{txHash}}"];
+const PLACEHOLDERS = ["{{senderName}}", "{{senderAddress}}", "{{recipientName}}", "{{recipientAddress}}", "{{amount}}", "{{asset}}", "{{cause}}"];
 
 export default function EmailTemplateEditor({ userProfileId }: { userProfileId: string | null }) {
   const [cause, setCause] = useState<CauseId>("payment");
@@ -79,7 +79,8 @@ export default function EmailTemplateEditor({ userProfileId }: { userProfileId: 
         <h4 className="text-sm font-medium text-white">Transfer Purpose</h4>
         <button
           onClick={() => setAiModalOpen(true)}
-          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber/15 border border-amber/30 text-amber text-xs font-medium hover:bg-amber/20"
+          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-white"
+          style={{ background: "linear-gradient(135deg, rgba(253,183,80,0.4), rgba(139,124,240,0.4))" }}
         >
           <Sparkles size={12} /> AI compose
         </button>
@@ -99,22 +100,26 @@ export default function EmailTemplateEditor({ userProfileId }: { userProfileId: 
         />
       </div>
 
-      <div className="flex flex-wrap gap-1">
-        {PLACEHOLDERS.map((p) => (
-          <span key={p} className="text-[10px] font-mono text-muted bg-white/[0.04] px-1.5 py-0.5 rounded cursor-pointer hover:text-white" onClick={() => {
-            const textarea = document.querySelector("textarea");
-            if (textarea) {
-              const start = textarea.selectionStart;
-              const end = textarea.selectionEnd;
-              setTemplate((prev) => prev.substring(0, start) + p + prev.substring(end));
-            }
-          }}>{p}</span>
-        ))}
+      <div>
+        <p className="text-xs text-white mb-1.5">Placeholders</p>
+        <div className="flex flex-wrap gap-1 mb-1.5">
+          {PLACEHOLDERS.map((p) => (
+            <span key={p} className="text-[10px] font-mono text-muted bg-white/[0.04] px-1.5 py-0.5 rounded cursor-pointer hover:text-white" onClick={() => {
+              const textarea = document.querySelector("textarea");
+              if (textarea) {
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                setTemplate((prev) => prev.substring(0, start) + p + prev.substring(end));
+              }
+            }}>{p}</span>
+          ))}
+        </div>
+        <p className="text-white/30 text-[11px]">Click to insert, or highlight text to replace</p>
       </div>
 
       <div className="flex items-center justify-between pt-2 border-t border-border">
-        <button onClick={reset} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border text-xs text-muted hover:text-white">
-          <RotateCcw size={12} /> Reset
+          <button onClick={reset} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border text-xs text-muted hover:text-white">
+          <RotateCcw size={12} /> Reset to default
         </button>
         <button onClick={save} disabled={saving} className="inline-flex items-center gap-1 px-4 py-1.5 rounded-lg bg-amber text-canvas text-xs font-medium hover:bg-amber/90 disabled:opacity-40">
           {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}

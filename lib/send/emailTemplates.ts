@@ -74,62 +74,90 @@ export function buildEmailBody(params: {
   return `${greeting}\n\n${body}\n\n${closing}`;
 }
 
+
 export const DEFAULT_TEMPLATES: Record<CauseId, string> = {
   gift: `Hi {{recipientName}},
 
-{{senderName}} sent you {{amount}} {{asset}} as a gift.
+{{senderName}} has sent you {{amount}} {{asset}} as a gift.
 
-Best,
-AttestGO Protocol`,
+This transfer was made as a personal gift from {{senderName}} to you.
+
+Best regards,
+{{senderName}}`,
+
   payment: `Hi {{recipientName}},
 
-{{senderName}} sent you {{amount}} {{asset}} as a payment.
+{{senderName}} has sent you {{amount}} {{asset}} as payment.
 
-Best,
-AttestGO Protocol`,
+This transfer is intended as payment for the agreed goods, services, or other arrangement between both parties.
+
+Best regards,
+{{senderName}}`,
+
   investment: `Hi {{recipientName}},
 
-{{senderName}} transferred {{amount}} {{asset}} as an investment.
+{{senderName}} has transferred {{amount}} {{asset}} in connection with an investment.
 
-Best,
-AttestGO Protocol`,
+This transfer is intended for the agreed investment or funding arrangement between both parties.
+
+Best regards,
+{{senderName}}`,
+
   loan: `Hi {{recipientName}},
 
-{{senderName}} sent {{amount}} {{asset}} as a loan repayment.
+{{senderName}} has sent you {{amount}} {{asset}} as a loan repayment.
 
-Best,
-AttestGO Protocol`,
+This transfer represents repayment under the agreed lending arrangement between both parties.
+
+Best regards,
+{{senderName}}`,
+
   other: `Hi {{recipientName}},
 
-{{senderName}} sent you {{amount}} {{asset}}.
+{{senderName}} has sent you {{amount}} {{asset}}.
 
-Best,
-AttestGO Protocol`,
+This transfer was made for the purpose agreed between {{senderName}} and you.
+
+Best regards,
+{{senderName}}`,
+
   refund: `Hi {{recipientName}},
 
-{{senderName}} issued you a refund of {{amount}} {{asset}}.
+{{senderName}} has issued you a refund of {{amount}} {{asset}}.
 
-Best,
-AttestGO Protocol`,
+This transfer represents a refund related to a previous payment or transaction.
+
+Best regards,
+{{senderName}}`,
+
   salary: `Hi {{recipientName}},
 
-{{senderName}} sent you {{amount}} {{asset}} as salary.
+{{senderName}} has sent you {{amount}} {{asset}} as salary.
 
-Best,
-AttestGO Protocol`,
+This transfer represents salary or compensation for the agreed work or services provided.
+
+Best regards,
+{{senderName}}`,
+
   dividend: `Hi {{recipientName}},
 
-{{senderName}} distributed {{amount}} {{asset}} as dividend yield.
+{{senderName}} has distributed {{amount}} {{asset}} as a dividend or investment yield.
 
-Best,
-AttestGO Protocol`,
+This transfer represents a distribution associated with your investment or asset holding.
+
+Best regards,
+{{senderName}}`,
+
   swap: `Hi {{recipientName}},
 
-{{senderName}} swapped {{amount}} {{asset}} with you.
+{{senderName}} has transferred {{amount}} {{asset}} as part of an asset swap.
 
-Best,
-AttestGO Protocol`,
-};
+This transfer forms part of the agreed exchange between both parties.
+
+Best regards,
+{{senderName}}`,
+}; 
+
 
 export function fillTemplate(template: string, vars: Record<string, string>): string {
   let result = template;
