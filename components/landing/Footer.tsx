@@ -87,13 +87,10 @@ export default function Footer() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-6 flex flex-col sm:flex-row flex-wrap items-center justify-between gap-3 sm:gap-4 text-xs text-muted">
           <span>© 2026 Tamago Labs. All rights reserved.</span>
           <div className="flex items-center gap-6">
-            <a href="#" className="hover:text-white transition-colors">
-              Twitter
+            <a href="https://x.com/tamago_labs_JP" target="_blank" rel="noopener" className="hover:text-white transition-colors">
+              X
             </a>
-            <a href="#" className="hover:text-white transition-colors">
-              Discord
-            </a>
-            <a href="#" className="hover:text-white transition-colors">
+            <a href="https://github.com/tamago-labs/attestgo-project" target="_blank" rel="noopener" className="hover:text-white transition-colors">
               GitHub
             </a>
           </div>
