@@ -32,11 +32,14 @@ export async function POST(req: NextRequest) {
     }
 
     const apiKey = process.env.OPENAI_API_KEY;
+    const baseURL = process.env.OPENAI_BASE_URL || undefined;
+    const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+
     if (!apiKey) {
       return NextResponse.json({ ok: false, error: "OPENAI_API_KEY not configured" }, { status: 503 });
     }
 
-    const client = new OpenAI({ apiKey });
+    const client = new OpenAI({ apiKey, baseURL });
 
     const userMessage = `Transfer purpose: ${cause || "other"}\nUser's description: ${prompt}`;
 
