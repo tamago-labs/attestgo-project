@@ -74,9 +74,9 @@ export default function EmailTemplateEditor({ userProfileId }: { userProfileId: 
   };
 
   return (
-    <div className="border border-border rounded-xl bg-panel p-5 space-y-4">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-white">Email Templates</h3>
+        <h4 className="text-sm font-medium text-white">Transfer Purpose</h4>
         <button
           onClick={() => setAiModalOpen(true)}
           className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber/15 border border-amber/30 text-amber text-xs font-medium hover:bg-amber/20"
@@ -85,38 +85,41 @@ export default function EmailTemplateEditor({ userProfileId }: { userProfileId: 
         </button>
       </div>
 
-      <div>
-        <label className="text-muted text-xs mb-1.5 block">Transfer purpose</label>
-        <select value={cause} onChange={(e) => setCause(e.target.value as CauseId)} className="w-full border border-border rounded-md px-3 py-2 text-sm bg-panel outline-none text-white">
-          {CAUSES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-        </select>
-      </div>
+      <select value={cause} onChange={(e) => setCause(e.target.value as CauseId)} className="w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-panel outline-none text-white">
+        {CAUSES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+      </select>
 
       <div>
-        <label className="text-muted text-xs mb-1.5 block">Template</label>
+        <label className="text-muted text-xs mb-1.5 block">Email template</label>
         <textarea
           value={template}
           onChange={(e) => setTemplate(e.target.value)}
-          rows={8}
-          className="w-full border border-border rounded-md px-3 py-2 text-sm bg-panel outline-none text-white resize-none font-mono"
+          rows={10}
+          className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-panel outline-none text-white resize-none font-mono leading-relaxed"
         />
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="flex flex-wrap gap-1">
-          {PLACEHOLDERS.map((p) => (
-            <span key={p} className="text-[10px] font-mono text-muted bg-white/[0.04] px-1.5 py-0.5 rounded">{p}</span>
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={reset} className="p-1.5 text-muted hover:text-white" title="Reset to default">
-            <RotateCcw size={14} />
-          </button>
-          <button onClick={save} disabled={saving} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber text-canvas text-xs font-medium hover:bg-amber/90 disabled:opacity-40">
-            {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
-            Save
-          </button>
-        </div>
+      <div className="flex flex-wrap gap-1">
+        {PLACEHOLDERS.map((p) => (
+          <span key={p} className="text-[10px] font-mono text-muted bg-white/[0.04] px-1.5 py-0.5 rounded cursor-pointer hover:text-white" onClick={() => {
+            const textarea = document.querySelector("textarea");
+            if (textarea) {
+              const start = textarea.selectionStart;
+              const end = textarea.selectionEnd;
+              setTemplate((prev) => prev.substring(0, start) + p + prev.substring(end));
+            }
+          }}>{p}</span>
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between pt-2 border-t border-border">
+        <button onClick={reset} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border text-xs text-muted hover:text-white">
+          <RotateCcw size={12} /> Reset
+        </button>
+        <button onClick={save} disabled={saving} className="inline-flex items-center gap-1 px-4 py-1.5 rounded-lg bg-amber text-canvas text-xs font-medium hover:bg-amber/90 disabled:opacity-40">
+          {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+          Save
+        </button>
       </div>
 
       {aiModalOpen && (
@@ -130,7 +133,7 @@ export default function EmailTemplateEditor({ userProfileId }: { userProfileId: 
               onChange={(e) => setAiPrompt(e.target.value)}
               rows={3}
               placeholder="e.g. Friendly birthday gift message"
-              className="w-full border border-border rounded-md px-3 py-2 text-sm bg-panel outline-none text-white resize-none"
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-panel outline-none text-white resize-none"
             />
             <div className="flex justify-end gap-2">
               <button onClick={() => setAiModalOpen(false)} className="px-3 py-1.5 rounded-lg border border-border text-xs text-muted hover:text-white">Cancel</button>
