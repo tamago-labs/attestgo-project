@@ -71,6 +71,7 @@ export default function SendDrawer({
 
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [emailPreview, setEmailPreview] = useState<{ subject: string; body: string } | null>(null);
 
   useEffect(() => {
     if (!open) {
@@ -125,8 +126,38 @@ export default function SendDrawer({
     }
   };
 
-  const handleReview = () => {
+  const buildEmailPreview = async (): Promise<{ subject: string; body: string }> => {
+    const senderName = ownerProfile?.displayName || (walletAddress ? truncateAddr(walletAddress) : "Unknown");
+    const recipientName = beneName || truncateAddr(recipient);
+    const subject = buildEmailSubject(cause, row.symbol, amount);
+    let template = DEFAULT_TEMPLATES[cause];
+    try {
+      if (ownerId) {
+        const tplRes = await fetch(`/api/templates?userProfileId=${ownerId}`);
+        if (tplRes.ok) {
+          const tplData = await tplRes.json();
+          const found = (tplData.templates || []).find((t: { cause: string }) => t.cause === cause);
+          if (found) template = found.template;
+        }
+      }
+    } catch {}
+    const body = fillTemplate(template, {
+      senderName,
+      senderAddress: walletAddress ? truncateAddr(walletAddress) : "",
+      recipientName,
+      recipientAddress: truncateAddr(recipient),
+      amount,
+      asset: row.symbol,
+      cause: CAUSES.find((c) => c.id === cause)?.label || cause,
+      txHash: "",
+    });
+    return { subject, body };
+  };
+
+  const handleReview = async () => {
     setSendError(null);
+    const preview = await buildEmailPreview();
+    setEmailPreview(preview);
     setStep(2);
   };
 
@@ -142,33 +173,9 @@ export default function SendDrawer({
       const tx = await token.transfer(recipient, amt);
       const rc = await tx.wait();
 
+      const { subject, body: emailBody } = await buildEmailPreview();
       const senderName = ownerProfile?.displayName || (walletAddress ? truncateAddr(walletAddress) : "Unknown");
       const recipientName = beneName || truncateAddr(recipient);
-      const subject = buildEmailSubject(cause, row.symbol, amount);
-
-      // Fetch user template or use default
-      let template = DEFAULT_TEMPLATES[cause];
-      try {
-        if (ownerId) {
-          const tplRes = await fetch(`/api/templates?userProfileId=${ownerId}`);
-          if (tplRes.ok) {
-            const tplData = await tplRes.json();
-            const found = (tplData.templates || []).find((t: { cause: string }) => t.cause === cause);
-            if (found) template = found.template;
-          }
-        }
-      } catch {}
-
-      const emailBody = fillTemplate(template, {
-        senderName,
-        senderAddress: walletAddress ? truncateAddr(walletAddress) : "",
-        recipientName,
-        recipientAddress: truncateAddr(recipient),
-        amount,
-        asset: row.symbol,
-        cause: CAUSES.find((c) => c.id === cause)?.label || cause,
-        txHash: tx.hash,
-      });
 
       const res = await fetch("/api/send", {
         method: "POST",
@@ -271,6 +278,7 @@ export default function SendDrawer({
                     <select value={cause} onChange={(e) => setCause(e.target.value as CauseId)} className="w-full border border-border rounded-md px-3 py-2.5 text-sm bg-panel outline-none text-white">
                       {CAUSES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
                     </select>
+                    <p className="text-white/30 text-[11px] mt-1.5">This writes the email to recipient. Customize with AI in Settings.</p>
                     {cause === "other" && (
                       <textarea value={customNote} onChange={(e) => setCustomNote(e.target.value)} rows={2} className="w-full border border-border rounded-md px-3 py-2 text-sm bg-panel outline-none text-white resize-none mt-2" placeholder="Describe the purpose…" />
                     )}
@@ -288,6 +296,7 @@ export default function SendDrawer({
                   beneInstitution={beneInstitution}
                   file={file}
                   uploadedPath={uploadedPath}
+                  emailPreview={emailPreview}
                 />
               )}
             </div>
