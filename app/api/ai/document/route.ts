@@ -9,7 +9,7 @@ Rules:
 - Use transfer data for wallet addresses, amount, asset, date, transaction hash
 - If a name is missing from email, use the travel rule originator/beneficiary name
 - Format as a clean, structured document with sections
-- Include: sender info, recipient info, transaction details, status
+- Include: sender info (name, wallet, country), recipient info (name, wallet, country), transaction details, status
 - Keep concise, single page
 - Output ONLY the document text, no markdown code blocks`;
 
@@ -34,8 +34,8 @@ export async function POST(req: NextRequest) {
 ${emailContent}
 
 TRANSFER DATA:
-Originator: ${trData.originatorName || "N/A"} (${trData.originatorWallet || "N/A"})
-Beneficiary: ${trData.beneficiaryName || "N/A"} (${trData.beneficiaryWallet || "N/A"})
+Originator: ${trData.originatorName || "N/A"} (${trData.originatorWallet || "N/A"}, ${trData.originatorCountry || "N/A"})
+Beneficiary: ${trData.beneficiaryName || "N/A"} (${trData.beneficiaryWallet || "N/A"}, ${trData.beneficiaryCountry || "N/A"})
 Amount: ${trData.amount || "N/A"} ${trData.asset || ""}
 Date: ${trData.createdAt ? new Date(trData.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}
 Transaction: ${trData.txHash || "N/A"}
@@ -52,12 +52,16 @@ Generate a compliance document based on the email and transfer data.`;
       temperature: 0.3,
       max_tokens: 500,
     });
-    console.log("[api/ai/document] completion received");
+    const choice = completion.choices[0];
+    console.log("[api/ai/document] completion received, finish:", choice?.finish_reason);
+    console.log("[api/ai/document] content type:", typeof choice?.message?.content);
+    console.log("[api/ai/document] content preview:", JSON.stringify(choice?.message?.content)?.slice(0, 200));
 
-    const document = completion.choices[0]?.message?.content?.trim();
+    const document = choice?.message?.content?.trim();
 
     if (!document) {
-      return NextResponse.json({ ok: false, error: "AI returned empty response" }, { status: 500 });
+      console.log("[api/ai/document] EMPTY — full choice:", JSON.stringify(choice)?.slice(0, 500));
+      return NextResponse.json({ ok: false, error: "AI returned empty response", debug: JSON.stringify(choice)?.slice(0, 200) }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true, document });
