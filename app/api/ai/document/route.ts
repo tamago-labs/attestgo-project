@@ -1,15 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
-const SYSTEM_PROMPT = `You are a compliance document generator for AttestGO, a cross-chain RWA lending platform.
-Generate a professional Travel Rule compliance document in plain text format.
+const SYSTEM_PROMPT = `You are a payment receipt generator for AttestGO, a cross-chain RWA lending platform.
+Generate a clean, human-readable PAYMENT RECEIPT using the provided transfer data.
 
-Use the provided travel rule data to create a FATF-compliant transfer record.
-Include all parties, amounts, dates, and transaction references.
-Format as a structured compliance report.
+Format exactly like this example:
 
-Available placeholders will be replaced with actual data.
-Output ONLY the document text, no markdown code blocks or explanation.`;
+PAYMENT RECEIPT
+==============
+
+From: {{originatorName}} ({{originatorWallet}})
+To: {{beneficiaryName}} ({{beneficiaryWallet}})
+Amount: {{amount}} {{asset}}
+Date: {{date}}
+Transaction: {{txHash}}
+Status: Verified
+
+Must be concise, professional, single page.
+Output ONLY the receipt text, no markdown, no extra sections, no compliance jargon.`;
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,20 +31,16 @@ export async function POST(req: NextRequest) {
     const client = new OpenAI({ apiKey, baseURL: "https://api.longcat.ai/openai/v1" });
     const model = "LongCat-2.0";
 
-    const userMessage = `Generate a Travel Rule compliance document with this data:
+    const userMessage = `Generate a payment receipt with this data:
 
-Originator Name: ${data.originatorName || "N/A"}
-Originator Wallet: ${data.originatorWallet || "N/A"}
-Originator Country: ${data.originatorCountry || "N/A"}
-Beneficiary Name: ${data.beneficiaryName || "N/A"}
-Beneficiary Wallet: ${data.beneficiaryWallet || "N/A"}
-Beneficiary Country: ${data.beneficiaryCountry || "N/A"}
-Beneficiary Institution: ${data.beneficiaryInstitution || "N/A"}
-Beneficiary Self-Custody: ${data.beneficiaryIsSelfHosted ? "Yes" : "No"}
-Amount: ${data.amount || "N/A"}
-Asset: ${data.asset || "N/A"}
-Transaction Hash: ${data.txHash || "N/A"}
-Status: ${data.status || "pending"}`;
+originatorName: ${data.originatorName || "N/A"}
+originatorWallet: ${data.originatorWallet || "N/A"}
+beneficiaryName: ${data.beneficiaryName || "N/A"}
+beneficiaryWallet: ${data.beneficiaryWallet || "N/A"}
+amount: ${data.amount || "N/A"}
+asset: ${data.asset || "N/A"}
+txHash: ${data.txHash || "N/A"}
+date: ${data.createdAt ? new Date(data.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}`;
 
     const completion = await client.chat.completions.create({
       model,
