@@ -50,18 +50,19 @@ Generate a compliance document based on the email and transfer data.`;
         { role: "user", content: userMessage },
       ],
       temperature: 0.3,
-      max_tokens: 500,
+      max_tokens: 1000,
     });
     const choice = completion.choices[0];
-    console.log("[api/ai/document] completion received, finish:", choice?.finish_reason);
-    console.log("[api/ai/document] content type:", typeof choice?.message?.content);
-    console.log("[api/ai/document] content preview:", JSON.stringify(choice?.message?.content)?.slice(0, 200));
+    const message = choice?.message as unknown as { content?: string; reasoning_content?: string };
 
-    const document = choice?.message?.content?.trim();
+    // LongCat/reasoning models return content in reasoning_content
+    const raw = message?.content || message?.reasoning_content || "";
+    const document = raw.trim();
+
+    console.log("[api/ai/document] finish:", choice?.finish_reason, "len:", document.length);
 
     if (!document) {
-      console.log("[api/ai/document] EMPTY — full choice:", JSON.stringify(choice)?.slice(0, 500));
-      return NextResponse.json({ ok: false, error: "AI returned empty response", debug: JSON.stringify(choice)?.slice(0, 200) }, { status: 500 });
+      return NextResponse.json({ ok: false, error: "AI returned empty response" }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true, document });
