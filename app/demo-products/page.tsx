@@ -11,7 +11,7 @@ export default function DemoProductsPage() {
       {/* Yield Hero like USYC */}
       <div className="max-w-[1120px] mx-auto px-6 py-8">
         <h1 className="text-4xl font-semibold tracking-tight leading-tight max-w-3xl">Yield and liquidity built for always-on institutional funds</h1>
-        <p className="text-slate-600 mt-3 leading-relaxed max-w-3xl">GO Asset Management brings Nikkei 225 and US T-Bill yield onchain — near-instant settlement and 24/7 access via GO Pass.</p>
+        <p className="text-slate-600 mt-3 leading-relaxed max-w-3xl">GO Asset Management brings Nikkei 225, US T-Bill yield, and GO SGD stablecoin onchain — near-instant settlement and 24/7 access via GO Pass.</p>
         <div className="mt-6 flex gap-3">
           <Link href="/demo-products/nikkei" className="px-6 py-2.5 rounded-lg bg-[#0A0A0F] text-white text-sm">Explore Nikkei →</Link>
           <Link href="/demo-products/tbill" className="px-5 py-2.5 rounded-lg border border-slate-200 text-sm bg-white">Explore T-Bill →</Link>
@@ -31,8 +31,8 @@ export default function DemoProductsPage() {
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-5">
             <p className="text-xs font-mono text-slate-500">Total AUM</p>
-            <p className="font-mono text-xl font-semibold mt-1">¥2.1T + $12M</p>
-            <p className="text-xs text-slate-500 mt-2">Sepolia · 2 funds live</p>
+            <p className="font-mono text-xl font-semibold mt-1">¥2.1T + $12M + S$50M</p>
+            <p className="text-xs text-slate-500 mt-2">Sepolia · 3 funds live</p>
             <p className="text-xs font-mono text-slate-900 mt-3">GO Asset Management</p>
           </div>
         </div>
@@ -43,9 +43,9 @@ export default function DemoProductsPage() {
           <h2 className="text-xl font-semibold">Why GO Asset Management?</h2>
           <div className="grid md:grid-cols-3 gap-4 mt-6">
             {[
-              ["Tokenized Nikkei & T-Bill", "Single manager for equity index and Treasury yield — both rule-verified."],
+              ["Tokenized Nikkei, T-Bill & SGD", "Single manager for equity index, Treasury yield, and Singapore-dollar stablecoin — all rule-verified."],
               ["24/7 settlement", "Mint/redeem any time into USDC, ~1 block under capacity."],
-              ["GO Pass-gated", "Tier ≥10 and region (Nikkei US/JP/SG, T-Bill US) enforced on every transfer."],
+              ["GO Pass-gated", "Tier ≥10 and region enforced on every transfer."],
               ["Daily NAV", "Onchain attestation, transparent pricing."],
               ["Composability", "Use as collateral or in DeFi while earning."],
               ["Low minimum", "$1k entry, first $1M fees waived."],
@@ -62,6 +62,7 @@ export default function DemoProductsPage() {
           {[
             { href: "/demo-products/nikkei", icon: "/nekkei-token-icon.png", name: "Go Nikkei 225 Index", symbol: "aN225", apy: "5.2%", tvl: "¥2.1T AUM", region: "US, JP, SG", desc: "TSE Nikkei 225 constituents tokenized — index exposure with onchain settlement." },
             { href: "/demo-products/tbill", icon: "/t-bill-token-icon.png", name: "Go T-Bill", symbol: "aTBILL", apy: "4.8%", tvl: "$12M", region: "US", desc: "Short-term US Treasury bills + reverse repo — 1:1 backed vault." },
+            { href: "/demo-products/sgd-go", icon: "/sgd-go-token-icon.png", name: "GO SGD", symbol: "SGD-GO", apy: "Stablecoin", tvl: "S$50M", region: "US, SG, JP, HK, GB", desc: "Singapore-dollar compliant stablecoin for business & remittance — 1:1 pegged, no yield." },
           ].map((f) => (
             <Link key={f.symbol} href={f.href} className="rounded-2xl border border-slate-200 bg-white p-6 hover:shadow-md transition">
               <div className="flex items-center gap-4">

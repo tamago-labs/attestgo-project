@@ -17,9 +17,22 @@ export default function BuyDrawer({ open, onClose, symbol, tokenAddress, chainId
   const [rwaBal, setRwaBal] = useState<string>("—");
   const [txHash, setTxHash] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [payAddr, setPayAddr] = useState<string>(payToken === "JPYC" || symbol === "aN225" ? "0xB8712751fFBe66DA15f2aCCCf0DFE8071Cc2E5D0" : "0x8d1A804D73CA595A8538C805Daef6FE8Ec68137B");
   const market = marketAddress || (symbol === "aN225" ? "0xd19d94035CA56B02c889396975FA12Fb6f72B73D" : "0x7eE76595B70991cE74812b4B352fb032B11B508B");
-  const payAddr = payToken === "JPYC" || symbol === "aN225" ? "0xB8712751fFBe66DA15f2aCCCf0DFE8071Cc2E5D0" : "0x8d1A804D73CA595A8538C805Daef6FE8Ec68137B";
   const explorer = "https://sepolia.etherscan.io";
+
+  useEffect(() => {
+    if (!open || !marketAddress) return;
+    const run = async () => {
+      try {
+        const p = new JsonRpcProvider(SEPOLIA_RPC);
+        const m = new Contract(market, ["function paymentToken() view returns (address)"], p);
+        const pt = await m.paymentToken();
+        if (pt && pt !== "0x0000000000000000000000000000000000000000") setPayAddr(pt);
+      } catch {}
+    };
+    run();
+  }, [open, market]);
 
   useEffect(() => {
     if (!open || !address) return;

@@ -388,7 +388,7 @@ export default function DiscoverPage() {
                         <span className="text-white/20 text-xs font-mono w-3 shrink-0">{i + 1}</span>
                         <span className="text-white truncate">{o.productName}</span>
                       </span>
-                      <span className="text-white/25 text-xs font-mono shrink-0 ml-2">{o.apy === "-" ? "—" : o.apy}</span>
+                      <span className={`text-xs font-mono shrink-0 ml-2 ${o.apy === "0%" || o.apy === "Stablecoin" ? "text-emerald-400" : "text-white/25"}`}>{o.apy === "0%" || o.apy === "Stablecoin" ? "Stablecoin" : (o.apy === "-" ? "—" : o.apy)}</span>
                     </li>
                   ))}
                 </ol>

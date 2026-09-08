@@ -139,7 +139,7 @@ export default function InboxPage() {
       if (!aiData.document) throw new Error("No document generated");
 
       // Upload to S3
-      const fileName = `travel-rule-${active.id}.txt`;
+      const fileName = `receipt-${active.id}.txt`;
       const file = new File([new Blob([aiData.document]) as unknown as BlobPart], fileName);
       const result = await uploadData({
         path: `docs/${fileName}`,
@@ -310,21 +310,21 @@ function smartTime(iso?: string | null): string {
               </div>
 
               {/* Documents */}
-              {active.docs && active.docs.length > 0 ? (
-                <div className="mt-6 space-y-1.5">
-                  <p className="text-[10px] uppercase tracking-widest text-muted">Documents</p>
-                  {active.docs.filter(Boolean).map((doc, i) => (
-                    <DownloadLink key={i} path={doc!} />
-                  ))}
-                </div>
-              ) : (
-                <div className="mt-6">
-                  <button onClick={generateDocument} disabled={generating} className="w-full inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-amber text-canvas text-xs font-medium hover:bg-amber/90 disabled:opacity-40">
-                    {generating ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
-                    {generating ? "Generating..." : "Generate compliance doc"}
+              <div className="mt-6">
+                <p className="text-[10px] uppercase tracking-widest text-muted mb-2">Documents</p>
+                {active.docs && active.docs.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {active.docs.filter(Boolean).map((doc, i) => (
+                      <DownloadLink key={i} path={doc!} />
+                    ))}
+                  </div>
+                ) : (
+                  <button onClick={generateDocument} disabled={generating} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-white disabled:opacity-40" style={{ background: "linear-gradient(135deg, rgba(253,183,80,0.4), rgba(139,124,240,0.4))" }}>
+                    {generating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                    {generating ? "Generating..." : "Generate document with AI"}
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center">
