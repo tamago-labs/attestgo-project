@@ -110,22 +110,27 @@ export default function InboxPage() {
 
   const generateDocument = async () => {
     if (!active) return;
+    console.log("[inbox] generateDocument start, inbox id:", active.id);
     setGenerating(true);
     try {
       // Fetch linked travel rule data
       const client = getClient();
+      console.log("[inbox] fetching travel rule data...");
       const trRes = await (client.models.TravelRuleData as unknown as {
         list: (a: { filter: { inboxItemId: { eq: string } } }) => Promise<{ data: Record<string, unknown>[] }>;
       }).list({ filter: { inboxItemId: { eq: active.id } } });
+      console.log("[inbox] travel rule records found:", trRes.data?.length);
       const trData = trRes.data?.[0];
       if (!trData) throw new Error("No travel rule data linked");
 
       // Generate document via AI
+      console.log("[inbox] calling AI document API...");
       const aiRes = await fetch("/api/ai/document", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(trData),
       });
+      console.log("[inbox] AI response status:", aiRes.status);
       if (!aiRes.ok) throw new Error("AI generation failed");
       const aiData = await aiRes.json();
       if (!aiData.document) throw new Error("No document generated");
@@ -138,6 +143,7 @@ export default function InboxPage() {
         data: file,
         options: { contentType: "text/plain" },
       }).result;
+      console.log("[inbox] uploaded to:", result.path);
 
       // Update inbox item with document
       await client.models.InboxItem.update({
@@ -146,8 +152,9 @@ export default function InboxPage() {
       } as unknown as { id: string; docs: string[] });
 
       setTravelRuleData({ ...trData, docs: [result.path] });
+      console.log("[inbox] done");
     } catch (e) {
-      console.error("Generate document error:", e);
+      console.error("[inbox] generateDocument error:", e);
     } finally {
       setGenerating(false);
     }
