@@ -2,20 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
 const SYSTEM_PROMPT = `You are a document generator for AttestGO, a cross-chain RWA lending platform.
-Generate a professional payment receipt document using the email content and transfer data provided.
+Generate a professional compliance document using the email content and transfer data provided.
 
 Rules:
-- Use the email content as the base — preserve its meaning and tone
-- Include all transfer details from the data (wallets, amount, asset, date, tx hash)
-- Format as a clean, human-readable receipt
-- Include sender name/address, recipient name/address, amount, asset, date, transaction hash
-- Mark as "Verified" if status is "verified" or "pending"
+- Extract sender name and recipient name from the EMAIL CONTENT (e.g. "From: Jane Doe", "Hi John")
+- Use transfer data for wallet addresses, amount, asset, date, transaction hash
+- If a name is missing from email, use the travel rule originator/beneficiary name
+- Format as a clean, structured document with sections
+- Include: sender info, recipient info, transaction details, status
 - Keep concise, single page
 - Output ONLY the document text, no markdown code blocks`;
 
 export async function POST(req: NextRequest) {
+  console.log("[api/ai/document] invoked");
   try {
     const data = await req.json();
+    console.log("[api/ai/document] email length:", data.emailContent?.length, "travelRule keys:", Object.keys(data.travelRule || {}));
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
@@ -39,7 +41,7 @@ Date: ${trData.createdAt ? new Date(trData.createdAt).toLocaleDateString() : new
 Transaction: ${trData.txHash || "N/A"}
 Status: ${trData.status || "pending"}
 
-Generate a payment receipt document using both sources.`;
+Generate a compliance document based on the email and transfer data.`;
 
     const completion = await client.chat.completions.create({
       model,
@@ -50,6 +52,7 @@ Generate a payment receipt document using both sources.`;
       temperature: 0.3,
       max_tokens: 500,
     });
+    console.log("[api/ai/document] completion received");
 
     const document = completion.choices[0]?.message?.content?.trim();
 
@@ -59,7 +62,7 @@ Generate a payment receipt document using both sources.`;
 
     return NextResponse.json({ ok: true, document });
   } catch (e) {
-    console.error("[api/ai/document] error", e);
+    console.error("[api/ai/document] error:", e instanceof Error ? e.message : String(e));
     return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : "Unknown error" }, { status: 500 });
   }
 }
