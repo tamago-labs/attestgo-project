@@ -221,7 +221,7 @@ contract CoreVault is IRemoteCollateralManager, Ownable {
 
     function onRemoteSeized(Id id, address borrower, address liquidator, uint256 assets) external {
         require(msg.sender == address(MORPHO), "only morpho");
-        borrower; // positions already debited by Morpho; only the claim matters here
+        _ = borrower; // positions already debited by Morpho; only the claim matters
         address collateralToken = MORPHO.idToMarketParams(id).collateralToken;
         claims[liquidator][collateralToken] += assets;
         emit ClaimCredited(liquidator, collateralToken, assets);

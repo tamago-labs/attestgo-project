@@ -24,7 +24,7 @@ contract PriceOracle is IOracle {
     uint256 public loanUsdPrice;
     uint256 public lastPriceUpdateTime;
 
-    // Oracle mode per side: 0=fallback, 1=bkc
+    // Oracle mode per side: 0=fallback, 1=Chainlink-style
     uint8 public collateralOracleMode;
     uint8 public loanOracleMode;
 
@@ -181,7 +181,7 @@ contract PriceOracle is IOracle {
     }
 
     /// @notice Manually set oracle modes for each side independently.
-    ///         0 = fallback, 1 = bkc
+    ///         0 = fallback, 1 = Chainlink-style
     function setOracleMode(uint8 collateralMode, uint8 loanMode) external {
         if (msg.sender != owner) revert NotOwner();
         if (collateralMode > 1 || loanMode > 1) revert InvalidOracleMode();

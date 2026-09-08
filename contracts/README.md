@@ -2,7 +2,8 @@
 
 Foundry workspace for AttestGO's onchain stack: GO Pass identity (hub/mirror), RWA tokens with
 self-enforcing rules, and a Morpho-based lending market on Creditcoin whose collateral is proven
-cross-chain via the [Attestcoin Protocol](https://docs.attestcoin.org/attestcoin-protocol/attestcoin-readability).
+cross-chain via the Attestcoin Protocol — a decentralized attestor network that tracks finalized
+source-chain blocks and verifies transaction inclusion on-chain via the Block Prover Precompile (`0x0FD2`).
 
 **Chains**: Sepolia `11155111` (source chain, Attestcoin chainKey `1`) · Creditcoin CC3 `102031`
 (testnet, mainnet `102030`) · any EVM for mirrors/GO Assets.
@@ -13,7 +14,7 @@ cross-chain via the [Attestcoin Protocol](https://docs.attestcoin.org/attestcoin
 Sepolia (chainKey 1)                 Creditcoin (102031)
 ────────────────────                 ───────────────────────────────────────
 GOPass (hub, pending→verified)  ─▶   GOPassRegistry (ASC, 0x0FD2 verifySingle
-                                     + on-chain Phase 4 decode of PassMinted)
+                                     + on-chain decode of PassMinted)
 GToken (RWA) ─▶ SourceVault     ─▶   CoreVault (ASC) ─▶ Morpho market
              (escrow, lock)           verifyAndSupplyCollateral        (USDC loan /
                                      → remote collateral credit       RWA collateral)
@@ -34,7 +35,7 @@ GToken (RWA) ─▶ SourceVault     ─▶   CoreVault (ASC) ─▶ Morpho marke
 | Contract | Chain | Purpose |
 |---|---|---|
 | [`src/GOPass.sol`](src/GOPass.sol) | Sepolia | Soulbound KYC NFT hub; mints `active=false` until Creditcoin verifies |
-| [`src/GOPassRegistry.sol`](src/GOPassRegistry.sol) | Creditcoin | Attestcoin Smart Contract: verifies hub mint txs (`0x0FD2` + on-chain Phase 4 log extraction), stores records, eligibility rules |
+| [`src/GOPassRegistry.sol`](src/GOPassRegistry.sol) | Creditcoin | Attestcoin Smart Contract: verifies hub mint txs (`0x0FD2` + on-chain log extraction), stores records, eligibility rules |
 | [`src/GOPassMirror.sol`](src/GOPassMirror.sol) | Base / any EVM | Worker-synced record cache; GTokens check eligibility locally (~5k gas) |
 | [`src/GToken.sol`](src/GToken.sol) | any chain | Compliant ERC20 gated by GOPass eligibility; native or wrapped 1:1 |
 | [`src/GTokenFactory.sol`](src/GTokenFactory.sol) | any chain | Operator-paid issuance of native/wrapped GTokens |

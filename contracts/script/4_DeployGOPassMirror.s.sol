@@ -19,7 +19,7 @@ contract DeployGOPassMirror is Script {
         console.log("Deploy GOPassMirror on new chain", block.chainid);
         console.log("deployer", deployer);
         console.log("worker", worker);
-        // require(block.chainid != 102031 && block.chainid != 102030, "Mirror must not be on Creditcoin");
+        // Creditcoin check disabled: mirror may be deployed on any chain including CC for testing
         require(deployer.balance > 0.001 ether, "insufficient");
         vm.startBroadcast(pk);
         GOPassMirror m = new GOPassMirror();

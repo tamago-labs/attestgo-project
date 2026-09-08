@@ -31,8 +31,6 @@ const ERC20_ABI = ['function approve(address,uint256) returns (bool)', 'function
 async function main() {
   if (!PK.startsWith('0x') || !CORE) { console.error('need PRIVATE_KEY, CORE_VAULT_ADDR'); process.exit(1); }
   const marketArg = (arg('--market') || '').toLowerCase();
-  const keys = marketArg ? [marketArg] : Object.keys(MARKETS).filter(k => process.argv.includes('--all') || !marketArg ? true : false);
-  // default --all if no market specified
   const selected = marketArg ? [marketArg] : Object.keys(MARKETS);
   const amountRaw = arg('--amount') || '1000';
   const irm = arg('--irm') || process.env.IRM_ADDR || '0x3345A6582669C00cA022d9200C083b3097B18DBb';

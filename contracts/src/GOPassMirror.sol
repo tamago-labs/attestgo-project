@@ -59,7 +59,7 @@ contract GOPassMirror is Ownable {
         cacheTTL = ttl;
     }
 
-    // trusted worker sync from CC registry after CC verified (like loan-flow CC→Sepolia registerLoanFund)
+    // trusted worker sync from CC registry after CC verified
     function syncFromCC(address wallet, Record calldata r) external onlyWorkerOrOwner {
         require(wallet != address(0), "wallet zero");
         require(r.expiry > block.timestamp, "expiry past");

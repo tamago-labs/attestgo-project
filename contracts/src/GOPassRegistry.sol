@@ -8,7 +8,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
  * (11155111, chainKey 1).
  * Sepolia GOPass mints pending (active=false); this registry verifies the mint tx inclusion via
  * 0x0FD2 `verifyAndEmit` (trustless), then decodes the verified encodedTransaction on-chain
- * (Attestcoin Phase 4: `PassMinted` log emitted by GOPASS_ADDR with
+ * (`PassMinted` log emitted by GOPASS_ADDR with
  * recordHash == keccak256(abi.encode(r))) before storing the record. Single source of truth on
  * Creditcoin; the worker then calls Sepolia GOPass.setActive(true) to activate. No privileged
  * worker needed for the trustless sync path.
@@ -66,7 +66,7 @@ contract GOPassRegistry is Ownable {
     uint64 public immutable SOURCE_CHAIN_KEY; // chainKey of the source chain for 0x0FD2 (1 = Sepolia)
     uint64 public cacheTTL = 24 hours;
     INativeQueryVerifier public constant VERIFIER = INativeQueryVerifier(address(0x0FD2));
-    address public worker; // trusted fallback path only (syncPass); see below
+    address public worker; // trusted fallback path only (syncPass function)
 
     /// @notice keccak256("PassMinted(address,uint256,bytes32,uint64)")
     bytes32 public constant PASS_MINTED_TOPIC0 = keccak256(bytes("PassMinted(address,uint256,bytes32,uint64)"));
@@ -97,8 +97,8 @@ contract GOPassRegistry is Ownable {
         worker = w;
     }
 
-    // EXPERIMENTAL fallback (worker/owner only): raw storage-proof staticcall. The Attestcoin docs
-    // define no raw storage-proof precompile API — use syncPassWithTxProof (tx-inclusion path) instead.
+    // EXPERIMENTAL fallback (worker/owner only): raw storage-proof staticcall. No raw storage-proof
+    // precompile API exists — use syncPassWithTxProof (tx-inclusion path) instead.
     function syncPass(address wallet, Record calldata r, bytes calldata proof) external onlyWorkerOrOwner {
         require(wallet != address(0), "wallet zero");
         require(r.expiry > block.timestamp, "expiry past");
@@ -114,8 +114,8 @@ contract GOPassRegistry is Ownable {
         emit PassSynced(wallet, expected, verifiedUntil[wallet]);
     }
 
-    // Real tx-inclusion path (available now on CC3 102031): prove the GOPass mint tx via ProofBuilder +
-    // 0x0FD2 verifyAndEmit, then decode the verified encodedTransaction on-chain (Attestcoin Phase 4):
+     // Real tx-inclusion path (available now on CC3 102031): prove the GOPass mint tx via ProofBuilder +
+     // 0x0FD2 verifyAndEmit, then decode the verified encodedTransaction on-chain:
     // receipt status must be success and the PassMinted log emitted by GOPASS_ADDR must carry the
     // record hash of the submitted record. Anyone can call — the record fields are cryptographically
     // bound to the proven tx, no privileged worker needed.
@@ -145,7 +145,7 @@ contract GOPassRegistry is Ownable {
         emit PassSynced(wallet, expected, verifiedUntil[wallet]);
     }
 
-    /// @notice Attestcoin Phase 4 (Data Extraction): decode the verified encodedTransaction
+     /// @notice On-chain log extraction: decode the verified encodedTransaction
     ///         (ABI-encoded (transaction, receipt) blob from the ProofBuilder) and require a
     ///         PassMinted log emitted by GOPASS_ADDR whose wallet / recordHash / expiry match the
     ///         submitted record. Receipt status is implied: the log only exists on success.

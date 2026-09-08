@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AttestGO — Slides</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; background: #0A0C0F; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
+
+    .viewport {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .slide-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      max-width: 1920px;
+      max-height: 1080px;
+      aspect-ratio: 16 / 9;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 0 8%;
+    }
+
+    .slide.active { display: flex; }
+
+    .token-mark {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #4C7CF0, #0A0C0F 70%);
+      margin-bottom: 40px;
+    }
+
+    .slide h1 {
+      font-size: clamp(28px, 6vw, 80px);
+      font-weight: 600;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      color: #fff;
+      max-width: 800px;
+    }
+
+    .slide .subtitle {
+      font-size: clamp(16px, 2.2vw, 28px);
+      margin-top: 24px;
+      background: linear-gradient(90deg, #FDB750 0%, #8B7CF0 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      font-weight: 500;
+    }
+
+    .nav-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 1px solid #262B31;
+      background: transparent;
+      color: #8A90A0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      z-index: 10;
+    }
+
+    .nav-btn:hover { color: #fff; border-color: #fff; }
+    .nav-btn.left { left: 24px; }
+    .nav-btn.right { right: 24px; }
+
+    .dots {
+      position: absolute;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      z-index: 10;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #262B31;
+      transition: background 0.15s ease;
+    }
+
+    .dot.active { background: #fff; }
+  </style>
+</head>
+<body>
+
+  <div class="viewport">
+    <div class="slide-container">
+
+      <!-- Slide 1 -->
+      <div class="slide active">
+        <div class="token-mark"></div>
+        <h1>Mint GO Pass & KYC With Sumsub</h1>
+        <p class="subtitle">Complete KYC once. Mint a verified, soulbound identity credential.</p>
+      </div>
+
+      <!-- Slide 2 -->
+      <div class="slide">
+        <div class="token-mark"></div>
+        <h1>Send Payment with RWA Tokens</h1>
+        <p class="subtitle">Compliant transfers with Travel Rule data attached to every transaction.</p>
+      </div>
+
+      <!-- Slide 3 -->
+      <div class="slide">
+        <div class="token-mark"></div>
+        <h1>Lock RWA on ETH → Borrow on CC</h1>
+        <p class="subtitle">Collateral never wraps, never bridges. Position credited trustlessly via Attestcoin.</p>
+      </div>
+
+      <button class="nav-btn left" onclick="prev()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <button class="nav-btn right" onclick="next()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+
+      <div class="dots">
+        <span class="dot active"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    let current = 0;
+    const slides = document.querySelectorAll('.slide');
+    const dots = document.querySelectorAll('.dot');
+
+    function show(i) {
+      slides.forEach(s => s.classList.remove('active'));
+      dots.forEach(d => d.classList.remove('active'));
+      slides[i].classList.add('active');
+      dots[i].classList.add('active');
+    }
+
+    function next() { current = (current + 1) % slides.length; show(current); }
+    function prev() { current = (current - 1 + slides.length) % slides.length; show(current); }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight') next();
+      if (e.key === 'ArrowLeft') prev();
+    });
+  </script>
+</body>
+</html>

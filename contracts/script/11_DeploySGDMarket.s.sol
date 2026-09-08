@@ -65,7 +65,7 @@ contract DeploySGDMarket is Script {
         vm.stopBroadcast();
 
         console.log("MARKET_SGD", address(mSGD));
-        console.log("Done - wire BuyDrawer to market.buy() with USDT");
+        console.log("Done - wire frontend BuyDrawer to market.buy() with USDT");
     }
 
     function _parse(string memory s) internal pure returns (uint256) {

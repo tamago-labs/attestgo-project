@@ -31,8 +31,8 @@ const ERC20_ABI = ['function approve(address,uint256) returns (bool)'] as const;
 async function main() {
   const key = (arg('--market') || 'nikkei').toLowerCase();
   const m = MARKETS[key]; if (!m) { console.error('unknown market'); process.exit(1); }
-  const repayRaw = arg('--repay') || arg('--borrow') || '100';
-  const unlockRaw = arg('--unlock') || arg('--amount') || '10';
+  const repayRaw = arg('--repay') || '100';
+  const unlockRaw = arg('--unlock') || '10';
   const irm = arg('--irm') || process.env.IRM_ADDR || '0x3345A6582669C00cA022d9200C083b3097B18DBb';
   const lltv = arg('--lltv') || process.env.LLTV || m.lltv;
   const loan = process.env[m.loanEnv] || DEFAULTS[m.loanEnv];

@@ -93,7 +93,7 @@ contract DeployPrimaryMarket is Script {
 
         console.log("MARKET_NIKKEI", address(mNikkei));
         console.log("MARKET_TBILL", address(mTBILL));
-        console.log("Done - wire BuyDrawer to market.buy() with JPYC/USDT");
+        console.log("Done - wire frontend BuyDrawer to market.buy() with JPYC/USDT");
     }
 
     function _parse(string memory s) internal pure returns (uint256) {

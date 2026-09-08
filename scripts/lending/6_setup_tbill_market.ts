@@ -57,7 +57,7 @@ async function main() {
       const after = await (oracle as any).getPriceInfo();
       console.log(`  new price()=${after.morphoPrice.toString()} (${(Number(after.morphoPrice) / 1e36).toFixed(4)}e36)`);
     } catch (e: any) {
-      if (String(e.message).includes('f7d97577') || String(e.message).includes('f7d97577') || String(e.message).includes('TooFrequent') || String(e.data || '').includes('53f7a6ee')) {
+      if (String(e.message).includes('f7d97577') || String(e.message).includes('TooFrequent') || String(e.data || '').includes('53f7a6ee')) {
         console.log(`  setPrice locked (1h cooldown since deploy) — constructor price ${pct.toFixed(1)}% off target, using as-is`);
       } else {
         throw e;

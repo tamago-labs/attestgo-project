@@ -26,6 +26,7 @@ contract DeploySourceVault is Script {
         require(block.chainid == 11155111 || block.chainid == 31337, "Wrong chain: SourceVault must be on Sepolia");
 
         address worker = vm.envOr("WORKER_ADDR", deployer);
+        // Fallback: Sepolia GOPass deployment (set GOPASS_ADDR env to override)
         address gopassAddr = vm.envOr("GOPASS_ADDR", address(0x0a6aD3b8B8D1A69Ba44002983e64e4824cB63334));
 
         vm.startBroadcast(pk);

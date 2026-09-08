@@ -30,7 +30,7 @@ contract GOPass is ERC721, Ownable {
     mapping(bytes32 => address) public hashToWallet; // uniqueness of customerIdHash
 
     string private _baseTokenURI;
-    address public worker; // authorized to setActive after CC approval (like loan-flow registerLoanFund)
+    address public worker; // authorized to setActive after CC approval
 
     event PassMinted(address indexed wallet, uint256 indexed tokenId, bytes32 recordHash, uint64 expiry);
     event PassUpdated(address indexed wallet, bytes32 recordHash);

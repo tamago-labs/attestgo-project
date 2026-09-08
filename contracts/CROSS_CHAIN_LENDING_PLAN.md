@@ -2,7 +2,7 @@
 
 ## Objective
 RWA GToken on source chain (ETH Sepolia 11155111, chainKey 1; mainnet later) as collateral, USDC on Creditcoin CC3 (102031) as loan. No mint, no wrapped transfer. Morpho core intact; collateral accounting split across chains. Liquidation = credit-based (Option A).
-**Trust model: ETH→CC — fully trustless (canonical Attestcoin ASC pattern): 0x0FD2 verifySingle + on-chain decode of encodedTransaction (tx + receipt data) validating `status == success` and `SourceVault.Locked` event fields. CC→ETH — trusted worker (unlock/seize settlement).** CoreVault is our ASC; `2_lend_e2e.ts` is the Oracle Query Worker (docs provisioning steps 3a–3c); submission permissionless.
+**Trust model: ETH→CC — fully trustless (canonical Attestcoin ASC pattern): 0x0FD2 verifySingle + on-chain decode of encodedTransaction (tx + receipt data) validating `status == success` and `SourceVault.Locked` event fields. CC→ETH — trusted worker (unlock/seize settlement).** CoreVault is our ASC; submission permissionless.
 
 ## Vendored Morpho (from kilolend-v2) — 3 small patches
 Copy `C:\projects\kilolend-v2\contracts\src\Morpho.sol:1` → `attestgo-project/contracts/src/Morpho.sol`, then:
@@ -25,7 +25,7 @@ Market = one supply token (USDC_CC) + one collateral token (GToken mirror, ident
 ### 3. `src/CoreVault.sol` (CC 102031) — verifier + Morpho facade + claims
 - State: `morpho` `worker owner` `BLOCK_PROVER = 0x0FD2` `SOURCE_CHAIN_KEY = 1` `sourceVault` `isProofUsed(lockId)` `sourceToCreditcoinToken(sourceCollateral → mirrorGToken)` `isRemoteMarket(id)` `claims(liquidator)`.
 - Struct `CrossChainLockProof { lockId, sourceCollateral, amount, recipient, marketId, nonce, headerNumber, txBytes, merkleRoot, siblings, lowerDigest, roots }` (same shape as `syncPassWithTxProof` args, `GOPassRegistry.sol:84`).
-- `verifyAndSupplyCollateral(p, mp)` — **permissionless** (canonical Phase 4 Data Extraction pattern; docs: validate "expected event found" from verified bytes):
+- `verifyAndSupplyCollateral(p, mp)` — **permissionless** (canonical log extraction pattern: validate "expected event found" from verified bytes):
   `require !isProofUsed[p.lockId]`; `require mp.collateralToken == sourceToCreditcoinToken[p.sourceCollateral]`; `require MarketParamsLib.id(mp) == p.marketId`;
   if `block.chainid != 31337` → 0x0FD2 `verifySingle(SOURCE_CHAIN_KEY, ...)` (skip on anvil, `GOPassRegistry.sol:71` pattern);
   **On-chain decode**: the encodedTransaction is the ProofBuilder's **ABI-encoded (transaction, receipt) blob** (confirmed against the live CC3 precompile + SDK output). Word-scan the blob for the `Locked` log pattern `[emitter, offTopics, offData, topicCount=4, topic0, topic1..3, dataLen=96, amount, marketId, nonce]` → require log **emitted by sourceVault** AND the tx head (fixed-shape ABI words preceding the calldata section) to target sourceVault — a forged log pattern inside calldata of a tx not calling SourceVault is thereby rejected. Receipt `status == 1` is implied by log presence (a reverted tx emits no events). Require fields == p fields and `lockId == p.lockId` (SourceVault.lock takes explicit `nonce`, enforced == vault nonce, so lockId fully determined by calldata).
@@ -63,7 +63,7 @@ Market = one supply token (USDC_CC) + one collateral token (GToken mirror, ident
 8. E2E: `lock 10 RWA` → proof → `verifyAndSupplyCollateral 10` → `borrow 6 USDC` → `repay` → `requestUnlock` → worker `unlock`; liquidation path separately.
 
 ## Hardening Backlog (v2, non-blocking)
-- Confirm SDK `getProof` encodedTransaction includes receipt data (docs say yes); else calldata-parse fallback (already specified in CoreVault impl note).
+- Confirm SDK `getProof` encodedTransaction includes receipt data; else calldata-parse fallback (already specified in CoreVault impl note).
 - PriceOracle fallback staleness: `price()` fallback mode ignores `lastPriceUpdateTime` (PriceOracle.sol:91-99) — add freshness check.
 - Unlock timelock for RWA T+ settlement; multi-worker quorum.
 - KYC rule per market wired into `borrow` passthrough (identity differentiator).

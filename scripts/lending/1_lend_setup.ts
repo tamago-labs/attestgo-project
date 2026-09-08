@@ -104,6 +104,6 @@ async function main() {
     } else console.log(`[${key}] market exists id=${id}`);
   }
 
-  console.log('\ndone — supplyRemoteCollateral via CoreVault.verifyAndSupplyCollateral, withdraw via requestUnlock (CoreVault.sol:157/321) → Morpho 351/368');
+  console.log('\ndone — supplyRemoteCollateral via CoreVault.verifyAndSupplyCollateral, withdraw via requestUnlock → Morpho');
 }
 main().catch((e) => { console.error(e); process.exit(1); });

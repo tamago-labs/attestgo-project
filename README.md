@@ -43,30 +43,16 @@ AttestGO is built on AWS Amplify Gen2 — a fullstack TypeScript framework that 
 - **Workers** — Attestation relayers, announcement registry, price oracles.
 - **Protocol** — Attestcoin for cross-chain proofs and settlement.
 
-![Architecture](https://docs.attestcoin.org/_next/image?url=%2Fimg%2Fattestcoin-readability.png&w=1200&q=75)
-
 > Full lending design: [`contracts/CROSS_CHAIN_LENDING_PLAN.md`](contracts/CROSS_CHAIN_LENDING_PLAN.md).
 
 ## Built on Attestcoin Protocol
 
-The [Attestcoin Protocol](https://docs.attestcoin.org/attestcoin-protocol/attestcoin-readability)
-gives an [Attestcoin Smart Contract (ASC)](https://docs.attestcoin.org/attestcoin-protocol/attestcoin-readability) on Creditcoin **readability** — the ability to trustlessly read and act on state from any source chain — in two steps:
-
-1. **Attestation** — a decentralized attestor network tracks finalized source-chain blocks and
-   stores consensus attestations on Creditcoin.
-2. **Transaction proving** — proofs are generated off-chain (ProofBuilder) and verified
-   synchronously on-chain by the **Block Prover Precompile (`0x0FD2`)**. The contract then extracts
-   the expected event log from the verified bytes (ABI-encoded transaction + receipt) and acts on it.
+AttestGO leverages the [Attestcoin Protocol](https://docs.attestcoin.org/attestcoin-protocol/attestcoin-readability) for trustless cross-chain interoperability — a decentralized attestor network tracks finalized source-chain blocks, and the **Block Prover Precompile (`0x0FD2`)** attests transaction inclusion on-chain, letting contracts decode the attested state and act on it.
 
 AttestGO uses this in two ways:
 
-- **Identity**: the GO Pass hub mints on Sepolia (chainKey 1); `GOPassRegistry` on Creditcoin
-  verifies the mint tx via `verifyAndEmit` and decodes the `PassMinted` log on-chain before
-  trusting the record. One pass works everywhere via worker-synced mirrors.
-- **Cross-chain lending**: RWA collateral is locked in `SourceVault` on Sepolia; `CoreVault`
-  verifies the lock tx via `0x0FD2` and credits the borrower's position on a Morpho-based market
-  on Creditcoin — no wrapped token, collateral never leaves the source chain. ETH→CC is
-  trustless (permissionless proof submission); CC→ETH (unlock settlement) uses a trusted worker.
+- **Identity**: the GO Pass hub mints on Sepolia (chainKey 1); `GOPassRegistry` on Creditcoin attests the mint tx via `verifyAndEmit` and decodes the `PassMinted` log on-chain before trusting the record. One pass works everywhere via worker-synced mirrors.
+- **Cross-chain lending**: RWA collateral is locked in `SourceVault` on Sepolia; `CoreVault` attests the lock tx via `0x0FD2` and credits the borrower's position on a Morpho-based market on Creditcoin — no wrapped token, collateral never leaves the source chain. ETH→CC is trustless (permissionless proof submission); CC→ETH (unlock settlement) uses a trusted worker.
 
 ```mermaid
 flowchart LR
@@ -84,9 +70,72 @@ flowchart LR
     W -.->|"unlock()"| SV
 ```
 
-Trust model: **ETH → CC trustless** (permissionless proof submission, replay-protected, params
-bound to the verified tx on-chain) · **CC → ETH trusted worker** (unlock/seize settlement).
+*Figure 1 — Cross-chain lending: RWA locked on Sepolia, collateral credited on Creditcoin.*
+
+```mermaid
+flowchart LR
+    subgraph Sepolia["Sepolia 11155111 (chainKey 1)"]
+        GP["GOPass (hub)"] -->|"mint()"| P["PassMinted()"]
+    end
+    GP -->|"mint tx + proof"| PB["ProofBuilder"]
+    PB -->|"0x0FD2 verifySingle"| REG
+    subgraph CC["Creditcoin 102031"]
+        REG["GOPassRegistry (ASC)"] -->|"decode + store"| REC["Verified Pass Record"]
+    end
+    REG -.->|"sync (trusted worker)"| M["Mirror chains"]
+```
+
+*Figure 2 — Identity: GO Pass minted on Sepolia, attested and decoded on Creditcoin.*
+
+### Trust model
+
+| Direction | Mechanism | Trust |
+|---|---|---|
+| ETH → CC | Permissionless proof submission, replay-protected, params bound to the attested tx on-chain | Trustless |
+| CC → ETH | Unlock/seize settlement | Trusted worker |
+
 See [`contracts/CROSS_CHAIN_LENDING_PLAN.md`](contracts/CROSS_CHAIN_LENDING_PLAN.md) for the full design.
+
+## Smart Contracts
+
+AttestGO's onchain stack spans two chains — Sepolia (source chain, Attestcoin chainKey `1`) and Creditcoin CC3 `102031` (verification hub and lending venue). Contracts are built with Foundry.
+
+#### GO Pass — Identity
+
+Reusable KYC identity powered by Sumsub. Complete KYC once and mint a verified, soulbound credential on Sepolia. The GOPassRegistry on Creditcoin attests the mint transaction via the Block Prover Precompile (`0x0FD2`) and decodes the `PassMinted` event on-chain before trusting the record. Mirrored to other chains via worker-synced caches for lightweight local eligibility checks.
+
+| Contract | Chain | Purpose |
+|---|---|---|
+| GOPass | Sepolia | Soulbound KYC NFT hub; mints `active=false` until Creditcoin attests |
+| GOPassRegistry | Creditcoin | Attestcoin Smart Contract: attests hub mint txs, stores records, eligibility rules |
+| GOPassMirror | Any EVM | Worker-synced record cache; GTokens check eligibility locally |
+
+#### GO Assets — Compliant RWAs
+
+Programmable compliance for tokenized real-world assets. Create and govern compliant tokens with country-based restrictions, eligibility checks, pause controls, and 1:1 wrapping for existing tokens. Rules are enforced on every transfer and can be updated without redeploying the asset.
+
+| Contract | Chain | Purpose |
+|---|---|---|
+| GToken | Any chain | Compliant ERC20 gated by GOPass eligibility; native or wrapped 1:1 |
+| GTokenFactory | Any chain | Operator-paid issuance of native/wrapped GTokens |
+
+#### Cross-Chain DeFi — Lending
+
+Isolated lending market on Creditcoin where RWA collateral is locked on the source chain and the position is credited trustlessly via Attestcoin. Suppliers earn yield in USDC; borrowers lock RWA on Sepolia and borrow USDC on Creditcoin — collateral never wraps, never bridges. Liquidation is credit-based; unlock settlement uses a trusted worker.
+
+| Contract | Chain | Purpose |
+|---|---|---|
+| Morpho | Creditcoin | Morpho Blue fork + remote-collateral patch |
+| PriceOracle | Creditcoin | Market oracle: fallback USD price + Chainlink-style feeds |
+| JumpRateIrm | Creditcoin | Compound-style jump rate IRM |
+| SourceVault | Sepolia | RWA collateral escrow; `Locked` tx is the proof payload |
+| CoreVault | Creditcoin | ASC verifier + Morpho facade + liquidation claims ledger |
+
+```shell
+cd contracts
+forge build
+forge test          # 40 tests
+```
 
 ## Getting Started
 
@@ -117,38 +166,6 @@ Contracts:
 cd contracts
 forge test
 ```
-
-Deploy — GO Pass hub on Sepolia, registry on Creditcoin:
-
-```shell
-forge script contracts/script/1_DeployGOPass.s.sol --rpc-url $SEPOLIA_RPC_URL --broadcast --legacy
-GOPASS_ADDR=0x... forge script contracts/script/2_DeployGOPassRegistry.s.sol --rpc-url $CREDITCOIN_RPC_URL --broadcast --legacy
-```
-
-Deploy — cross-chain lending (see [deploy plan](contracts/CROSS_CHAIN_LENDING_PLAN.md)); each script
-deploys only its own contract, reuses anything already deployed via its `*_ADDR` env, and the
-CoreVault script validates oracle/IRM/Morpho before spending gas:
-
-```shell
-# Creditcoin: lending primitives
-forge script contracts/script/5_DeployMorpho.s.sol --rpc-url $CREDITCOIN_RPC_URL --broadcast --legacy
-COLLATERAL_USD=1000000000000000000 LOAN_USD=1000000000000000000 LOAN_TOKEN=0x.. COLLATERAL_TOKEN=0x.. \
-  forge script contracts/script/6_DeployOracle.s.sol --rpc-url $CREDITCOIN_RPC_URL --broadcast --legacy
-forge script contracts/script/7_DeployIrm.s.sol --rpc-url $CREDITCOIN_RPC_URL --broadcast --legacy
-# Sepolia: collateral escrow
-forge script contracts/script/8_DeploySourceVault.s.sol --rpc-url $SEPOLIA_RPC_URL --broadcast --legacy
-# Creditcoin: deploy-only (no wiring — 1_lend_setup.ts validates and wires)
-MORPHO_ADDR=0x.. SOURCE_VAULT_ADDR=0x.. forge script contracts/script/9_DeployCoreVault.s.sol --rpc-url $CREDITCOIN_RPC_URL --broadcast --legacy
-# Wire everything: worker, mappings, both markets, lltv/irm enable (plain TS)
-npx tsx scripts/lending/1_lend_setup.ts --all
-# Optional: NAV primary markets + mint test GTokens (Sepolia)
-forge script contracts/script/10_DeployPrimaryMarket.s.sol --rpc-url $SEPOLIA_RPC_URL --broadcast --legacy
-forge script contracts/script/4_MintGToken.s.sol --rpc-url $SEPOLIA_RPC_URL --broadcast --legacy
-```
-
-### Environment variables
-
-`PRIVATE_KEY`, `SEPOLIA_RPC_URL`, `CREDITCOIN_RPC_URL`, `PROOF_BUILDER_URL`, plus per-flow addresses (`GOPASS_ADDR`, `REGISTRY_ADDR`, `CORE_VAULT_ADDR`, `SOURCE_VAULT_ADDR`, …). See [`scripts/.env.example`](scripts/.env.example) and each script header.
 
 ## Deployment
 
@@ -205,14 +222,6 @@ one trust boundary: the CC→ETH worker.
 | [`scripts/lending/3_worker_unlock.ts`](scripts/lending/3_worker_unlock.ts) | Settle `UnlockRequested` on Sepolia (borrower exits + liquidator payouts) | trusted worker |
 | [`scripts/cross-chain-bridge/`](scripts/cross-chain-bridge/) | Payment-stream bridge demos + workers (previous iterations) | mixed |
 
-## Deploying to AWS
-
-For detailed instructions on deploying the web application, refer to the
-[Amplify deployment docs](https://docs.amplify.aws/nextjs/start/quickstart/nextjs-app-router-client-components/#deploy-a-fullstack-app-to-aws).
-
-## Security
-
-See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
 
 ## License
 

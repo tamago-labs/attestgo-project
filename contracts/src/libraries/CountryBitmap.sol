@@ -4,8 +4,8 @@ pragma solidity 0.8.19;
 /**
  * CountryBitmap — ISO2 to bitmap helper
  * Sorted example mapping: US=0, SG=1, JP=2, HK=3, DE=4, CN=5, GB=6 ...
- * Bitmap allows single uint256 check in GOPassMirror isEligibleCached.
- * Off-chain sync must use same table (scripts/cleanverse-docs: ISO2 uppercase).
+ * Bitmap allows single uint256 check in GOPassMirror isEligible.
+ * Off-chain sync must use same table (scripts/: ISO2 uppercase).
  */
 library CountryBitmap {
     function iso2ToBit(string memory iso2) internal pure returns (uint8) {
