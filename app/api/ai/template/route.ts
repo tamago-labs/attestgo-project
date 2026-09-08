@@ -24,27 +24,34 @@ Rules:
 - Use natural language, not legal jargon`;
 
 export async function POST(req: NextRequest) {
+  console.log("[api/ai/template] invoked");
   try {
     const { prompt, cause } = await req.json();
+    console.log("[api/ai/template] prompt:", prompt, "cause:", cause);
 
     if (!prompt) {
       return NextResponse.json({ ok: false, error: "prompt required" }, { status: 400 });
     }
 
     const apiKey = process.env.OPENAI_API_KEY;
-    const baseURL = process.env.OPENAI_BASE_URL || undefined;
-    const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
-
     if (!apiKey) {
       return NextResponse.json({ ok: false, error: "OPENAI_API_KEY not configured" }, { status: 503 });
     }
+    console.log("[api/ai/template] key present, calling LongCat...");
 
-    const client = new OpenAI({ apiKey, baseURL });
+    let client: OpenAI;
+    try {
+      client = new OpenAI({ apiKey, baseURL: "https://api.longcat.ai/openai/v1" });
+    } catch (e) {
+      console.error("[api/ai/template] OpenAI init error", e);
+      return NextResponse.json({ ok: false, error: "AI client init failed" }, { status: 500 });
+    }
+    const model = "LongCat-2.0";
 
     const userMessage = `Transfer purpose: ${cause || "other"}\nUser's description: ${prompt}`;
 
     const completion = await client.chat.completions.create({
-      model: "gpt-4o-mini",
+      model,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: userMessage },
@@ -54,6 +61,7 @@ export async function POST(req: NextRequest) {
     });
 
     const template = completion.choices[0]?.message?.content?.trim();
+    console.log("[api/ai/template] generated, length:", template?.length);
 
     if (!template) {
       return NextResponse.json({ ok: false, error: "AI returned empty response" }, { status: 500 });
