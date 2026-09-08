@@ -6,6 +6,10 @@
 [![API Docs](https://img.shields.io/badge/docs-attestgo-blue)](https://docs.attestcoin.org/)
 [![X](https://img.shields.io/badge/x-follow-000000)](https://x.com/tamago_labs_JP)
 
+| Quick links |
+|---|
+| [YouTube (5 min)](https://youtu.be/OstSy9YQGqU) · [Dapp](https://attestgo.tamagolabs.com/) · [DoraHacks](https://dorahacks.io/buidl/48299) |
+
 We build compliance infrastructure for onchain finance — verified identity, compliant RWAs, and cross-chain DeFi, with an AI inbox that explains every transaction, leveraging [Attestcoin](https://docs.attestcoin.org/) for trustless cross-chain interoperability.
 
 ## Overview
