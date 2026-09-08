@@ -50,7 +50,7 @@ export default function Footer() {
             </li>
             <li>
               <a href="/demo-products" className="hover:text-white transition-colors">
-                Products
+                Demo Products
               </a>
             </li>
             <li>
@@ -66,17 +66,17 @@ export default function Footer() {
           </div>
           <ul className="space-y-3 text-sm text-white/80">
             <li>
-              <a href="/#about" className="hover:text-white transition-colors">
+              <a href="https://www.tamagolabs.com/en/about" target="_blank" rel="noopener" className="hover:text-white transition-colors">
                 About
               </a>
             </li>
             <li>
-              <a href="https://x.com/tamago_labs_JP" target="_blank" rel="noopener" className="hover:text-white transition-colors">
+              <a href="https://www.tamagolabs.com/en/blog" target="_blank" rel="noopener" className="hover:text-white transition-colors">
                 Blog
               </a>
             </li>
             <li>
-              <a href="/#contact" className="hover:text-white transition-colors">
+              <a href="https://www.tamagolabs.com/en/about" target="_blank" rel="noopener" className="hover:text-white transition-colors">
                 Contact
               </a>
             </li>
