@@ -260,7 +260,7 @@ const schema = a.schema({
   EmailTemplate: a
     .model({
       userProfileId: a.string().required(),
-      cause: a.enum(["gift", "payment", "investment", "loan", "other"]),
+      cause: a.enum(["gift", "payment", "investment", "loan", "refund", "salary", "dividend", "swap", "other"]),
       template: a.string().required(),
     })
     .authorization((allow) => [allow.publicApiKey().to(["read", "create", "update", "delete"])])

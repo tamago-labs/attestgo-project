@@ -3,6 +3,10 @@ export const CAUSES = [
   { id: "payment", label: "Payment" },
   { id: "investment", label: "Investment" },
   { id: "loan", label: "Loan repayment" },
+  { id: "refund", label: "Refund" },
+  { id: "salary", label: "Salary" },
+  { id: "dividend", label: "Dividend" },
+  { id: "swap", label: "Swap" },
   { id: "other", label: "Other" },
 ] as const;
 
@@ -14,6 +18,10 @@ export function buildEmailSubject(cause: CauseId, asset: string, amount: string)
     case "payment": return `Payment of ${amount} ${asset} received`;
     case "investment": return `Investment transfer: ${amount} ${asset}`;
     case "loan": return `Loan repayment: ${amount} ${asset}`;
+    case "refund": return `Refund of ${amount} ${asset}`;
+    case "salary": return `Salary payment: ${amount} ${asset}`;
+    case "dividend": return `Dividend distribution: ${amount} ${asset}`;
+    case "swap": return `Swap: ${amount} ${asset}`;
     default: return `You received ${amount} ${asset}`;
   }
 }
@@ -94,6 +102,30 @@ AttestGO Protocol`,
   other: `Hi {{recipientName}},
 
 {{senderName}} sent you {{amount}} {{asset}}.
+
+Best,
+AttestGO Protocol`,
+  refund: `Hi {{recipientName}},
+
+{{senderName}} issued you a refund of {{amount}} {{asset}}.
+
+Best,
+AttestGO Protocol`,
+  salary: `Hi {{recipientName}},
+
+{{senderName}} sent you {{amount}} {{asset}} as salary.
+
+Best,
+AttestGO Protocol`,
+  dividend: `Hi {{recipientName}},
+
+{{senderName}} distributed {{amount}} {{asset}} as dividend yield.
+
+Best,
+AttestGO Protocol`,
+  swap: `Hi {{recipientName}},
+
+{{senderName}} swapped {{amount}} {{asset}} with you.
 
 Best,
 AttestGO Protocol`,
