@@ -22,18 +22,18 @@ export default function Footer() {
           </div>
           <ul className="space-y-3 text-sm text-white/80">
             <li>
-              <a href="#" className="hover:text-white transition-colors">
-                Protocol
+              <a href="/app/discover" className="hover:text-white transition-colors">
+                Discover
               </a>
             </li>
             <li>
-              <a href="#" className="hover:text-white transition-colors">
-                Verification
+              <a href="/app/send" className="hover:text-white transition-colors">
+                Send
               </a>
             </li>
             <li>
-              <a href="#" className="hover:text-white transition-colors">
-                Pricing
+              <a href="/app/defi" className="hover:text-white transition-colors">
+                DeFi
               </a>
             </li>
           </ul>
@@ -44,17 +44,17 @@ export default function Footer() {
           </div>
           <ul className="space-y-3 text-sm text-white/80">
             <li>
-              <a href="#" className="hover:text-white transition-colors">
+              <a href="/docs" className="hover:text-white transition-colors">
                 Documentation
               </a>
             </li>
             <li>
-              <a href="#" className="hover:text-white transition-colors">
-                Whitepaper
+              <a href="/demo-products" className="hover:text-white transition-colors">
+                Products
               </a>
             </li>
             <li>
-              <a href="#" className="hover:text-white transition-colors">
+              <a href="https://github.com/tamago-labs/attestgo-project" target="_blank" rel="noopener" className="hover:text-white transition-colors">
                 GitHub
               </a>
             </li>
@@ -66,17 +66,17 @@ export default function Footer() {
           </div>
           <ul className="space-y-3 text-sm text-white/80">
             <li>
-              <a href="#" className="hover:text-white transition-colors">
+              <a href="/#about" className="hover:text-white transition-colors">
                 About
               </a>
             </li>
             <li>
-              <a href="#" className="hover:text-white transition-colors">
+              <a href="https://x.com/tamago_labs_JP" target="_blank" rel="noopener" className="hover:text-white transition-colors">
                 Blog
               </a>
             </li>
             <li>
-              <a href="#" className="hover:text-white transition-colors">
+              <a href="/#contact" className="hover:text-white transition-colors">
                 Contact
               </a>
             </li>
