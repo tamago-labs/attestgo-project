@@ -1,6 +1,5 @@
 "use client";
 
-import { truncateAddr } from "@/lib/send/constants";
 import { CAUSES } from "@/lib/send/emailTemplates";
 
 export default function ReviewPanel({
@@ -34,10 +33,6 @@ export default function ReviewPanel({
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted">You send</span>
           <span className="text-sm font-semibold text-white">{amount} {symbol}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted">To</span>
-          <span className="text-xs font-mono text-white/70">{truncateAddr(recipient)}</span>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted">Purpose</span>
