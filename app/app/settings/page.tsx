@@ -9,6 +9,7 @@ import AddressBookDrawer from "@/components/app/AddressBookDrawer";
 import TokenRegistryDrawer from "@/components/app/TokenRegistryDrawer";
 import KYCStatusModal from "@/components/app/KYCStatusModal";
 import EmailTemplatesDrawer from "@/components/app/settings/EmailTemplatesDrawer";
+import TravelRuleDrawer from "@/components/app/settings/TravelRuleDrawer";
 
 function shortAddr(a: string) {
   return a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "—";
@@ -37,6 +38,7 @@ export default function SettingsPage() {
   const [tokenOpen, setTokenOpen] = useState(false);
   const [kycOpen, setKycOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [travelRuleOpen, setTravelRuleOpen] = useState(false);
 
   const fetch = async () => {
     if (!address) {
@@ -142,6 +144,10 @@ export default function SettingsPage() {
               <span className="text-sm text-white">Email templates</span>
               <span className="text-white/25">›</span>
             </button>
+            <button onClick={() => setTravelRuleOpen(true)} className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/[0.03] transition-colors text-left">
+              <span className="text-sm text-white">Travel Rule records</span>
+              <span className="text-white/25">›</span>
+            </button>
           </div>
         </>
       ) : (
@@ -155,6 +161,7 @@ export default function SettingsPage() {
       <TokenRegistryDrawer open={tokenOpen} onClose={() => setTokenOpen(false)} ownerId={(profile as unknown as { id: string } | null)?.id || null} />
       <KYCStatusModal open={kycOpen} onClose={() => setKycOpen(false)} profile={profile as unknown as { kycStatus?: string; kycReviewAnswer?: string; kycRejectType?: string; applicantId?: string } | null} />
       <EmailTemplatesDrawer open={templatesOpen} onClose={() => setTemplatesOpen(false)} userProfileId={(profile as unknown as { id: string } | null)?.id || null} />
+      <TravelRuleDrawer open={travelRuleOpen} onClose={() => setTravelRuleOpen(false)} userProfileId={(profile as unknown as { id: string } | null)?.id || null} walletAddress={address || null} />
     </div>
   );
 }
