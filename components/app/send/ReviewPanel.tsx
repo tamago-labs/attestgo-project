@@ -69,16 +69,12 @@ export default function ReviewPanel({
         </div>
       )}
 
-      <div className="bg-amber/5 border border-amber/20 rounded-lg p-3">
-        <p className="text-[11px] text-muted">A notification with transfer details will be sent to the recipient's inbox.</p>
-      </div>
-
       {/* Email preview */}
-      {emailPreview && (
-        <div className="border border-border rounded-lg overflow-hidden">
-          <div className="bg-white/[0.02] px-4 py-2 border-b border-border">
-            <p className="text-[10px] uppercase tracking-widest text-muted">Email preview</p>
-          </div>
+      <div className="border border-border rounded-lg overflow-hidden">
+        <div className="bg-white/[0.02] px-4 py-2 border-b border-border">
+          <p className="text-[10px] uppercase tracking-widest text-muted">Email preview</p>
+        </div>
+        {emailPreview ? (
           <div className="p-4 space-y-2">
             <div className="flex items-baseline gap-2">
               <span className="text-[10px] text-muted shrink-0">Subject:</span>
@@ -86,8 +82,14 @@ export default function ReviewPanel({
             </div>
             <p className="text-xs text-muted whitespace-pre-wrap leading-relaxed">{emailPreview.body}</p>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="p-4 space-y-2.5">
+            <div className="h-2.5 bg-white/[0.04] rounded w-3/4 animate-pulse" />
+            <div className="h-2.5 bg-white/[0.04] rounded w-full animate-pulse" />
+            <div className="h-2.5 bg-white/[0.04] rounded w-5/6 animate-pulse" />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

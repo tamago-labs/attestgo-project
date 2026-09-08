@@ -154,12 +154,21 @@ export default function SendDrawer({
     return { subject, body };
   };
 
-  const handleReview = async () => {
+  const handleReview = () => {
     setSendError(null);
-    const preview = await buildEmailPreview();
-    setEmailPreview(preview);
+    setEmailPreview(null);
     setStep(2);
   };
+
+  useEffect(() => {
+    if (step !== 2) return;
+    let cancelled = false;
+    (async () => {
+      const preview = await buildEmailPreview();
+      if (!cancelled) setEmailPreview(preview);
+    })();
+    return () => { cancelled = true; };
+  }, [step]);
 
   const handleConfirmSend = async () => {
     if (!walletAddress || !signer) return;
