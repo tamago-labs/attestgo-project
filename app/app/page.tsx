@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowUpRight } from "lucide-react";
-import { getUrl } from "aws-amplify/storage";
+import { ArrowUpRight, Sparkles, Loader2 } from "lucide-react";
+import { getUrl, uploadData } from "aws-amplify/storage";
 import { useWallet } from "@/components/app/WalletContext";
 import { loadProfile } from "@/lib/userProfile";
 import { getClient } from "@/lib/tokenRegistry";
@@ -68,6 +68,8 @@ export default function InboxPage() {
   const [items, setItems] = useState<InboxItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(0);
+  const [generating, setGenerating] = useState(false);
+  const [travelRuleData, setTravelRuleData] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -104,6 +106,51 @@ export default function InboxPage() {
       await client.models.InboxItem.update({ id, read: true });
       setItems((prev) => prev.map((it) => (it.id === id ? { ...it, read: true } : it)));
     } catch {}
+  };
+
+  const generateDocument = async () => {
+    if (!active) return;
+    setGenerating(true);
+    try {
+      // Fetch linked travel rule data
+      const client = getClient();
+      const trRes = await (client.models.TravelRuleData as unknown as {
+        list: (a: { filter: { inboxItemId: { eq: string } } }) => Promise<{ data: Record<string, unknown>[] }>;
+      }).list({ filter: { inboxItemId: { eq: active.id } } });
+      const trData = trRes.data?.[0];
+      if (!trData) throw new Error("No travel rule data linked");
+
+      // Generate document via AI
+      const aiRes = await fetch("/api/ai/document", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(trData),
+      });
+      if (!aiRes.ok) throw new Error("AI generation failed");
+      const aiData = await aiRes.json();
+      if (!aiData.document) throw new Error("No document generated");
+
+      // Upload to S3
+      const fileName = `travel-rule-${active.id}.txt`;
+      const file = new File([new Blob([aiData.document]) as unknown as BlobPart], fileName);
+      const result = await uploadData({
+        path: `docs/${fileName}`,
+        data: file,
+        options: { contentType: "text/plain" },
+      }).result;
+
+      // Update inbox item with document
+      await client.models.InboxItem.update({
+        id: active.id,
+        docs: [result.path],
+      } as unknown as { id: string; docs: string[] });
+
+      setTravelRuleData({ ...trData, docs: [result.path] });
+    } catch (e) {
+      console.error("Generate document error:", e);
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const active = items[selected];
@@ -246,12 +293,19 @@ function smartTime(iso?: string | null): string {
               </div>
 
               {/* Documents */}
-              {active.docs && active.docs.length > 0 && (
+              {active.docs && active.docs.length > 0 ? (
                 <div className="mt-6 space-y-1.5">
                   <p className="text-[10px] uppercase tracking-widest text-muted">Documents</p>
                   {active.docs.filter(Boolean).map((doc, i) => (
                     <DownloadLink key={i} path={doc!} />
                   ))}
+                </div>
+              ) : (
+                <div className="mt-6">
+                  <button onClick={generateDocument} disabled={generating} className="w-full inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-amber text-canvas text-xs font-medium hover:bg-amber/90 disabled:opacity-40">
+                    {generating ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+                    {generating ? "Generating..." : "Generate compliance doc"}
+                  </button>
                 </div>
               )}
             </>

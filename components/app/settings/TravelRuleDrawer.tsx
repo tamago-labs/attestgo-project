@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, Download, FileText, Sparkles, Loader2, Calendar } from "lucide-react";
+import { Download, FileText, Loader2, Calendar } from "lucide-react";
 import { truncateAddr } from "@/lib/send/constants";
-import { uploadData } from "aws-amplify/storage";
 import { generateClient } from "aws-amplify/data";
 import type { Schema } from "@/amplify/data/resource";
 
@@ -26,7 +25,6 @@ export default function TravelRuleDrawer({
   const [records, setRecords] = useState<TravelRuleData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<TravelRuleData | null>(null);
-  const [generating, setGenerating] = useState(false);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
@@ -65,44 +63,6 @@ export default function TravelRuleDrawer({
     if (dateTo && r.createdAt && r.createdAt > dateTo + "T23:59:59") return false;
     return true;
   });
-
-  const generateDocument = async (record: TravelRuleData) => {
-    setGenerating(true);
-    try {
-      const res = await fetch("/api/ai/document", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(record),
-      });
-      if (!res.ok) throw new Error("AI generation failed");
-      const data = await res.json();
-      if (!data.document) throw new Error("No document generated");
-
-      // Upload to S3
-      const fileName = `travel-rule-${record.id || Date.now()}.txt`;
-      const blob = new Blob([data.document], { type: "text/plain" });
-      const file = new File([blob], fileName);
-      const result = await uploadData({
-        path: `docs/${fileName}`,
-        data: file,
-        options: { contentType: "text/plain" },
-      }).result;
-
-      // Update inbox item with document
-      if (record.inboxItemId) {
-        await client.models.InboxItem.update({
-          id: record.inboxItemId,
-          docs: [result.path],
-        } as unknown as { id: string; docs: string[] });
-      }
-
-      setSelected(record);
-    } catch (e) {
-      console.error("Generate document error:", e);
-    } finally {
-      setGenerating(false);
-    }
-  };
 
   const downloadTxt = (record: TravelRuleData) => {
     const content = `Travel Rule Compliance Record
@@ -169,13 +129,9 @@ TRANSFER
                   </div>
                 </div>
 
-                <div className="flex gap-2 pt-3 border-t border-border">
-                  <button onClick={() => downloadTxt(selected)} className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg border border-border text-xs text-muted hover:text-white">
+                <div className="pt-3 border-t border-border">
+                  <button onClick={() => downloadTxt(selected)} className="w-full inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg border border-border text-xs text-muted hover:text-white">
                     <Download size={13} /> Download
-                  </button>
-                  <button onClick={() => generateDocument(selected)} disabled={generating} className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-amber text-canvas text-xs font-medium hover:bg-amber/90 disabled:opacity-40">
-                    {generating ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
-                    {generating ? "Generating..." : "AI Generate Doc"}
                   </button>
                 </div>
               </div>
