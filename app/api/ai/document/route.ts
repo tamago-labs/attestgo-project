@@ -1,23 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
-const SYSTEM_PROMPT = `You are a payment receipt generator for AttestGO, a cross-chain RWA lending platform.
-Generate a clean, human-readable PAYMENT RECEIPT using the provided transfer data.
+const SYSTEM_PROMPT = `You are a document generator for AttestGO, a cross-chain RWA lending platform.
+Generate a professional payment receipt document using the email content and transfer data provided.
 
-Format exactly like this example:
-
-PAYMENT RECEIPT
-==============
-
-From: {{originatorName}} ({{originatorWallet}})
-To: {{beneficiaryName}} ({{beneficiaryWallet}})
-Amount: {{amount}} {{asset}}
-Date: {{date}}
-Transaction: {{txHash}}
-Status: Verified
-
-Must be concise, professional, single page.
-Output ONLY the receipt text, no markdown, no extra sections, no compliance jargon.`;
+Rules:
+- Use the email content as the base — preserve its meaning and tone
+- Include all transfer details from the data (wallets, amount, asset, date, tx hash)
+- Format as a clean, human-readable receipt
+- Include sender name/address, recipient name/address, amount, asset, date, transaction hash
+- Mark as "Verified" if status is "verified" or "pending"
+- Keep concise, single page
+- Output ONLY the document text, no markdown code blocks`;
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,16 +25,21 @@ export async function POST(req: NextRequest) {
     const client = new OpenAI({ apiKey, baseURL: "https://api.longcat.ai/openai/v1" });
     const model = "LongCat-2.0";
 
-    const userMessage = `Generate a payment receipt with this data:
+    const emailContent = data.emailContent || "No email content available.";
+    const trData = data.travelRule || {};
 
-originatorName: ${data.originatorName || "N/A"}
-originatorWallet: ${data.originatorWallet || "N/A"}
-beneficiaryName: ${data.beneficiaryName || "N/A"}
-beneficiaryWallet: ${data.beneficiaryWallet || "N/A"}
-amount: ${data.amount || "N/A"}
-asset: ${data.asset || "N/A"}
-txHash: ${data.txHash || "N/A"}
-date: ${data.createdAt ? new Date(data.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}`;
+    const userMessage = `EMAIL CONTENT:
+${emailContent}
+
+TRANSFER DATA:
+Originator: ${trData.originatorName || "N/A"} (${trData.originatorWallet || "N/A"})
+Beneficiary: ${trData.beneficiaryName || "N/A"} (${trData.beneficiaryWallet || "N/A"})
+Amount: ${trData.amount || "N/A"} ${trData.asset || ""}
+Date: ${trData.createdAt ? new Date(trData.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}
+Transaction: ${trData.txHash || "N/A"}
+Status: ${trData.status || "pending"}
+
+Generate a payment receipt document using both sources.`;
 
     const completion = await client.chat.completions.create({
       model,

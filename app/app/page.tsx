@@ -123,12 +123,15 @@ export default function InboxPage() {
       const trData = trRes.data?.[0];
       if (!trData) throw new Error("No travel rule data linked");
 
-      // Generate document via AI
+      // Generate document via AI (feed email content + travel rule data)
       console.log("[inbox] calling AI document API...");
       const aiRes = await fetch("/api/ai/document", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(trData),
+        body: JSON.stringify({
+          emailContent: active.body,
+          travelRule: trData,
+        }),
       });
       console.log("[inbox] AI response status:", aiRes.status);
       if (!aiRes.ok) throw new Error("AI generation failed");
