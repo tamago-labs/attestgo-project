@@ -221,7 +221,7 @@ export default function DiscoverPage() {
               )}
               <div className="min-w-0">
                 <h3 className="font-semibold leading-snug text-white truncate">{selected.productName}</h3>
-                <p className="text-white/40 text-xs font-mono">{selected.symbol} · {selected.chain}</p>
+                <p className="text-white/40 text-xs font-mono">{selected.productName} · {selected.chain}</p>
               </div>
             </div>
             <div className="flex gap-1 px-5 pt-4">
@@ -340,7 +340,7 @@ export default function DiscoverPage() {
                           )}
                           <div className="min-w-0">
                             <p className="text-sm font-medium text-white truncate">{offersById.get(f.tokenProfileId)!.productName}</p>
-                            <p className="text-white/40 text-xs font-mono">{offersById.get(f.tokenProfileId)!.symbol} · Tier {offersById.get(f.tokenProfileId)!.ruleMinTier}+{offersById.get(f.tokenProfileId)!.countries.length > 0 ? ` · ${offersById.get(f.tokenProfileId)!.countries.join(", ")}` : ""}</p>
+                            <p className="text-white/40 text-xs font-mono">{offersById.get(f.tokenProfileId)!.productName} · Tier {offersById.get(f.tokenProfileId)!.ruleMinTier}+{offersById.get(f.tokenProfileId)!.countries.length > 0 ? ` · ${offersById.get(f.tokenProfileId)!.countries.join(", ")}` : ""}</p>
                           </div>
                         </div>
                         <p className="font-mono text-sm text-white shrink-0 ml-3">{offersById.get(f.tokenProfileId)!.tvl}</p>
@@ -386,7 +386,7 @@ export default function DiscoverPage() {
                     <li key={o.id} className="flex items-center justify-between px-2 py-2 rounded-md hover:bg-white/[0.04] cursor-pointer" onClick={() => setSelected(o)}>
                       <span className="flex items-center gap-2 min-w-0">
                         <span className="text-white/20 text-xs font-mono w-3 shrink-0">{i + 1}</span>
-                        <span className="text-white truncate">{o.symbol}</span>
+                        <span className="text-white truncate">{o.productName}</span>
                       </span>
                       <span className="text-white/25 text-xs font-mono shrink-0 ml-2">{o.apy === "-" ? "—" : o.apy}</span>
                     </li>
