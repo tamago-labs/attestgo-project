@@ -161,7 +161,7 @@ export default function SettingsPage() {
       <TokenRegistryDrawer open={tokenOpen} onClose={() => setTokenOpen(false)} ownerId={(profile as unknown as { id: string } | null)?.id || null} />
       <KYCStatusModal open={kycOpen} onClose={() => setKycOpen(false)} profile={profile as unknown as { kycStatus?: string; kycReviewAnswer?: string; kycRejectType?: string; applicantId?: string } | null} />
       <EmailTemplatesDrawer open={templatesOpen} onClose={() => setTemplatesOpen(false)} userProfileId={(profile as unknown as { id: string } | null)?.id || null} />
-      <TravelRuleDrawer open={travelRuleOpen} onClose={() => setTravelRuleOpen(false)} userProfileId={(profile as unknown as { id: string } | null)?.id || null} walletAddress={address || null} />
+      <TravelRuleDrawer open={travelRuleOpen} onClose={() => setTravelRuleOpen(false)} walletAddress={address || null} />
     </div>
   );
 }
