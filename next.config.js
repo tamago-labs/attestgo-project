@@ -9,6 +9,9 @@ const nextConfig = {
       { protocol: "https", hostname: "play-lh.googleusercontent.com" },
     ],
   },
+  serverRuntimeConfig: {
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+  },
   async redirects() {
     return [
       { source: "/api_docs", destination: "/docs", permanent: true },

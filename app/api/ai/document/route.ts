@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import getConfig from "next/config";
+
+const { serverRuntimeConfig } = getConfig();
 
 const SYSTEM_PROMPT = `You are a document generator for AttestGO, a cross-chain RWA lending platform.
 Generate a professional Transfer Record document using the email content and transfer data provided.
@@ -23,7 +26,7 @@ export async function POST(req: NextRequest) {
     const data = await req.json();
     console.log("[api/ai/document] email length:", data.emailContent?.length, "travelRule keys:", Object.keys(data.travelRule || {}));
 
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = serverRuntimeConfig.OPENAI_API_KEY || process.env.OPENAI_API_KEY;
     if (!apiKey) {
       return NextResponse.json({ ok: false, error: "OPENAI_API_KEY not configured" }, { status: 503 });
     }

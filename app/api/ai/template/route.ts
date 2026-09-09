@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import getConfig from "next/config";
+
+const { serverRuntimeConfig } = getConfig();
 
 const PLACEHOLDERS = [
   "{{senderName}}",
@@ -32,7 +35,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "prompt required" }, { status: 400 });
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = serverRuntimeConfig.OPENAI_API_KEY || process.env.OPENAI_API_KEY;
     if (!apiKey) {
       return NextResponse.json({ ok: false, error: "OPENAI_API_KEY not configured" }, { status: 503 });
     }
